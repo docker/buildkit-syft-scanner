@@ -9,6 +9,7 @@ FROM build-base as build
 ARG SYFT_VERSION=main
 ADD https://github.com/anchore/syft.git#${SYFT_VERSION} /syft
 WORKDIR /syft
+ARG TARGETPLATFORM
 ENV CGO_ENABLED=0
 RUN \
   --mount=target=/root/.cache,type=cache \

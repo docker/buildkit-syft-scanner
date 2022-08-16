@@ -32,4 +32,4 @@ jobs:
           tags: jedevc/buildkit-syft-scanner:latest
           cache-to: type=inline
           cache-from: type=registry,ref=jedevc/buildkit-syft-scanner:latest
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
