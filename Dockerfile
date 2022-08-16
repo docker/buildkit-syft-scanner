@@ -1,12 +1,12 @@
 #syntax=docker/dockerfile-upstream:master-labs
 
-FROM --platform=$BUILDPLATFORM tonistiigi/xx:latest AS xx
+FROM --platform=$BUILDPLATFORM tonistiigi/xx:1.1.2 AS xx
 
 FROM golang as build-base
 COPY --link --from=xx / /
 
 FROM build-base as build
-ARG SYFT_VERSION=main
+ARG SYFT_VERSION=3db69118650caab0479c261c277ddba8712d9f6b
 ADD https://github.com/anchore/syft.git#${SYFT_VERSION} /syft
 WORKDIR /syft
 ARG TARGETPLATFORM
