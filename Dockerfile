@@ -6,7 +6,7 @@ FROM golang as build-base
 COPY --link --from=xx / /
 
 FROM build-base as build
-ARG SYFT_VERSION=3db69118650caab0479c261c277ddba8712d9f6b
+ARG SYFT_VERSION=b0fc955e0c406a12d8aaddcd8ececda89cbcddce
 ADD https://github.com/anchore/syft.git#${SYFT_VERSION} /syft
 WORKDIR /syft
 ARG TARGETPLATFORM
