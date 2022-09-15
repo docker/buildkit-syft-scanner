@@ -21,11 +21,23 @@ COPY --from=build /usr/bin/syft /usr/bin/syft
 
 COPY <<-"EOF" /entrypoint.sh
 	#!/bin/sh
-	for source in "${BUILDKIT_SCAN_SOURCES:?}"/*; do
-		name=$(basename "$source")
-		syft \
-			--output spdx-json="${BUILDKIT_SCAN_DESTINATIONS:?}/$name/spdx.json" \
-			"$source"
+	set -e
+	for src in "${BUILDKIT_SCAN_SOURCES:?}"/*; do
+		dest="${BUILDKIT_SCAN_DESTINATIONS:?}"/$(basename "$src")
+		echo syft --output spdx-json="$dest/spdx.json" "$src"
+		syft --output spdx-json="$dest/spdx.json" "$src"
+		cat <<BUNDLE > "$dest/index.json"
+		[
+		  {
+		    "kind": "in-toto",
+		    "path": "spdx.json",
+		    "in-toto": {
+		      "predicate-type": "https://spdx.dev/Document"
+		    }
+		  }
+		]
+		BUNDLE
 	done
+	find "${BUILDKIT_SCAN_DESTINATIONS:?}/"
 EOF
 CMD sh /entrypoint.sh
