@@ -6,6 +6,6 @@ target "buildkit-syft-scanner" {
     context = "."
     dockerfile = "Dockerfile"
 
-	tags = ["jedevc/buildkit-syft-scanner:latest"]
+    tags = ["jedevc/buildkit-syft-scanner:latest"]
     platforms = ["linux/amd64"]
 }
