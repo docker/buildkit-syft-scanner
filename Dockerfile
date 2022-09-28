@@ -28,14 +28,12 @@ COPY <<-"EOF" /entrypoint.sh
 	scan () {
 		echo "Scanning $1"
 		out="$(basename $1).spdx.json"
-		syft --output spdx-json="${BUILDKIT_SCAN_DESTINATION}/$out" "$1"
-		cat <<-BUNDLE >> "${BUILDKIT_SCAN_DESTINATION_INDEX}"
+		syft --output spdx-json="/tmp/$out" "$1"
+		cat <<-BUNDLE > "${BUILDKIT_SCAN_DESTINATION}/$out"
 		{
-		  "kind": "in-toto",
-		  "path": "$out",
-		  "in-toto": {
-		    "predicate-type": "https://spdx.dev/Document"
-		  }
+		  "_type": "https://in-toto.io/Statement/v0.1",
+		  "predicateType": "https://spdx.dev/Document",
+		  "predicate": $(cat "/tmp/$out")
 		}
 		BUNDLE
 	}
