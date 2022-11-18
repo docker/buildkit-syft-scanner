@@ -1,5 +1,12 @@
 # BuildKit Syft scanner
 
-This repo is a temporary test-bed to test SBOM generation for BuildKit images.
+This repo packages the [Syft scanner](https://github.com/anchore/syft) as a
+[BuildKit SBOM generator](https://github.com/moby/buildkit/pull/2983) to
+include scan results with the output of Docker builds.
 
-This image can be used as part of the functionality described in [SBOM attestations generation](https://github.com/moby/buildkit/pull/2983).
+## Usage
+
+To scan an image during build using [buildctl](https://github.com/moby/buildkit):
+
+    $ buildctl build ... \
+        --output type=image,name=<image>,push=true --opt attest:sbom=generator=jedevc/buildkit-syft-scanner
