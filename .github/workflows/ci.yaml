@@ -1,9 +1,19 @@
 name: ci
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   push:
     branches:
       - 'master'
+    tags:
+      - 'v*'
+  pull_request:
+
+env:
+  DOCKERHUB_SLUG: docker/buildkit-syft-scanner
 
 jobs:
   build:
@@ -12,6 +22,25 @@ jobs:
       -
         name: Checkout
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      -
+        name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: |
+            ${{ env.DOCKERHUB_SLUG }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=ref,event=pr
+            type=edge
+          labels: |
+            org.opencontainers.image.title=BuildKit Syft scanner
+            org.opencontainers.image.description=SBOM generation for BuildKit images
+            org.opencontainers.image.vendor=Docker Inc.
       -
         name: Set up QEMU
         uses: docker/setup-qemu-action@v2
@@ -20,16 +49,18 @@ jobs:
         uses: docker/setup-buildx-action@v2
       -
         name: Login to DockerHub
+        if: github.event_name != 'pull_request'
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       -
-        name: Build and push
-        uses: docker/build-push-action@v3
+        name: Build
+        uses: docker/bake-action@v2
         with:
-          push: true
-          tags: jedevc/buildkit-syft-scanner:latest
-          cache-to: type=inline
-          cache-from: type=registry,ref=jedevc/buildkit-syft-scanner:latest
-          platforms: linux/amd64
+          files: |
+            ./docker-bake.hcl
+            ${{ steps.meta.outputs.bake-file }}
+          targets: image
+          # TODO: enable push when hup repo created
+          #push: ${{ github.event_name != 'pull_request' }}

@@ -5,16 +5,20 @@ import (
 	"os"
 
 	"github.com/anchore/go-logger"
-	"github.com/anchore/go-logger/adapter/logrus"
+	alogrus "github.com/anchore/go-logger/adapter/logrus"
 	"github.com/anchore/stereoscope"
 	"github.com/anchore/syft/syft"
 	"github.com/docker/buildkit-syft-scanner/internal"
+	"github.com/docker/buildkit-syft-scanner/version"
+	"github.com/sirupsen/logrus"
 )
 
 func main() {
 	if err := enableLogs(); err != nil {
 		panic(fmt.Sprintf("unable to initialize logger: %+v", err))
 	}
+
+	logrus.Infof("starting syft scanner for buildkit %s", version.Version)
 
 	scanner, err := internal.NewScannerFromEnvironment()
 	if err != nil {
@@ -35,11 +39,11 @@ func enableLogs() error {
 		level = "warn"
 	}
 
-	cfg := logrus.Config{
+	cfg := alogrus.Config{
 		EnableConsole: true,
 		Level:         logger.Level(level),
 	}
-	logWrapper, err := logrus.New(cfg)
+	logWrapper, err := alogrus.New(cfg)
 	if err != nil {
 		return err
 	}

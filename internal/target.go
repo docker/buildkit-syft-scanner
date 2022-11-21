@@ -8,6 +8,7 @@ import (
 	"github.com/anchore/syft/syft/pkg/cataloger"
 	"github.com/anchore/syft/syft/sbom"
 	"github.com/anchore/syft/syft/source"
+	"github.com/docker/buildkit-syft-scanner/version"
 )
 
 type Target struct {
@@ -37,7 +38,7 @@ func (t Target) Scan() (sbom.SBOM, error) {
 		Source: src.Metadata,
 		Descriptor: sbom.Descriptor{
 			Name:    "syft",
-			Version: SyftVersion,
+			Version: version.SyftVersion,
 		},
 	}
 
@@ -52,7 +53,3 @@ func (t Target) Scan() (sbom.SBOM, error) {
 
 	return result, nil
 }
-
-var (
-	SyftVersion = "[not provided]"
-)
