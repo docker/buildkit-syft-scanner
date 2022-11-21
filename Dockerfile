@@ -1,50 +1,26 @@
-#syntax=docker/dockerfile-upstream:master-labs
+#syntax=docker/dockerfile:1
 
 FROM --platform=$BUILDPLATFORM tonistiigi/xx:1.1.2 AS xx
 
-FROM golang as build-base
+FROM --platform=$BUILDPLATFORM golang:alpine as build-base
 COPY --link --from=xx / /
+ENV CGO_ENABLED=0
 
 FROM build-base as build
-ARG SYFT_VERSION=b0fc955e0c406a12d8aaddcd8ececda89cbcddce
-ADD https://github.com/anchore/syft.git#${SYFT_VERSION} /syft
-WORKDIR /syft
 ARG TARGETPLATFORM
-ENV CGO_ENABLED=0
+WORKDIR /src
 RUN \
-  --mount=target=/root/.cache,type=cache \
-  xx-go build -ldflags '-extldflags -static' -o /usr/bin/syft ./cmd/syft && \
-  xx-verify --static /usr/bin/syft
+  --mount=type=bind,target=. \
+  --mount=type=cache,target=/root/.cache <<EOF
+  set -e
 
-FROM alpine:latest
-COPY --from=build /usr/bin/syft /usr/bin/syft
-
-COPY <<-"EOF" /entrypoint.sh
-	#!/bin/sh
-	set -e
-	
-	env
-
-	scan () {
-		echo "Scanning $1"
-		out="$(basename $1).spdx.json"
-		syft --output spdx-json="/tmp/$out" "$1"
-		cat <<-BUNDLE > "${BUILDKIT_SCAN_DESTINATION}/$out"
-		{
-		  "_type": "https://in-toto.io/Statement/v0.1",
-		  "predicateType": "https://spdx.dev/Document",
-		  "predicate": $(cat "/tmp/$out")
-		}
-		BUNDLE
-	}
-	
-	scan "$BUILDKIT_SCAN_SOURCE"
-	if [ -d "${BUILDKIT_SCAN_SOURCE_EXTRAS:?}" ]; then
-		for src in "${BUILDKIT_SCAN_SOURCE_EXTRAS}"/*; do
-			scan "$src"
-		done
-	fi
-	
-	find "${BUILDKIT_SCAN_DESTINATION:?}/"
+  PKG=github.com/docker/buildkit-syft-scanner
+  echo "-X ${PKG}/internal.SyftVersion=$(go list -mod=mod -u -m -f '{{.Version}}' 'github.com/anchore/syft')" | tee /tmp/.ldflags
+  xx-go build -ldflags "$(cat /tmp/.ldflags) -extldflags -static" -o /usr/local/bin/syft-scanner ./cmd/syft-scanner
+  xx-verify --static /usr/local/bin/syft-scanner
 EOF
-CMD sh /entrypoint.sh
+
+FROM scratch
+COPY --from=build /usr/local/bin/syft-scanner /bin/syft-scanner
+ENV LOG_LEVEL="warn"
+ENTRYPOINT [ "/bin/syft-scanner" ]
