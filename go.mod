@@ -1,4 +1,4 @@
-module github.com/jedevc/buildkit-syft-scanner
+module github.com/docker/buildkit-syft-scanner
 
 go 1.19
 

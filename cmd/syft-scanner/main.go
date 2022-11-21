@@ -8,7 +8,7 @@ import (
 	"github.com/anchore/go-logger/adapter/logrus"
 	"github.com/anchore/stereoscope"
 	"github.com/anchore/syft/syft"
-	"github.com/jedevc/buildkit-syft-scanner/internal"
+	"github.com/docker/buildkit-syft-scanner/internal"
 )
 
 func main() {

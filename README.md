@@ -9,4 +9,4 @@ include scan results with the output of Docker builds.
 To scan an image during build using [buildctl](https://github.com/moby/buildkit):
 
     $ buildctl build ... \
-        --output type=image,name=<image>,push=true --opt attest:sbom=generator=jedevc/buildkit-syft-scanner
+        --output type=image,name=<image>,push=true --opt attest:sbom=generator=docker/buildkit-syft-scanner

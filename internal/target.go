@@ -3,7 +3,6 @@ package internal
 import (
 	"fmt"
 	"path/filepath"
-	"runtime/debug"
 
 	"github.com/anchore/syft/syft"
 	"github.com/anchore/syft/syft/pkg/cataloger"
@@ -38,7 +37,7 @@ func (t Target) Scan() (sbom.SBOM, error) {
 		Source: src.Metadata,
 		Descriptor: sbom.Descriptor{
 			Name:    "syft",
-			Version: syftVersion(),
+			Version: SyftVersion,
 		},
 	}
 
@@ -54,16 +53,6 @@ func (t Target) Scan() (sbom.SBOM, error) {
 	return result, nil
 }
 
-func syftVersion() string {
-	info, ok := debug.ReadBuildInfo()
-	if !ok {
-		return "unknown"
-	}
-
-	for _, dep := range info.Deps {
-		if dep.Path == "github.com/anchore/syft" {
-			return dep.Version
-		}
-	}
-	return "unknown"
-}
+var (
+	SyftVersion = "[not provided]"
+)
