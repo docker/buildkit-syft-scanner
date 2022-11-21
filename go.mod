@@ -3,10 +3,11 @@ module github.com/jedevc/buildkit-syft-scanner
 go 1.19
 
 require (
+	github.com/anchore/go-logger v0.0.0-20220728155337-03b66a5207d8
+	github.com/anchore/stereoscope v0.0.0-20221006201143-d24c9d626b33
 	github.com/anchore/syft v0.60.3
 	github.com/in-toto/in-toto-golang v0.4.1-0.20221018183522-731d0640b65f
 	github.com/pkg/errors v0.9.1
-	github.com/sirupsen/logrus v1.9.0
 )
 
 require (
@@ -17,10 +18,8 @@ require (
 	github.com/Masterminds/sprig/v3 v3.2.2 // indirect
 	github.com/Microsoft/go-winio v0.5.2 // indirect
 	github.com/acobaugh/osrelease v0.1.0 // indirect
-	github.com/anchore/go-logger v0.0.0-20220728155337-03b66a5207d8 // indirect
 	github.com/anchore/go-macholibre v0.0.0-20220308212642-53e6d0aaf6fb // indirect
 	github.com/anchore/packageurl-go v0.1.1-0.20220428202044-a072fa3cb6d7 // indirect
-	github.com/anchore/stereoscope v0.0.0-20221006201143-d24c9d626b33 // indirect
 	github.com/andybalholm/brotli v1.0.4 // indirect
 	github.com/bmatcuk/doublestar/v4 v4.0.2 // indirect
 	github.com/containerd/containerd v1.6.8 // indirect
@@ -51,8 +50,10 @@ require (
 	github.com/klauspost/compress v1.15.9 // indirect
 	github.com/klauspost/pgzip v1.2.5 // indirect
 	github.com/knqyf263/go-rpmdb v0.0.0-20221030135625-4082a22221ce // indirect
+	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.16 // indirect
 	github.com/mattn/go-runewidth v0.0.13 // indirect
+	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d // indirect
 	github.com/mholt/archiver/v3 v3.5.1 // indirect
 	github.com/microsoft/go-rustaudit v0.0.0-20220730194248-4b17361d90a5 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
@@ -75,6 +76,7 @@ require (
 	github.com/secure-systems-lab/go-securesystemslib v0.4.0 // indirect
 	github.com/shibumi/go-pathspec v1.3.0 // indirect
 	github.com/shopspring/decimal v1.2.0 // indirect
+	github.com/sirupsen/logrus v1.9.0 // indirect
 	github.com/spdx/tools-golang v0.2.0 // indirect
 	github.com/spf13/afero v1.8.2 // indirect
 	github.com/spf13/cast v1.5.0 // indirect
@@ -94,6 +96,7 @@ require (
 	golang.org/x/net v0.0.0-20221012135044-0b7e1fb9d458 // indirect
 	golang.org/x/sync v0.0.0-20220929204114-8fcdb60fdcc0 // indirect
 	golang.org/x/sys v0.0.0-20220928140112-f11e5e49a4ec // indirect
+	golang.org/x/term v0.0.0-20220919170432-7a66f970e087 // indirect
 	golang.org/x/text v0.3.8-0.20211004125949-5bd84dd9b33b // indirect
 	golang.org/x/tools v0.1.12 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect

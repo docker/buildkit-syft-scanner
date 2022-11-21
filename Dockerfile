@@ -17,4 +17,5 @@ RUN \
 
 FROM scratch
 COPY --from=build /usr/local/bin/syft-scanner /bin/syft-scanner
+ENV LOG_LEVEL="warn"
 ENTRYPOINT [ "/bin/syft-scanner" ]
