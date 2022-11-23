@@ -1,0 +1,56 @@
+# source  latest
+# dest    stable-1
+# result  docker/buildkit-syft-scanner:latest > docker/buildkit-syft-scanner:stable-1
+#
+# source  v1.0.0
+# dest    stable-1
+# result  docker/buildkit-syft-scanner:v1.0.0 > docker/buildkit-syft-scanner:stable-1
+name: buildkit-image
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  workflow_dispatch:
+    inputs:
+      source-tag:
+        description: 'Source tag'
+        required: true
+        default: 'latest'
+      dest-tag:
+        description: 'Dest tag'
+        required: true
+        default: 'stable-1'
+      push:
+        required: false
+        type: boolean
+
+env:
+  DOCKERHUB_SLUG: docker/buildkit-syft-scanner
+
+jobs:
+  create:
+    runs-on: ubuntu-latest
+    steps:
+      -
+        name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      -
+        name: Login to DockerHub
+        if: ${{ inputs.push }}
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERBUILDBOT_USERNAME }}
+          password: ${{ secrets.DOCKERBUILDBOT_WRITE_PAT }}
+      -
+        name: Create
+        run: |
+          DRYRUN_FLAG=""
+          if [ "${{ inputs.push }}" = "false" ]; then
+            DRYRUN_FLAG="--dry-run"
+          fi
+          set -x
+          docker buildx imagetools create ${DRYRUN_FLAG} --tag \
+            "${{ env.DOCKERHUB_SLUG }}:${{ inputs.dest-tag }}" \
+            "${{ env.DOCKERHUB_SLUG }}:${{ inputs.source-tag }}"
