@@ -35,3 +35,17 @@ target "image" {
     "linux/s390x"
   ]
 }
+
+target "validate-license" {
+  inherits = ["_common"]
+  dockerfile = "./hack/dockerfiles/license.Dockerfile"
+  target = "validate"
+  output = ["type=cacheonly"]
+}
+
+target "update-license" {
+  inherits = ["_common"]
+  dockerfile = "./hack/dockerfiles/license.Dockerfile"
+  target = "update"
+  output = ["."]
+}
