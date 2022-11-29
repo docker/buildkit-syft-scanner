@@ -21,7 +21,7 @@ ARG XX_VERSION="1.1.2"
 FROM --platform=$BUILDPLATFORM tonistiigi/xx:${XX_VERSION} AS xx
 
 FROM --platform=$BUILDPLATFORM golang:${GO_VERSION}-alpine AS base
-COPY --link --from=xx / /
+COPY --from=xx / /
 ENV CGO_ENABLED=0
 RUN apk add --no-cache file git
 WORKDIR /src
@@ -40,9 +40,10 @@ RUN --mount=target=. <<EOT
 EOT
 
 FROM base as build
-RUN --mount=type=bind,target=. \
+RUN --mount=type=bind,source=go.mod,target=go.mod \
+    --mount=type=bind,source=go.sum,target=go.sum \
     --mount=type=cache,target=/go/pkg/mod \
-    go mod download
+    go mod download -x
 ARG TARGETPLATFORM
 RUN --mount=type=bind,target=. \
     --mount=type=bind,from=version,source=/tmp/.ldflags,target=/tmp/.ldflags \
