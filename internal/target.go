@@ -44,6 +44,7 @@ func (t Target) Scan() (sbom.SBOM, error) {
 	if err != nil {
 		return sbom.SBOM{}, fmt.Errorf("failed to construct source from user input %q: %w", inputSrc, err)
 	}
+	src.Metadata.Name = t.Name()
 	if cleanup != nil {
 		defer cleanup()
 	}
