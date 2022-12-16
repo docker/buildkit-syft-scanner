@@ -71,5 +71,7 @@ jobs:
           targets: image
           push: ${{ github.event_name != 'pull_request' }}
           set: |
+            *.cache-from=type=gha,scope=image
+            *.cache-to=type=gha,scope=image,mode=max
             *.attest=type=sbom
             *.attest=type=provenance,mode=max,builder-id=https://github.com/${{ env.GITHUB_REPOSITORY }}/actions/runs/${{ env.GITHUB_RUN_ID }}
