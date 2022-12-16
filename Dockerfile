@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-#syntax=docker/dockerfile:1
+# syntax=docker/dockerfile-upstream:master
 
 ARG GO_VERSION="1.19"
 ARG ALPINE_VERSION="3.17"
