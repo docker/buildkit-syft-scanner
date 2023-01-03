@@ -12,15 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-#syntax=docker/dockerfile:1
+# syntax=docker/dockerfile-upstream:master
 
 ARG GO_VERSION="1.19"
-ARG ALPINE_VERSION="3.16"
+ARG ALPINE_VERSION="3.17"
 ARG XX_VERSION="1.1.2"
 
 FROM --platform=$BUILDPLATFORM tonistiigi/xx:${XX_VERSION} AS xx
 
-FROM --platform=$BUILDPLATFORM golang:${GO_VERSION}-alpine AS base
+FROM --platform=$BUILDPLATFORM golang:${GO_VERSION}-alpine${ALPINE_VERSION} AS base
 COPY --from=xx / /
 ENV CGO_ENABLED=0
 RUN apk add --no-cache file git
