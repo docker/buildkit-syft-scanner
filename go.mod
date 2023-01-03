@@ -5,14 +5,14 @@ go 1.19
 require (
 	github.com/anchore/go-logger v0.0.0-20220728155337-03b66a5207d8
 	github.com/anchore/stereoscope v0.0.0-20221208011002-c5ff155d72f1
-	github.com/anchore/syft v0.63.0
+	github.com/anchore/syft v0.64.0
 	github.com/in-toto/in-toto-golang v0.4.1-0.20221018183522-731d0640b65f
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.9.0
 )
 
 require (
-	github.com/CycloneDX/cyclonedx-go v0.7.0 // indirect
+	github.com/CycloneDX/cyclonedx-go v0.7.1-0.20221222100750-41a1ac565cce // indirect
 	github.com/DataDog/zstd v1.4.5 // indirect
 	github.com/Masterminds/goutils v1.1.1 // indirect
 	github.com/Masterminds/semver/v3 v3.1.1 // indirect
@@ -92,6 +92,7 @@ require (
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8 // indirect
 	go.uber.org/goleak v1.2.0 // indirect
 	golang.org/x/crypto v0.0.0-20220926161630-eccd6366d1be // indirect
+	golang.org/x/exp v0.0.0-20220823124025-807a23277127 // indirect
 	golang.org/x/mod v0.6.0-dev.0.20220419223038-86c51ed26bb4 // indirect
 	golang.org/x/net v0.0.0-20221012135044-0b7e1fb9d458 // indirect
 	golang.org/x/sync v0.0.0-20220929204114-8fcdb60fdcc0 // indirect
