@@ -75,3 +75,12 @@ jobs:
             *.cache-to=type=gha,scope=image,mode=max
             *.attest=type=sbom
             *.attest=type=provenance,mode=max,builder-id=https://github.com/${{ env.GITHUB_REPOSITORY }}/actions/runs/${{ env.GITHUB_RUN_ID }}
+      -
+        name: Update repo description
+        if: github.event_name != 'pull_request'
+        uses: peter-evans/dockerhub-description@v3
+        with:
+          username: ${{ secrets.DOCKERBUILDBOT_USERNAME }}
+          password: ${{ secrets.DOCKERBUILDBOT_WRITE_PAT }}
+          repository: ${{ env.DOCKERHUB_SLUG }}
+
