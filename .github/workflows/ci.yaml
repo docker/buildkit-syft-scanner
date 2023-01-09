@@ -59,8 +59,8 @@ jobs:
         if: github.event_name != 'pull_request'
         uses: docker/login-action@v2
         with:
-          username: ${{ secrets.DOCKERBUILDBOT_USERNAME }}
-          password: ${{ secrets.DOCKERBUILDBOT_WRITE_PAT }}
+          username: ${{ secrets.DOCKERPUBLICBOT_USERNAME }}
+          password: ${{ secrets.DOCKERPUBLICBOT_WRITE_PAT }}
       -
         name: Build
         uses: docker/bake-action@v2
@@ -80,7 +80,6 @@ jobs:
         if: github.event_name != 'pull_request'
         uses: peter-evans/dockerhub-description@v3
         with:
-          username: ${{ secrets.DOCKERBUILDBOT_USERNAME }}
-          password: ${{ secrets.DOCKERBUILDBOT_WRITE_PAT }}
+          username: ${{ secrets.DOCKERPUBLICBOT_USERNAME }}
+          password: ${{ secrets.DOCKERPUBLICBOT_DELETE_PAT }}
           repository: ${{ env.DOCKERHUB_SLUG }}
-
