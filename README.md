@@ -1,12 +1,12 @@
 # BuildKit Syft scanner
 
 This repo packages the [Syft scanner](https://github.com/anchore/syft) as a
-[BuildKit SBOM generator](https://github.com/moby/buildkit/blob/master/docs/sbom.md)
+[BuildKit SBOM generator](https://github.com/moby/buildkit/blob/master/docs/attestations/sbom.md)
 to include scan results with the output of Docker builds.
 
 The [docker/buildkit-syft-scanner](https://hub.docker.com/r/docker/buildkit-syft-scanner)
 image implements the BuildKit SBOM scanner protocol defined
-[here](https://github.com/moby/buildkit/blob/master/docs/sbom-protocol.md).
+[here](https://github.com/moby/buildkit/blob/master/docs/attestations/sbom-protocol.md).
 
 ## Usage
 
