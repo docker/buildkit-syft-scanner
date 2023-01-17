@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile-upstream:master
+# syntax=docker/dockerfile-upstream:1
 
 # Copyright 2022 buildkit-syft-scanner authors
 #
