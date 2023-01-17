@@ -10,11 +10,38 @@ image implements the BuildKit SBOM scanner protocol defined
 
 ## Usage
 
-To scan an image during build using [buildctl](https://github.com/moby/buildkit):
+To scan an image during build with [buildctl](https://github.com/moby/buildkit):
 
     $ buildctl build ... \
         --output type=image,name=<image>,push=true \
         --opt attest:sbom=generator=docker/buildkit-syft-scanner
+
+## Development
+
+`buildkit-syft-scanner` uses bake to build the project.
+
+To setup a development environment by cloning the git repository:
+
+    $ git clone https://github.com/docker/buildkit-syft-scanner.git
+    $ cd buildkit-syft-scanner
+
+It's recommended to setup an ephemeral local registry to push the development
+image to:
+
+    $ docker run -d -p 5000:5000 --rm --name registry registry:2
+
+To build the development image (replacing `image.platform` with your desired
+platform):
+
+    $ buildx bake image --set image.platform=linux/amd64 \
+        --set image.tags=localhost:5000/buildkit-syft-scanner:dev --push
+
+To scan an image during build with [buildctl](https://github.com/moby/buildkit)
+using the development image:
+
+    $ buildctl build ... \
+        --output type=image,name=<image>,push=true \
+        --opt attest:sbom=generator=localhost:5000/buildkit-syft-scanner:dev
 
 ## Contributing
 
