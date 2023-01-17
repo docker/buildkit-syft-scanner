@@ -22,6 +22,10 @@ variable "GITHUB_REF" {
   default = ""
 }
 
+variable "IMAGE_LOCAL" {
+  default = "buildkit-syft-scanner:local"
+}
+
 target "_common" {
   args = {
     GO_VERSION = GO_VERSION
@@ -35,10 +39,16 @@ target "docker-metadata-action" {
 }
 
 group "default" {
-  targets = ["image"]
+  targets = ["image-local"]
 }
 
-target "image" {
+target "image-local" {
+  inherits = ["_common"]
+  tags = ["${IMAGE_LOCAL}"]
+  output = ["type=image"]
+}
+
+target "image-all" {
   inherits = ["_common", "docker-metadata-action"]
   platforms = [
     "linux/amd64",

@@ -30,11 +30,9 @@ image to:
 
     $ docker run -d -p 5000:5000 --rm --name registry registry:2
 
-To build the development image (replacing `image.platform` with your desired
-platform):
+To build the development image, and push it to `localhost:5000/buildkit-syft-scanner:dev`:
 
-    $ buildx bake image --set image.platform=linux/amd64 \
-        --set image.tags=localhost:5000/buildkit-syft-scanner:dev --push
+    $ make dev IMAGE=localhost:5000/buildkit-syft-scanner:dev 
 
 To scan an image during build with [buildctl](https://github.com/moby/buildkit)
 using the development image:
