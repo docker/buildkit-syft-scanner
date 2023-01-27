@@ -1,0 +1,76 @@
+name: e2e
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'master'
+    tags:
+      - 'v*'
+  pull_request:
+
+env:
+  BUILDX_VERSION: v0.10.0
+  BUILDKIT_IMAGE: moby/buildkit:v0.11.2
+  IMAGE_LOCAL: localhost:5000/buildkit-syft-scanner:latest
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        example:
+          - alpine
+          - centos
+          - ubuntu
+    services:
+      registry:
+        image: registry:2
+        ports:
+          - 5000:5000
+    steps:
+      -
+        name: Checkout
+        uses: actions/checkout@v3
+      -
+        name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+        with:
+          version: ${{ env.BUILDX_VERSION }}
+          driver-opts: |
+            network=host
+            image=${{ env.BUILDKIT_IMAGE }}
+      -
+        name: Build and push Syft Scanner image
+        uses: docker/bake-action@v2
+        with:
+          targets: image-local
+          push: true
+      -
+        name: Test
+        uses: docker/build-push-action@v3
+        with:
+          context: ./examples
+          file: ./examples/${{ matrix.example }}.Dockerfile
+          sbom: generator=${{ env.IMAGE_LOCAL }}
+          outputs: /tmp/buildx-build
+      -
+        name: Check output folder
+        run: |
+          tree /tmp/buildx-build
+      -
+        name: Print SBOM
+        run: |
+          jq . /tmp/buildx-build/sbom-base.spdx.json
+      -
+        name: Upload output folder
+        uses: actions/upload-artifact@v3
+        with:
+          name: e2e-${{ matrix.example }}
+          path: /tmp/buildx-build/*
+          if-no-files-found: error
