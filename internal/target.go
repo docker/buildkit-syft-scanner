@@ -34,49 +34,27 @@ func (t Target) Name() string {
 }
 
 func (t Target) Scan() (sbom.SBOM, error) {
-	// HACK: execute the scan inside a chroot, to ensure that symlinks are
-	// correctly resolved internally to the mounted image (instead of
-	// redirecting to the host).
-	//
-	// To avoid this, syft needs to support a mode of execution that scans
-	// unpacked container filesystems, see https://github.com/anchore/syft/issues/1359.
+	src, err := source.NewFromDirectoryRootWithName(t.Path, t.Name())
+	if err != nil {
+		return sbom.SBOM{}, fmt.Errorf("failed to create source from %q: %w", t.Path, err)
+	}
+	result := sbom.SBOM{
+		Source: src.Metadata,
+		Descriptor: sbom.Descriptor{
+			Name:    "syft",
+			Version: version.SyftVersion,
+		},
+	}
 
-	var result sbom.SBOM
-	err := withChroot(t.Path, func() error {
-		inputSrc := "dir:/"
-		input, err := source.ParseInput(inputSrc, "", false)
-		if err != nil {
-			return fmt.Errorf("failed to parse user input %q: %w", inputSrc, err)
-		}
+	packageCatalog, relationships, theDistro, err := syft.CatalogPackages(&src, cataloger.DefaultConfig())
+	if err != nil {
+		return sbom.SBOM{}, err
+	}
 
-		src, cleanup, err := source.New(*input, nil, nil)
-		if err != nil {
-			return fmt.Errorf("failed to construct source from user input %q: %w", inputSrc, err)
-		}
-		src.Metadata.Name = t.Name()
-		if cleanup != nil {
-			defer cleanup()
-		}
+	result.Artifacts.PackageCatalog = packageCatalog
+	result.Artifacts.LinuxDistribution = theDistro
+	result.Relationships = relationships
 
-		result = sbom.SBOM{
-			Source: src.Metadata,
-			Descriptor: sbom.Descriptor{
-				Name:    "syft",
-				Version: version.SyftVersion,
-			},
-		}
-
-		packageCatalog, relationships, theDistro, err := syft.CatalogPackages(src, cataloger.DefaultConfig())
-		if err != nil {
-			return err
-		}
-
-		result.Artifacts.PackageCatalog = packageCatalog
-		result.Artifacts.LinuxDistribution = theDistro
-		result.Relationships = relationships
-
-		return nil
-	})
 	if err != nil {
 		return sbom.SBOM{}, err
 	}

@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM centos:7
+FROM centos:7 AS base
 ARG BUILDKIT_SBOM_SCAN_STAGE=true
 RUN yum install -y findutils
 COPY <<EOF /empty
