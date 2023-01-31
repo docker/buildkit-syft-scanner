@@ -15,6 +15,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
@@ -30,6 +31,11 @@ import (
 func main() {
 	if err := enableLogs(); err != nil {
 		panic(fmt.Sprintf("unable to initialize logger: %+v", err))
+	}
+
+	// HACK: ensure that /tmp exists, as syft will fail if it does not
+	if err := os.Mkdir("/tmp", 0o777); err != nil && !errors.Is(err, os.ErrExist) {
+		panic("could not create /tmp directory")
 	}
 
 	logrus.Infof("starting syft scanner for buildkit %s", version.Version)
