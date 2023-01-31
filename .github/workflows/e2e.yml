@@ -19,15 +19,33 @@ env:
   IMAGE_LOCAL: localhost:5000/buildkit-syft-scanner:latest
 
 jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.examples.outputs.matrix }}
+    steps:
+      -
+        name: Checkout
+        uses: actions/checkout@v3
+      -
+        name: Create matrix
+        id: examples
+        run: |
+          examples=$(jq -ncR '[inputs]' <<< "$(ls -A ./examples/)")
+          echo "matrix=$examples" >> $GITHUB_OUTPUT
+      -
+        name: Show matrix
+        run: |
+          echo ${{ steps.examples.outputs.matrix }}
+
   test:
     runs-on: ubuntu-latest
+    needs:
+      - prepare
     strategy:
       fail-fast: false
       matrix:
-        example:
-          - alpine
-          - centos
-          - ubuntu
+        example: ${{ fromJson(needs.prepare.outputs.matrix) }}
     services:
       registry:
         image: registry:2
@@ -55,8 +73,7 @@ jobs:
         name: Test
         uses: docker/build-push-action@v3
         with:
-          context: ./examples
-          file: ./examples/${{ matrix.example }}.Dockerfile
+          context: ./examples/${{ matrix.example }}
           sbom: generator=${{ env.IMAGE_LOCAL }}
           outputs: /tmp/buildx-build
       -
