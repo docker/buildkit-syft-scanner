@@ -54,7 +54,7 @@ func (t Target) Scan() (sbom.SBOM, error) {
 		config.Catalogers[i] = c.Name()
 	}
 
-	packageCatalog, relationships, theDistro, err := syft.CatalogPackages(&src, cataloger.DefaultConfig())
+	packageCatalog, relationships, theDistro, err := syft.CatalogPackages(&src, config)
 	if err != nil {
 		return sbom.SBOM{}, err
 	}
