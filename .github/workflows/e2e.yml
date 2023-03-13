@@ -82,6 +82,7 @@ jobs:
           tree /tmp/buildx-build
       -
         name: Print SBOM
+        if: matrix.example != 'scratch'
         run: |
           jq . /tmp/buildx-build/sbom-base.spdx.json
       -
