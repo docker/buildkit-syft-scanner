@@ -34,6 +34,10 @@ To build the development image, and push it to `localhost:5000/buildkit-syft-sca
 
     $ make dev IMAGE=localhost:5000/buildkit-syft-scanner:dev 
 
+To test the development image:
+
+    $ make examples IMAGE=localhost:5000/buildkit-syft-scanner:dev 
+
 To scan an image during build with [buildctl](https://github.com/moby/buildkit)
 using the development image:
 

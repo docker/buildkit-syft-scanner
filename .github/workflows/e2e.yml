@@ -71,24 +71,21 @@ jobs:
           push: true
       -
         name: Test
-        uses: docker/build-push-action@v4
-        with:
-          context: ./examples/${{ matrix.example }}
-          sbom: generator=${{ env.IMAGE_LOCAL }}
-          outputs: /tmp/buildx-build
+        run: |
+          ./hack/check-example.sh ${{ env.IMAGE_LOCAL }} ${{ matrix.example }}
       -
         name: Check output folder
         run: |
-          tree /tmp/buildx-build
+          tree ./examples/${{ matrix.example }}/build
       -
         name: Print SBOM
         if: matrix.example != 'scratch'
         run: |
-          jq . /tmp/buildx-build/sbom-base.spdx.json
+          jq . ./examples/${{ matrix.example }}/build/sbom-base.spdx.json
       -
         name: Upload output folder
         uses: actions/upload-artifact@v3
         with:
           name: e2e-${{ matrix.example }}
-          path: /tmp/buildx-build/*
+          path: ./examples/${{ matrix.example }}/build/*
           if-no-files-found: error
