@@ -1,0 +1,26 @@
+{
+  "_type": "https://in-toto.io/Statement/v0.1",
+  "predicateType": "https://spdx.dev/Document",
+  "predicate": {
+    "SPDXID": "SPDXRef-DOCUMENT",
+    "packages": [
+      {
+        "SPDXID": "=package",
+        "name": "findutils"
+      }
+    ],
+    "files": [
+      {
+        "SPDXID": "=filename",
+        "fileName": "/usr/bin/xargs"
+      }
+    ],
+    "relationships": [
+      {
+        "spdxElementId": "==package",
+        "relationshipType": "CONTAINS",
+        "relatedSpdxElement": "==filename"
+      }
+    ]
+  }
+}
