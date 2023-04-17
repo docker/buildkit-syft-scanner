@@ -46,7 +46,15 @@ func (t Target) Scan() (sbom.SBOM, error) {
 		},
 	}
 
-	packageCatalog, relationships, theDistro, err := syft.CatalogPackages(&src, cataloger.DefaultConfig())
+	// Enable all the image catalogers to mimic same cataloging behavior as syft running on an image
+	config := cataloger.DefaultConfig()
+	catalogers := cataloger.ImageCatalogers(config)
+	config.Catalogers = make([]string, len(catalogers))
+	for i, c := range catalogers {
+		config.Catalogers[i] = c.Name()
+	}
+
+	packageCatalog, relationships, theDistro, err := syft.CatalogPackages(&src, config)
 	if err != nil {
 		return sbom.SBOM{}, err
 	}
