@@ -13,7 +13,7 @@
 // limitations under the License.
 
 variable "GO_VERSION" {
-  default = "1.19"
+  default = "1.20"
 }
 
 # GITHUB_REF is the actual ref that triggers the workflow and used as version
