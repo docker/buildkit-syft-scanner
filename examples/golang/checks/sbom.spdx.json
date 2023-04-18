@@ -5,7 +5,22 @@
     "SPDXID": "SPDXRef-DOCUMENT",
     "packages": [
       {
+        "SPDXID": "=package",
         "name": "github.com/spf13/cobra"
+      }
+    ],
+    "files": [
+      {
+        "SPDXID": "=filename",
+        "fileName": "/bin/app"
+      }
+    ],
+    "relationships": [
+      {
+        "spdxElementId": "==package",
+        "relationshipType": "OTHER",
+        "comment": "evident-by: indicates the package's existence is evident by the given file",
+        "relatedSpdxElement": "==filename"
       }
     ]
   }
