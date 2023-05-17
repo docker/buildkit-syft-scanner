@@ -59,7 +59,7 @@ func (t Target) Scan() (sbom.SBOM, error) {
 		return sbom.SBOM{}, err
 	}
 
-	result.Artifacts.PackageCatalog = packageCatalog
+	result.Artifacts.Packages = packageCatalog
 	result.Artifacts.LinuxDistribution = theDistro
 	result.Relationships = relationships
 
