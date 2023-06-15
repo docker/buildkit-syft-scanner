@@ -4,8 +4,8 @@ go 1.20
 
 require (
 	github.com/anchore/go-logger v0.0.0-20220728155337-03b66a5207d8
-	github.com/anchore/stereoscope v0.0.0-20230522170632-e14bc4437b2e
-	github.com/anchore/syft v0.83.0
+	github.com/anchore/stereoscope v0.0.0-20230609190519-5b5049bf4d3a
+	github.com/anchore/syft v0.83.1
 	github.com/in-toto/in-toto-golang v0.4.1-0.20221018183522-731d0640b65f
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.9.3
@@ -92,7 +92,7 @@ require (
 	github.com/shibumi/go-pathspec v1.3.0 // indirect
 	github.com/shopspring/decimal v1.2.0 // indirect
 	github.com/skeema/knownhosts v1.1.1 // indirect
-	github.com/spdx/tools-golang v0.5.1 // indirect
+	github.com/spdx/tools-golang v0.5.2 // indirect
 	github.com/spf13/afero v1.9.5 // indirect
 	github.com/spf13/cast v1.5.1 // indirect
 	github.com/sylabs/sif/v2 v2.8.1 // indirect
@@ -107,14 +107,14 @@ require (
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8 // indirect
 	go.uber.org/goleak v1.2.0 // indirect
-	golang.org/x/crypto v0.9.0 // indirect
+	golang.org/x/crypto v0.10.0 // indirect
 	golang.org/x/exp v0.0.0-20230202163644-54bba9f4231b // indirect
 	golang.org/x/mod v0.10.0 // indirect
-	golang.org/x/net v0.10.0 // indirect
+	golang.org/x/net v0.11.0 // indirect
 	golang.org/x/sync v0.1.0 // indirect
-	golang.org/x/sys v0.8.0 // indirect
-	golang.org/x/term v0.8.0 // indirect
-	golang.org/x/text v0.9.0 // indirect
+	golang.org/x/sys v0.9.0 // indirect
+	golang.org/x/term v0.9.0 // indirect
+	golang.org/x/text v0.10.0 // indirect
 	golang.org/x/tools v0.8.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	google.golang.org/genproto v0.0.0-20230410155749-daa745c078e1 // indirect
