@@ -73,3 +73,17 @@ target "update-license" {
   target = "update"
   output = ["."]
 }
+
+target "validate-vendor" {
+  inherits = ["_common"]
+  dockerfile = "./hack/dockerfiles/vendor.Dockerfile"
+  target = "validate"
+  output = ["type=cacheonly"]
+}
+
+target "update-vendor" {
+  inherits = ["_common"]
+  dockerfile = "./hack/dockerfiles/vendor.Dockerfile"
+  target = "update"
+  output = ["."]
+}
