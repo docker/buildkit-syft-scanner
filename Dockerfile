@@ -22,6 +22,7 @@ FROM --platform=$BUILDPLATFORM tonistiigi/xx:${XX_VERSION} AS xx
 
 FROM --platform=$BUILDPLATFORM golang:${GO_VERSION}-alpine${ALPINE_VERSION} AS base
 COPY --from=xx / /
+ENV GOFLAGS=-mod=vendor
 ENV CGO_ENABLED=0
 RUN apk add --no-cache file git
 WORKDIR /src
@@ -40,14 +41,9 @@ RUN --mount=target=. <<EOT
 EOT
 
 FROM base as build
-RUN --mount=type=bind,source=go.mod,target=go.mod \
-    --mount=type=bind,source=go.sum,target=go.sum \
-    --mount=type=cache,target=/go/pkg/mod \
-    go mod download -x
 ARG TARGETPLATFORM
 RUN --mount=type=bind,target=. \
     --mount=type=bind,from=version,source=/tmp/.ldflags,target=/tmp/.ldflags \
-    --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache <<EOT
   set -e
   xx-go build -trimpath -ldflags "$(cat /tmp/.ldflags)" -o /usr/local/bin/syft-scanner ./cmd/syft-scanner
