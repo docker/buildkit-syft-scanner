@@ -19,6 +19,7 @@ jobs:
       matrix:
         target:
           - validate-license
+          - validate-vendor
     steps:
       -
         name: Checkout
