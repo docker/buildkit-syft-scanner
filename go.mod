@@ -4,8 +4,8 @@ go 1.20
 
 require (
 	github.com/anchore/go-logger v0.0.0-20220728155337-03b66a5207d8
-	github.com/anchore/stereoscope v0.0.0-20230609190519-5b5049bf4d3a
-	github.com/anchore/syft v0.84.0
+	github.com/anchore/stereoscope v0.0.0-20230627195312-cd49355d934e
+	github.com/anchore/syft v0.84.1
 	github.com/in-toto/in-toto-golang v0.4.1-0.20221018183522-731d0640b65f
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.9.3
@@ -121,7 +121,6 @@ require (
 	google.golang.org/grpc v1.55.0 // indirect
 	google.golang.org/protobuf v1.30.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
-	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gotest.tools/v3 v3.1.0 // indirect
 )
