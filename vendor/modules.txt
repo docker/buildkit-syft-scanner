@@ -63,7 +63,7 @@ github.com/anchore/go-struct-converter
 # github.com/anchore/packageurl-go v0.1.1-0.20230104203445-02e0a6721501
 ## explicit; go 1.17
 github.com/anchore/packageurl-go
-# github.com/anchore/stereoscope v0.0.0-20230609190519-5b5049bf4d3a
+# github.com/anchore/stereoscope v0.0.0-20230627195312-cd49355d934e
 ## explicit; go 1.19
 github.com/anchore/stereoscope
 github.com/anchore/stereoscope/internal/bus
@@ -80,7 +80,7 @@ github.com/anchore/stereoscope/pkg/image/oci
 github.com/anchore/stereoscope/pkg/image/sif
 github.com/anchore/stereoscope/pkg/tree
 github.com/anchore/stereoscope/pkg/tree/node
-# github.com/anchore/syft v0.84.0
+# github.com/anchore/syft v0.84.1
 ## explicit; go 1.19
 github.com/anchore/syft/internal
 github.com/anchore/syft/internal/bus
@@ -752,9 +752,6 @@ google.golang.org/protobuf/types/known/timestamppb
 # gopkg.in/warnings.v0 v0.1.2
 ## explicit
 gopkg.in/warnings.v0
-# gopkg.in/yaml.v2 v2.4.0
-## explicit; go 1.15
-gopkg.in/yaml.v2
 # gopkg.in/yaml.v3 v3.0.1
 ## explicit
 gopkg.in/yaml.v3
