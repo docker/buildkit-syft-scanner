@@ -25,8 +25,8 @@ Note: this code was copied from https://github.com/x-cray/logrus-prefixed-format
 const defaultTimestampFormat = time.RFC3339
 
 var (
-	baseTimestamp      time.Time    = time.Now()
-	defaultColorScheme *ColorScheme = &ColorScheme{
+	baseTimestamp      = time.Now()
+	defaultColorScheme = &ColorScheme{
 		InfoLevelStyle:  "green",
 		WarnLevelStyle:  "yellow",
 		ErrorLevelStyle: "red",
@@ -37,7 +37,7 @@ var (
 		PrefixStyle:     "cyan",
 		TimestampStyle:  "black+h",
 	}
-	noColorsColorScheme *compiledColorScheme = &compiledColorScheme{
+	noColorsColorScheme = &compiledColorScheme{
 		InfoLevelColor:  ansi.ColorFunc(""),
 		WarnLevelColor:  ansi.ColorFunc(""),
 		ErrorLevelColor: ansi.ColorFunc(""),
@@ -48,7 +48,7 @@ var (
 		PrefixColor:     ansi.ColorFunc(""),
 		TimestampColor:  ansi.ColorFunc(""),
 	}
-	defaultCompiledColorScheme *compiledColorScheme = compileColorScheme(defaultColorScheme)
+	defaultCompiledColorScheme = compileColorScheme(defaultColorScheme)
 )
 
 func miniTS() int {
@@ -177,7 +177,7 @@ func (f *TextFormatter) SetColorScheme(colorScheme *ColorScheme) {
 
 func (f *TextFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	var b *bytes.Buffer
-	var keys []string = make([]string, 0, len(entry.Data))
+	var keys = make([]string, 0, len(entry.Data))
 	for k := range entry.Data {
 		keys = append(keys, k)
 	}
@@ -269,7 +269,10 @@ func (f *TextFormatter) printColored(b *bytes.Buffer, entry *logrus.Entry, keys 
 	message := entry.Message
 
 	if prefixValue, ok := entry.Data["prefix"]; ok {
-		prefix = colorScheme.PrefixColor(" " + prefixValue.(string) + ":")
+		val, ok := prefixValue.(string)
+		if ok {
+			prefix = colorScheme.PrefixColor(" " + val + ":")
+		}
 	} else {
 		prefixValue, trimmedMsg := extractPrefix(entry.Message)
 		if len(prefixValue) > 0 {
@@ -319,7 +322,7 @@ func (f *TextFormatter) needsQuoting(text string) bool {
 
 func extractPrefix(msg string) (string, string) {
 	prefix := ""
-	regex := regexp.MustCompile("^\\[(.*?)\\]")
+	regex := regexp.MustCompile(`^\[(.*?)]`)
 	if regex.MatchString(msg) {
 		match := regex.FindString(msg)
 		prefix, msg = match[1:len(match)-1], strings.TrimSpace(msg[len(match):])
@@ -360,12 +363,12 @@ func (f *TextFormatter) appendValue(b *bytes.Buffer, value interface{}) {
 // This is to not silently overwrite `time`, `msg` and `level` fields when
 // dumping it. If this code wasn't there doing:
 //
-//  logrus.WithField("level", 1).Info("hello")
+//	logrus.WithField("level", 1).Info("hello")
 //
 // would just silently drop the user provided level. Instead with this code
 // it'll be logged as:
 //
-//  {"level": "info", "fields.level": 1, "msg": "hello", "time": "..."}
+//	{"level": "info", "fields.level": 1, "msg": "hello", "time": "..."}
 func prefixFieldClashes(data logrus.Fields) {
 	if t, ok := data["time"]; ok {
 		data["fields.time"] = t

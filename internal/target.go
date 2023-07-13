@@ -34,12 +34,18 @@ func (t Target) Name() string {
 }
 
 func (t Target) Scan() (sbom.SBOM, error) {
-	src, err := source.NewFromDirectoryRootWithName(t.Path, t.Name())
+	src, err := source.NewFromDirectory(source.DirectoryConfig{
+		Path: t.Path,
+		Base: t.Path,
+		Alias: source.Alias{
+			Name: t.Name(),
+		},
+	})
 	if err != nil {
 		return sbom.SBOM{}, fmt.Errorf("failed to create source from %q: %w", t.Path, err)
 	}
 	result := sbom.SBOM{
-		Source: src.Metadata,
+		Source: src.Describe(),
 		Descriptor: sbom.Descriptor{
 			Name:    "syft",
 			Version: version.SyftVersion,
@@ -54,7 +60,7 @@ func (t Target) Scan() (sbom.SBOM, error) {
 		config.Catalogers[i] = c.Name()
 	}
 
-	packageCatalog, relationships, theDistro, err := syft.CatalogPackages(&src, config)
+	packageCatalog, relationships, theDistro, err := syft.CatalogPackages(src, config)
 	if err != nil {
 		return sbom.SBOM{}, err
 	}
