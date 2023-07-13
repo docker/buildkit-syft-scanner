@@ -3,6 +3,7 @@
   "predicateType": "https://spdx.dev/Document",
   "predicate": {
     "SPDXID": "SPDXRef-DOCUMENT",
+    "name": "sbom",
     "packages": [
       {
         "SPDXID": "=package",
