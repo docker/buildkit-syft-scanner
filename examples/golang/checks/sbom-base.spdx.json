@@ -1,8 +1,17 @@
 {
   "_type": "https://in-toto.io/Statement/v0.1",
   "predicateType": "https://spdx.dev/Document",
+  "subject": [
+    {
+      "name": "bin/app",
+      "digest": {
+        "sha256": "137e71592242436360271294fa4b9e969480fc99ae2ccbb87166d7ffa29c1386"
+      }
+    }
+  ],
   "predicate": {
     "SPDXID": "SPDXRef-DOCUMENT",
+    "name": "sbom-base",
     "packages": [
       {
         "name": "github.com/spf13/cobra"

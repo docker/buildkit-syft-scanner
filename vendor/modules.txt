@@ -49,11 +49,12 @@ github.com/acobaugh/osrelease
 # github.com/acomagu/bufpipe v1.0.4
 ## explicit; go 1.12
 github.com/acomagu/bufpipe
-# github.com/anchore/go-logger v0.0.0-20220728155337-03b66a5207d8
+# github.com/anchore/go-logger v0.0.0-20230531193951-db5ae83e7dbe
 ## explicit; go 1.17
 github.com/anchore/go-logger
 github.com/anchore/go-logger/adapter/discard
 github.com/anchore/go-logger/adapter/logrus
+github.com/anchore/go-logger/adapter/redact
 # github.com/anchore/go-macholibre v0.0.0-20220308212642-53e6d0aaf6fb
 ## explicit; go 1.17
 github.com/anchore/go-macholibre
@@ -80,7 +81,7 @@ github.com/anchore/stereoscope/pkg/image/oci
 github.com/anchore/stereoscope/pkg/image/sif
 github.com/anchore/stereoscope/pkg/tree
 github.com/anchore/stereoscope/pkg/tree/node
-# github.com/anchore/syft v0.84.1
+# github.com/anchore/syft v0.85.0
 ## explicit; go 1.19
 github.com/anchore/syft/internal
 github.com/anchore/syft/internal/bus
@@ -92,6 +93,7 @@ github.com/anchore/syft/syft
 github.com/anchore/syft/syft/artifact
 github.com/anchore/syft/syft/cpe
 github.com/anchore/syft/syft/event
+github.com/anchore/syft/syft/event/monitor
 github.com/anchore/syft/syft/file
 github.com/anchore/syft/syft/formats
 github.com/anchore/syft/syft/formats/common
@@ -109,6 +111,8 @@ github.com/anchore/syft/syft/formats/table
 github.com/anchore/syft/syft/formats/template
 github.com/anchore/syft/syft/formats/text
 github.com/anchore/syft/syft/internal/fileresolver
+github.com/anchore/syft/syft/internal/sourcemetadata
+github.com/anchore/syft/syft/internal/windows
 github.com/anchore/syft/syft/license
 github.com/anchore/syft/syft/linux
 github.com/anchore/syft/syft/pkg
@@ -430,10 +434,10 @@ github.com/knqyf263/go-rpmdb/pkg/sqlite3
 # github.com/mattn/go-colorable v0.1.13
 ## explicit; go 1.15
 github.com/mattn/go-colorable
-# github.com/mattn/go-isatty v0.0.17
+# github.com/mattn/go-isatty v0.0.18
 ## explicit; go 1.15
 github.com/mattn/go-isatty
-# github.com/mattn/go-runewidth v0.0.13
+# github.com/mattn/go-runewidth v0.0.14
 ## explicit; go 1.9
 github.com/mattn/go-runewidth
 # github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d
@@ -580,8 +584,8 @@ github.com/vbatts/tar-split/archive/tar
 # github.com/vifraa/gopom v0.2.1
 ## explicit; go 1.15
 github.com/vifraa/gopom
-# github.com/wagoodman/go-partybus v0.0.0-20210627031916-db1f5573bbc5
-## explicit; go 1.14
+# github.com/wagoodman/go-partybus v0.0.0-20230516145632-8ccac152c651
+## explicit; go 1.20
 github.com/wagoodman/go-partybus
 # github.com/wagoodman/go-progress v0.0.0-20230301185719-21920a456ad5
 ## explicit; go 1.14
@@ -594,7 +598,7 @@ github.com/xanzy/ssh-agent
 github.com/xi2/xz
 # go.uber.org/goleak v1.2.0
 ## explicit; go 1.18
-# golang.org/x/crypto v0.10.0
+# golang.org/x/crypto v0.11.0
 ## explicit; go 1.17
 golang.org/x/crypto/argon2
 golang.org/x/crypto/bcrypt
@@ -627,13 +631,13 @@ golang.org/x/crypto/ssh/knownhosts
 golang.org/x/exp/constraints
 golang.org/x/exp/maps
 golang.org/x/exp/slices
-# golang.org/x/mod v0.11.0
+# golang.org/x/mod v0.12.0
 ## explicit; go 1.17
 golang.org/x/mod/internal/lazyregexp
 golang.org/x/mod/modfile
 golang.org/x/mod/module
 golang.org/x/mod/semver
-# golang.org/x/net v0.11.0
+# golang.org/x/net v0.12.0
 ## explicit; go 1.17
 golang.org/x/net/context
 golang.org/x/net/html
@@ -644,7 +648,7 @@ golang.org/x/net/proxy
 # golang.org/x/sync v0.1.0
 ## explicit
 golang.org/x/sync/errgroup
-# golang.org/x/sys v0.9.0
+# golang.org/x/sys v0.10.0
 ## explicit; go 1.17
 golang.org/x/sys/cpu
 golang.org/x/sys/execabs
@@ -652,10 +656,10 @@ golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/plan9
 golang.org/x/sys/unix
 golang.org/x/sys/windows
-# golang.org/x/term v0.9.0
+# golang.org/x/term v0.10.0
 ## explicit; go 1.17
 golang.org/x/term
-# golang.org/x/text v0.10.0
+# golang.org/x/text v0.11.0
 ## explicit; go 1.17
 golang.org/x/text/encoding
 golang.org/x/text/encoding/charmap

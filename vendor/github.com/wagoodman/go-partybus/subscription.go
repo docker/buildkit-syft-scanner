@@ -3,6 +3,9 @@ package partybus
 var nextID int64
 
 // type EventCallback func(Event)
+
+var _ Unsubscribable = (*Subscription)(nil)
+
 type SubscriptionId int64
 
 type Subscription struct {

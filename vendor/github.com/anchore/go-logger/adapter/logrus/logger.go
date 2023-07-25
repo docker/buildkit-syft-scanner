@@ -7,8 +7,9 @@ import (
 	"io/ioutil"
 	"os"
 
-	iface "github.com/anchore/go-logger"
 	"github.com/sirupsen/logrus"
+
+	iface "github.com/anchore/go-logger"
 )
 
 var _ iface.Logger = (*logger)(nil)

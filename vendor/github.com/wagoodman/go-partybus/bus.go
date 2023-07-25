@@ -7,6 +7,10 @@ import (
 
 var ErrUnsubscribe = fmt.Errorf("unable to find subscription to unsubscribe")
 
+type Responder interface {
+	RespondsTo() []EventType
+}
+
 type Handler interface {
 	Handle(Event) error
 }
@@ -17,7 +21,10 @@ type Publisher interface {
 
 type Subscriber interface {
 	Subscribe(...EventType) *Subscription
-	Unsubscribe(*Subscription) error
+}
+
+type Unsubscribable interface {
+	Unsubscribe() error
 }
 
 type Bus struct {

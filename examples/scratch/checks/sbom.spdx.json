@@ -1,4 +1,8 @@
 {
   "_type": "https://in-toto.io/Statement/v0.1",
-  "predicateType": "https://spdx.dev/Document"
+  "predicateType": "https://spdx.dev/Document",
+  "predicate": {
+    "SPDXID": "SPDXRef-DOCUMENT",
+    "name": "sbom"
+  }
 }

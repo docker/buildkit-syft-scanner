@@ -1,8 +1,9 @@
 package logrus
 
 import (
-	iface "github.com/anchore/go-logger"
 	"github.com/sirupsen/logrus"
+
+	iface "github.com/anchore/go-logger"
 )
 
 var _ iface.Logger = (*nestedLogger)(nil)
