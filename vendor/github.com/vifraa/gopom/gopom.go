@@ -304,20 +304,22 @@ type PluginManagement struct {
 }
 
 type Plugin struct {
-	GroupID      string            `xml:"groupId"`
-	ArtifactID   string            `xml:"artifactId"`
-	Version      string            `xml:"version"`
-	Extensions   string            `xml:"extensions"`
-	Executions   []PluginExecution `xml:"executions>execution"`
-	Dependencies []Dependency      `xml:"dependencies>dependency"`
-	Inherited    string            `xml:"inherited"`
+	GroupID       string            `xml:"groupId"`
+	ArtifactID    string            `xml:"artifactId"`
+	Version       string            `xml:"version"`
+	Extensions    string            `xml:"extensions"`
+	Executions    []PluginExecution `xml:"executions>execution"`
+	Dependencies  []Dependency      `xml:"dependencies>dependency"`
+	Inherited     string            `xml:"inherited"`
+	Configuration Properties        `xml:"configuration"`
 }
 
 type PluginExecution struct {
-	ID        string   `xml:"id"`
-	Phase     string   `xml:"phase"`
-	Goals     []string `xml:"goals>goal"`
-	Inherited string   `xml:"inherited"`
+	ID            string     `xml:"id"`
+	Phase         string     `xml:"phase"`
+	Goals         []string   `xml:"goals>goal"`
+	Inherited     string     `xml:"inherited"`
+	Configuration Properties `xml:"configuration"`
 }
 
 type Reporting struct {
@@ -327,17 +329,19 @@ type Reporting struct {
 }
 
 type ReportingPlugin struct {
-	GroupID    string      `xml:"groupId"`
-	ArtifactID string      `xml:"artifactId"`
-	Version    string      `xml:"version"`
-	Inherited  string      `xml:"inherited"`
-	ReportSets []ReportSet `xml:"reportSets>reportSet"`
+	GroupID       string      `xml:"groupId"`
+	ArtifactID    string      `xml:"artifactId"`
+	Version       string      `xml:"version"`
+	Inherited     string      `xml:"inherited"`
+	ReportSets    []ReportSet `xml:"reportSets>reportSet"`
+	Configuration Properties  `xml:"configuration"`
 }
 
 type ReportSet struct {
-	ID        string   `xml:"id"`
-	Reports   []string `xml:"reports>report"`
-	Inherited string   `xml:"inherited"`
+	ID            string     `xml:"id"`
+	Reports       []string   `xml:"reports>report"`
+	Inherited     string     `xml:"inherited"`
+	Configuration Properties `xml:"configuration"`
 }
 
 type Profile struct {
