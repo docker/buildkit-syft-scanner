@@ -325,7 +325,11 @@ var examplePom = `
 				<goal>goal</goal>
  		      </goals>
               <inherited>inherited</inherited>
-              <configuration>configuration</configuration>
+              <configuration>
+              	<key>value</key>
+              	<key2>value2</key2>
+              	<key3>value3</key3>
+              </configuration>
             </execution>
           </executions>
           <dependencies>
@@ -350,7 +354,11 @@ var examplePom = `
 			<goal>goal</goal>
           </goals>
           <inherited>inherited</inherited>
-          <configuration>configuration</configuration>
+          <configuration>
+            <key>value</key>
+            <key2>value2</key2>
+            <key3>value3</key3>
+          </configuration>
         </plugin>
       </plugins>
     </pluginManagement>
@@ -368,7 +376,11 @@ var examplePom = `
 				<goal>goal</goal>
  		      </goals>
               <inherited>inherited</inherited>
-              <configuration>configuration</configuration>
+			  <configuration>
+			    <key>value</key>
+			    <key2>value2</key2>
+			    <key3>value3</key3>
+			  </configuration>
             </execution>
           </executions>
           <dependencies>
@@ -393,7 +405,11 @@ var examplePom = `
 			<goal>goal</goal>
    		  </goals>
           <inherited>inherited</inherited>
-          <configuration>configuration</configuration>
+		  <configuration>
+			<key>value</key>
+			<key2>value2</key2>
+			<key3>value3</key3>
+		  </configuration>
         </plugin>
     </plugins>
   </build>
@@ -414,11 +430,19 @@ var examplePom = `
 			  <report>report</report>
 		    </reports>
             <inherited>inherited</inherited>
-            <configuration>configuration</configuration>
+			<configuration>
+			  <key>value</key>
+			  <key2>value2</key2>
+			  <key3>value3</key3>
+			</configuration>
           </reportSet>
         </reportSets>
         <inherited>inherited</inherited>
-        <configuration>configuration</configuration>
+        <configuration>
+          <key>value</key>
+          <key2>value2</key2>
+          <key3>value3</key3>
+        </configuration>
       </plugin>
     </plugins>
   </reporting>
@@ -492,7 +516,11 @@ var examplePom = `
 					<goal>goal</goal>
 		   		  </goals>
                   <inherited>inherited</inherited>
-                  <configuration>configuration</configuration>
+				  <configuration>
+					<key>value</key>
+					<key2>value2</key2>
+					<key3>value3</key3>
+				  </configuration>
                 </execution>
               </executions>
               <dependencies>
@@ -517,7 +545,11 @@ var examplePom = `
 				<goal>goal</goal>
  			  </goals>
               <inherited>inherited</inherited>
-              <configuration>configuration</configuration>
+			  <configuration>
+			    <key>value</key>
+			    <key2>value2</key2>
+			    <key3>value3</key3>
+			  </configuration>
             </plugin>
           </plugins>
         </pluginManagement>
@@ -535,7 +567,11 @@ var examplePom = `
 					<goal>goal</goal>
  			    </goals>
                 <inherited>inherited</inherited>
-                <configuration>configuration</configuration>
+				<configuration>
+				  <key>value</key>
+				  <key2>value2</key2>
+				  <key3>value3</key3>
+				</configuration>
               </execution>
             </executions>
             <dependencies>
@@ -560,7 +596,11 @@ var examplePom = `
 				<goal>goal</goal>
  			</goals>
             <inherited>inherited</inherited>
-            <configuration>configuration</configuration>
+		  	<configuration>
+			  <key>value</key>
+			  <key2>value2</key2>
+			  <key3>value3</key3>
+		  	</configuration>
           </plugin>
         </plugins>
       </build>
@@ -719,11 +759,19 @@ var examplePom = `
 					<report>report</report>
       			</reports>
                 <inherited>inherited</inherited>
-                <configuration>configuration</configuration>
+				<configuration>
+				  <key>value</key>
+				  <key2>value2</key2>
+				  <key3>value3</key3>
+				</configuration>
               </reportSet>
             </reportSets>
             <inherited>inherited</inherited>
-            <configuration>configuration</configuration>
+			<configuration>
+              <key>value</key>
+			  <key2>value2</key2>
+			  <key3>value3</key3>
+			</configuration>
           </plugin>
         </plugins>
       </reporting>

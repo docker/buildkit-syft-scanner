@@ -36,36 +36,36 @@ func ParseFromReader(reader io.Reader) (*Project, error) {
 }
 
 type Project struct {
-	XMLName                xml.Name               `xml:"project"`
-	ModelVersion           string                 `xml:"modelVersion"`
-	Parent                 Parent                 `xml:"parent"`
-	GroupID                string                 `xml:"groupId"`
-	ArtifactID             string                 `xml:"artifactId"`
-	Version                string                 `xml:"version"`
-	Packaging              string                 `xml:"packaging"`
-	Name                   string                 `xml:"name"`
-	Description            string                 `xml:"description"`
-	URL                    string                 `xml:"url"`
-	InceptionYear          string                 `xml:"inceptionYear"`
-	Organization           Organization           `xml:"organization"`
-	Licenses               []License              `xml:"licenses>license"`
-	Developers             []Developer            `xml:"developers>developer"`
-	Contributors           []Contributor          `xml:"contributors>contributor"`
-	MailingLists           []MailingList          `xml:"mailingLists>mailingList"`
-	Prerequisites          Prerequisites          `xml:"prerequisites"`
-	Modules                []string               `xml:"modules>module"`
-	SCM                    Scm                    `xml:"scm"`
-	IssueManagement        IssueManagement        `xml:"issueManagement"`
-	CIManagement           CIManagement           `xml:"ciManagement"`
-	DistributionManagement DistributionManagement `xml:"distributionManagement"`
-	DependencyManagement   DependencyManagement   `xml:"dependencyManagement"`
-	Dependencies           []Dependency           `xml:"dependencies>dependency"`
-	Repositories           []Repository           `xml:"repositories>repository"`
-	PluginRepositories     []PluginRepository     `xml:"pluginRepositories>pluginRepository"`
-	Build                  Build                  `xml:"build"`
-	Reporting              Reporting              `xml:"reporting"`
-	Profiles               []Profile              `xml:"profiles>profile"`
-	Properties             Properties             `xml:"properties"`
+	XMLName                *xml.Name               `xml:"project,omitempty"`
+	ModelVersion           *string                 `xml:"modelVersion,omitempty"`
+	Parent                 *Parent                 `xml:"parent,omitempty"`
+	GroupID                *string                 `xml:"groupId,omitempty"`
+	ArtifactID             *string                 `xml:"artifactId,omitempty"`
+	Version                *string                 `xml:"version,omitempty"`
+	Packaging              *string                 `xml:"packaging,omitempty"`
+	Name                   *string                 `xml:"name,omitempty"`
+	Description            *string                 `xml:"description,omitempty"`
+	URL                    *string                 `xml:"url,omitempty"`
+	InceptionYear          *string                 `xml:"inceptionYear,omitempty"`
+	Organization           *Organization           `xml:"organization,omitempty"`
+	Licenses               *[]License              `xml:"licenses>license,omitempty"`
+	Developers             *[]Developer            `xml:"developers>developer,omitempty"`
+	Contributors           *[]Contributor          `xml:"contributors>contributor,omitempty"`
+	MailingLists           *[]MailingList          `xml:"mailingLists>mailingList,omitempty"`
+	Prerequisites          *Prerequisites          `xml:"prerequisites,omitempty"`
+	Modules                *[]string               `xml:"modules>module,omitempty"`
+	SCM                    *Scm                    `xml:"scm,omitempty"`
+	IssueManagement        *IssueManagement        `xml:"issueManagement,omitempty"`
+	CIManagement           *CIManagement           `xml:"ciManagement,omitempty"`
+	DistributionManagement *DistributionManagement `xml:"distributionManagement,omitempty"`
+	DependencyManagement   *DependencyManagement   `xml:"dependencyManagement,omitempty"`
+	Dependencies           *[]Dependency           `xml:"dependencies>dependency,omitempty"`
+	Repositories           *[]Repository           `xml:"repositories>repository,omitempty"`
+	PluginRepositories     *[]PluginRepository     `xml:"pluginRepositories>pluginRepository,omitempty"`
+	Build                  *Build                  `xml:"build,omitempty"`
+	Reporting              *Reporting              `xml:"reporting,omitempty"`
+	Profiles               *[]Profile              `xml:"profiles>profile,omitempty"`
+	Properties             *Properties             `xml:"properties,omitempty"`
 }
 
 type Properties struct {
@@ -114,267 +114,271 @@ func (p Properties) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 }
 
 type Parent struct {
-	GroupID      string `xml:"groupId"`
-	ArtifactID   string `xml:"artifactId"`
-	Version      string `xml:"version"`
-	RelativePath string `xml:"relativePath"`
+	GroupID      *string `xml:"groupId,omitempty"`
+	ArtifactID   *string `xml:"artifactId,omitempty"`
+	Version      *string `xml:"version,omitempty"`
+	RelativePath *string `xml:"relativePath,omitempty"`
 }
 
 type Organization struct {
-	Name string `xml:"name"`
-	URL  string `xml:"url"`
+	Name *string `xml:"name,omitempty"`
+	URL  *string `xml:"url,omitempty"`
 }
 
 type License struct {
-	Name         string `xml:"name"`
-	URL          string `xml:"url"`
-	Distribution string `xml:"distribution"`
-	Comments     string `xml:"comments"`
+	Name         *string `xml:"name,omitempty"`
+	URL          *string `xml:"url,omitempty"`
+	Distribution *string `xml:"distribution,omitempty"`
+	Comments     *string `xml:"comments,omitempty"`
 }
 
 type Developer struct {
-	ID              string     `xml:"id"`
-	Name            string     `xml:"name"`
-	Email           string     `xml:"email"`
-	URL             string     `xml:"url"`
-	Organization    string     `xml:"organization"`
-	OrganizationURL string     `xml:"organizationUrl"`
-	Roles           []string   `xml:"roles>role"`
-	Timezone        string     `xml:"timezone"`
-	Properties      Properties `xml:"properties"`
+	ID              *string     `xml:"id,omitempty"`
+	Name            *string     `xml:"name,omitempty"`
+	Email           *string     `xml:"email,omitempty"`
+	URL             *string     `xml:"url,omitempty"`
+	Organization    *string     `xml:"organization,omitempty"`
+	OrganizationURL *string     `xml:"organizationUrl,omitempty"`
+	Roles           *[]string   `xml:"roles>role,omitempty"`
+	Timezone        *string     `xml:"timezone,omitempty"`
+	Properties      *Properties `xml:"properties,omitempty"`
 }
 
 type Contributor struct {
-	Name            string     `xml:"name"`
-	Email           string     `xml:"email"`
-	URL             string     `xml:"url"`
-	Organization    string     `xml:"organization"`
-	OrganizationURL string     `xml:"organizationUrl"`
-	Roles           []string   `xml:"roles>role"`
-	Timezone        string     `xml:"timezone"`
-	Properties      Properties `xml:"properties"`
+	Name            *string     `xml:"name,omitempty"`
+	Email           *string     `xml:"email,omitempty"`
+	URL             *string     `xml:"url,omitempty"`
+	Organization    *string     `xml:"organization,omitempty"`
+	OrganizationURL *string     `xml:"organizationUrl,omitempty"`
+	Roles           *[]string   `xml:"roles>role,omitempty"`
+	Timezone        *string     `xml:"timezone,omitempty"`
+	Properties      *Properties `xml:"properties,omitempty"`
 }
 
 type MailingList struct {
-	Name          string   `xml:"name"`
-	Subscribe     string   `xml:"subscribe"`
-	Unsubscribe   string   `xml:"unsubscribe"`
-	Post          string   `xml:"post"`
-	Archive       string   `xml:"archive"`
-	OtherArchives []string `xml:"otherArchives>otherArchive"`
+	Name          *string   `xml:"name,omitempty"`
+	Subscribe     *string   `xml:"subscribe,omitempty"`
+	Unsubscribe   *string   `xml:"unsubscribe,omitempty"`
+	Post          *string   `xml:"post,omitempty"`
+	Archive       *string   `xml:"archive,omitempty"`
+	OtherArchives *[]string `xml:"otherArchives>otherArchive,omitempty"`
 }
 
 type Prerequisites struct {
-	Maven string `xml:"maven"`
+	Maven *string `xml:"maven,omitempty"`
 }
 
 type Scm struct {
-	Connection          string `xml:"connection"`
-	DeveloperConnection string `xml:"developerConnection"`
-	Tag                 string `xml:"tag"`
-	URL                 string `xml:"url"`
+	Connection          *string `xml:"connection,omitempty"`
+	DeveloperConnection *string `xml:"developerConnection,omitempty"`
+	Tag                 *string `xml:"tag,omitempty"`
+	URL                 *string `xml:"url,omitempty"`
 }
 
 type IssueManagement struct {
-	System string `xml:"system"`
-	URL    string `xml:"url"`
+	System *string `xml:"system,omitempty"`
+	URL    *string `xml:"url,omitempty"`
 }
 
 type CIManagement struct {
-	System    string     `xml:"system"`
-	URL       string     `xml:"url"`
-	Notifiers []Notifier `xml:"notifiers>notifier"`
+	System    *string     `xml:"system,omitempty"`
+	URL       *string     `xml:"url,omitempty"`
+	Notifiers *[]Notifier `xml:"notifiers>notifier,omitempty"`
 }
 
 type Notifier struct {
-	Type          string     `xml:"type"`
-	SendOnError   bool       `xml:"sendOnError"`
-	SendOnFailure bool       `xml:"sendOnFailure"`
-	SendOnSuccess bool       `xml:"sendOnSuccess"`
-	SendOnWarning bool       `xml:"sendOnWarning"`
-	Address       string     `xml:"address"`
-	Configuration Properties `xml:"configuration"`
+	Type          *string     `xml:"type,omitempty"`
+	SendOnError   *bool       `xml:"sendOnError,omitempty"`
+	SendOnFailure *bool       `xml:"sendOnFailure,omitempty"`
+	SendOnSuccess *bool       `xml:"sendOnSuccess,omitempty"`
+	SendOnWarning *bool       `xml:"sendOnWarning,omitempty"`
+	Address       *string     `xml:"address,omitempty"`
+	Configuration *Properties `xml:"configuration,omitempty"`
 }
 
 type DistributionManagement struct {
-	Repository         Repository `xml:"repository"`
-	SnapshotRepository Repository `xml:"snapshotRepository"`
-	Site               Site       `xml:"site"`
-	DownloadURL        string     `xml:"downloadUrl"`
-	Relocation         Relocation `xml:"relocation"`
-	Status             string     `xml:"status"`
+	Repository         *Repository `xml:"repository,omitempty"`
+	SnapshotRepository *Repository `xml:"snapshotRepository,omitempty"`
+	Site               *Site       `xml:"site,omitempty"`
+	DownloadURL        *string     `xml:"downloadUrl,omitempty"`
+	Relocation         *Relocation `xml:"relocation,omitempty"`
+	Status             *string     `xml:"status,omitempty"`
 }
 
 type Site struct {
-	ID   string `xml:"id"`
-	Name string `xml:"name"`
-	URL  string `xml:"url"`
+	ID   *string `xml:"id,omitempty"`
+	Name *string `xml:"name,omitempty"`
+	URL  *string `xml:"url,omitempty"`
 }
 
 type Relocation struct {
-	GroupID    string `xml:"groupId"`
-	ArtifactID string `xml:"artifactId"`
-	Version    string `xml:"version"`
-	Message    string `xml:"message"`
+	GroupID    *string `xml:"groupId,omitempty"`
+	ArtifactID *string `xml:"artifactId,omitempty"`
+	Version    *string `xml:"version,omitempty"`
+	Message    *string `xml:"message,omitempty"`
 }
 
 type DependencyManagement struct {
-	Dependencies []Dependency `xml:"dependencies>dependency"`
+	Dependencies *[]Dependency `xml:"dependencies>dependency,omitempty"`
 }
 
 type Dependency struct {
-	GroupID    string      `xml:"groupId"`
-	ArtifactID string      `xml:"artifactId"`
-	Version    string      `xml:"version"`
-	Type       string      `xml:"type"`
-	Classifier string      `xml:"classifier"`
-	Scope      string      `xml:"scope"`
-	SystemPath string      `xml:"systemPath"`
-	Exclusions []Exclusion `xml:"exclusions>exclusion"`
-	Optional   string      `xml:"optional"`
+	GroupID    *string      `xml:"groupId,omitempty"`
+	ArtifactID *string      `xml:"artifactId,omitempty"`
+	Version    *string      `xml:"version,omitempty"`
+	Type       *string      `xml:"type,omitempty"`
+	Classifier *string      `xml:"classifier,omitempty"`
+	Scope      *string      `xml:"scope,omitempty"`
+	SystemPath *string      `xml:"systemPath,omitempty"`
+	Exclusions *[]Exclusion `xml:"exclusions>exclusion,omitempty"`
+	Optional   *string      `xml:"optional,omitempty"`
 }
 
 type Exclusion struct {
-	ArtifactID string `xml:"artifactId"`
-	GroupID    string `xml:"groupId"`
+	ArtifactID *string `xml:"artifactId,omitempty"`
+	GroupID    *string `xml:"groupId,omitempty"`
 }
 
 type Repository struct {
-	UniqueVersion bool             `xml:"uniqueVersion"`
-	Releases      RepositoryPolicy `xml:"releases"`
-	Snapshots     RepositoryPolicy `xml:"snapshots"`
-	ID            string           `xml:"id"`
-	Name          string           `xml:"name"`
-	URL           string           `xml:"url"`
-	Layout        string           `xml:"layout"`
+	UniqueVersion *bool             `xml:"uniqueVersion,omitempty"`
+	Releases      *RepositoryPolicy `xml:"releases,omitempty"`
+	Snapshots     *RepositoryPolicy `xml:"snapshots,omitempty"`
+	ID            *string           `xml:"id,omitempty"`
+	Name          *string           `xml:"name,omitempty"`
+	URL           *string           `xml:"url,omitempty"`
+	Layout        *string           `xml:"layout,omitempty"`
 }
 
 type RepositoryPolicy struct {
-	Enabled        string `xml:"enabled"`
-	UpdatePolicy   string `xml:"updatePolicy"`
-	ChecksumPolicy string `xml:"checksumPolicy"`
+	Enabled        *string `xml:"enabled,omitempty"`
+	UpdatePolicy   *string `xml:"updatePolicy,omitempty"`
+	ChecksumPolicy *string `xml:"checksumPolicy,omitempty"`
 }
 
 type PluginRepository struct {
-	Releases  RepositoryPolicy `xml:"releases"`
-	Snapshots RepositoryPolicy `xml:"snapshots"`
-	ID        string           `xml:"id"`
-	Name      string           `xml:"name"`
-	URL       string           `xml:"url"`
-	Layout    string           `xml:"layout"`
+	Releases  *RepositoryPolicy `xml:"releases,omitempty"`
+	Snapshots *RepositoryPolicy `xml:"snapshots,omitempty"`
+	ID        *string           `xml:"id,omitempty"`
+	Name      *string           `xml:"name,omitempty"`
+	URL       *string           `xml:"url,omitempty"`
+	Layout    *string           `xml:"layout,omitempty"`
 }
 
 type BuildBase struct {
-	DefaultGoal      string           `xml:"defaultGoal"`
-	Resources        []Resource       `xml:"resources>resource"`
-	TestResources    []Resource       `xml:"testResources>testResource"`
-	Directory        string           `xml:"directory"`
-	FinalName        string           `xml:"finalName"`
-	Filters          []string         `xml:"filters>filter"`
-	PluginManagement PluginManagement `xml:"pluginManagement"`
-	Plugins          []Plugin         `xml:"plugins>plugin"`
+	DefaultGoal      *string           `xml:"defaultGoal,omitempty"`
+	Resources        *[]Resource       `xml:"resources>resource,omitempty"`
+	TestResources    *[]Resource       `xml:"testResources>testResource,omitempty"`
+	Directory        *string           `xml:"directory,omitempty"`
+	FinalName        *string           `xml:"finalName,omitempty"`
+	Filters          *[]string         `xml:"filters>filter,omitempty"`
+	PluginManagement *PluginManagement `xml:"pluginManagement,omitempty"`
+	Plugins          *[]Plugin         `xml:"plugins>plugin,omitempty"`
 }
 
 type Build struct {
-	SourceDirectory       string      `xml:"sourceDirectory"`
-	ScriptSourceDirectory string      `xml:"scriptSourceDirectory"`
-	TestSourceDirectory   string      `xml:"testSourceDirectory"`
-	OutputDirectory       string      `xml:"outputDirectory"`
-	TestOutputDirectory   string      `xml:"testOutputDirectory"`
-	Extensions            []Extension `xml:"extensions>extension"`
+	SourceDirectory       *string      `xml:"sourceDirectory,omitempty"`
+	ScriptSourceDirectory *string      `xml:"scriptSourceDirectory,omitempty"`
+	TestSourceDirectory   *string      `xml:"testSourceDirectory,omitempty"`
+	OutputDirectory       *string      `xml:"outputDirectory,omitempty"`
+	TestOutputDirectory   *string      `xml:"testOutputDirectory,omitempty"`
+	Extensions            *[]Extension `xml:"extensions>extension,omitempty"`
 	BuildBase
 }
 
 type Extension struct {
-	GroupID    string `xml:"groupId"`
-	ArtifactID string `xml:"artifactId"`
-	Version    string `xml:"version"`
+	GroupID    *string `xml:"groupId,omitempty"`
+	ArtifactID *string `xml:"artifactId,omitempty"`
+	Version    *string `xml:"version,omitempty"`
 }
 
 type Resource struct {
-	TargetPath string   `xml:"targetPath"`
-	Filtering  string   `xml:"filtering"`
-	Directory  string   `xml:"directory"`
-	Includes   []string `xml:"includes>include"`
-	Excludes   []string `xml:"excludes>exclude"`
+	TargetPath *string   `xml:"targetPath,omitempty"`
+	Filtering  *string   `xml:"filtering,omitempty"`
+	Directory  *string   `xml:"directory,omitempty"`
+	Includes   *[]string `xml:"includes>include,omitempty"`
+	Excludes   *[]string `xml:"excludes>exclude,omitempty"`
 }
 
 type PluginManagement struct {
-	Plugins []Plugin `xml:"plugins>plugin"`
+	Plugins *[]Plugin `xml:"plugins>plugin,omitempty"`
 }
 
 type Plugin struct {
-	GroupID      string            `xml:"groupId"`
-	ArtifactID   string            `xml:"artifactId"`
-	Version      string            `xml:"version"`
-	Extensions   string            `xml:"extensions"`
-	Executions   []PluginExecution `xml:"executions>execution"`
-	Dependencies []Dependency      `xml:"dependencies>dependency"`
-	Inherited    string            `xml:"inherited"`
+	GroupID       *string            `xml:"groupId,omitempty"`
+	ArtifactID    *string            `xml:"artifactId,omitempty"`
+	Version       *string            `xml:"version,omitempty"`
+	Extensions    *string            `xml:"extensions,omitempty"`
+	Executions    *[]PluginExecution `xml:"executions>execution,omitempty"`
+	Dependencies  *[]Dependency      `xml:"dependencies>dependency,omitempty"`
+	Inherited     *string            `xml:"inherited,omitempty"`
+	Configuration *Properties        `xml:"configuration,omitempty"`
 }
 
 type PluginExecution struct {
-	ID        string   `xml:"id"`
-	Phase     string   `xml:"phase"`
-	Goals     []string `xml:"goals>goal"`
-	Inherited string   `xml:"inherited"`
+	ID            *string     `xml:"id,omitempty"`
+	Phase         *string     `xml:"phase,omitempty"`
+	Goals         *[]string   `xml:"goals>goal,omitempty"`
+	Inherited     *string     `xml:"inherited,omitempty"`
+	Configuration *Properties `xml:"configuration,omitempty"`
 }
 
 type Reporting struct {
-	ExcludeDefaults string            `xml:"excludeDefaults"`
-	OutputDirectory string            `xml:"outputDirectory"`
-	Plugins         []ReportingPlugin `xml:"plugins>plugin"`
+	ExcludeDefaults *string            `xml:"excludeDefaults,omitempty"`
+	OutputDirectory *string            `xml:"outputDirectory,omitempty"`
+	Plugins         *[]ReportingPlugin `xml:"plugins>plugin,omitempty"`
 }
 
 type ReportingPlugin struct {
-	GroupID    string      `xml:"groupId"`
-	ArtifactID string      `xml:"artifactId"`
-	Version    string      `xml:"version"`
-	Inherited  string      `xml:"inherited"`
-	ReportSets []ReportSet `xml:"reportSets>reportSet"`
+	GroupID       *string      `xml:"groupId,omitempty"`
+	ArtifactID    *string      `xml:"artifactId,omitempty"`
+	Version       *string      `xml:"version,omitempty"`
+	Inherited     *string      `xml:"inherited,omitempty"`
+	ReportSets    *[]ReportSet `xml:"reportSets>reportSet,omitempty"`
+	Configuration *Properties  `xml:"configuration,omitempty"`
 }
 
 type ReportSet struct {
-	ID        string   `xml:"id"`
-	Reports   []string `xml:"reports>report"`
-	Inherited string   `xml:"inherited"`
+	ID            *string     `xml:"id,omitempty"`
+	Reports       *[]string   `xml:"reports>report,omitempty"`
+	Inherited     *string     `xml:"inherited,omitempty"`
+	Configuration *Properties `xml:"configuration,omitempty"`
 }
 
 type Profile struct {
-	ID                     string                 `xml:"id"`
-	Activation             Activation             `xml:"activation"`
-	Build                  BuildBase              `xml:"build"`
-	Modules                []string               `xml:"modules>module"`
-	DistributionManagement DistributionManagement `xml:"distributionManagement"`
-	Properties             Properties             `xml:"properties"`
-	DependencyManagement   DependencyManagement   `xml:"dependencyManagement"`
-	Dependencies           []Dependency           `xml:"dependencies>dependency"`
-	Repositories           []Repository           `xml:"repositories>repository"`
-	PluginRepositories     []PluginRepository     `xml:"pluginRepositories>pluginRepository"`
-	Reporting              Reporting              `xml:"reporting"`
+	ID                     *string                 `xml:"id,omitempty"`
+	Activation             *Activation             `xml:"activation,omitempty"`
+	Build                  *BuildBase              `xml:"build,omitempty"`
+	Modules                *[]string               `xml:"modules>module,omitempty"`
+	DistributionManagement *DistributionManagement `xml:"distributionManagement,omitempty"`
+	Properties             *Properties             `xml:"properties,omitempty"`
+	DependencyManagement   *DependencyManagement   `xml:"dependencyManagement,omitempty"`
+	Dependencies           *[]Dependency           `xml:"dependencies>dependency,omitempty"`
+	Repositories           *[]Repository           `xml:"repositories>repository,omitempty"`
+	PluginRepositories     *[]PluginRepository     `xml:"pluginRepositories>pluginRepository,omitempty"`
+	Reporting              *Reporting              `xml:"reporting,omitempty"`
 }
 
 type Activation struct {
-	ActiveByDefault bool               `xml:"activeByDefault"`
-	JDK             string             `xml:"jdk"`
-	OS              ActivationOS       `xml:"os"`
-	Property        ActivationProperty `xml:"property"`
-	File            ActivationFile     `xml:"file"`
+	ActiveByDefault *bool               `xml:"activeByDefault,omitempty"`
+	JDK             *string             `xml:"jdk,omitempty"`
+	OS              *ActivationOS       `xml:"os,omitempty"`
+	Property        *ActivationProperty `xml:"property,omitempty"`
+	File            *ActivationFile     `xml:"file,omitempty"`
 }
 
 type ActivationOS struct {
-	Name    string `xml:"name"`
-	Family  string `xml:"family"`
-	Arch    string `xml:"arch"`
-	Version string `xml:"version"`
+	Name    *string `xml:"name,omitempty"`
+	Family  *string `xml:"family,omitempty"`
+	Arch    *string `xml:"arch,omitempty"`
+	Version *string `xml:"version,omitempty"`
 }
 
 type ActivationProperty struct {
-	Name  string `xml:"name"`
-	Value string `xml:"value"`
+	Name  *string `xml:"name,omitempty"`
+	Value *string `xml:"value,omitempty"`
 }
 
 type ActivationFile struct {
-	Missing string `xml:"missing"`
-	Exists  string `xml:"exists"`
+	Missing *string `xml:"missing,omitempty"`
+	Exists  *string `xml:"exists,omitempty"`
 }
