@@ -3,10 +3,7 @@
   "predicateType": "https://spdx.dev/Document",
   "subject": [
     {
-      "name": "bin/app",
-      "digest": {
-        "sha256": "137e71592242436360271294fa4b9e969480fc99ae2ccbb87166d7ffa29c1386"
-      }
+      "name": "bin/app"
     }
   ],
   "predicate": {

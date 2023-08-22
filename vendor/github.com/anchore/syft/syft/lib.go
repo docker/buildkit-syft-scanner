@@ -74,9 +74,31 @@ func CatalogPackages(src source.Source, cfg cataloger.Config) (*pkg.Collection, 
 
 	catalog, relationships, err := cataloger.Catalog(resolver, release, cfg.Parallelism, catalogers...)
 
-	relationships = append(relationships, newSourceRelationshipsFromCatalog(src, catalog)...)
+	// apply exclusions to the package catalog
+	// default config value for this is true
+	// https://github.com/anchore/syft/issues/931
+	if cfg.ExcludeBinaryOverlapByOwnership {
+		for _, r := range relationships {
+			if cataloger.ExcludeBinaryByFileOwnershipOverlap(r, catalog) {
+				catalog.Delete(r.To.ID())
+				relationships = removeRelationshipsByID(relationships, r.To.ID())
+			}
+		}
+	}
 
+	// no need to consider source relationships for os -> binary exclusions
+	relationships = append(relationships, newSourceRelationshipsFromCatalog(src, catalog)...)
 	return catalog, relationships, release, err
+}
+
+func removeRelationshipsByID(relationships []artifact.Relationship, id artifact.ID) []artifact.Relationship {
+	var filtered []artifact.Relationship
+	for _, r := range relationships {
+		if r.To.ID() != id && r.From.ID() != id {
+			filtered = append(filtered, r)
+		}
+	}
+	return filtered
 }
 
 func newSourceRelationshipsFromCatalog(src source.Source, c *pkg.Collection) []artifact.Relationship {
