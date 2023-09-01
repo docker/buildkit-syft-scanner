@@ -44,7 +44,6 @@ func DefaultConfig() Config {
 func DefaultTextFormatter() logrus.Formatter {
 	return &TextFormatter{
 		TimestampFormat: timestampFormat,
-		ForceColors:     true,
 		ForceFormatting: true,
 	}
 }
