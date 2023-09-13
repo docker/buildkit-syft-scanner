@@ -39,7 +39,7 @@ jobs:
       -
         name: Login to DockerHub
         if: ${{ inputs.push }}
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERPUBLICBOT_USERNAME }}
           password: ${{ secrets.DOCKERPUBLICBOT_WRITE_PAT }}
