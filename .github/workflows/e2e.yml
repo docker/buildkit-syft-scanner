@@ -65,7 +65,7 @@ jobs:
             image=${{ env.BUILDKIT_IMAGE }}
       -
         name: Build and push Syft Scanner image
-        uses: docker/bake-action@v3
+        uses: docker/bake-action@v4
         with:
           targets: image-local
           push: true
