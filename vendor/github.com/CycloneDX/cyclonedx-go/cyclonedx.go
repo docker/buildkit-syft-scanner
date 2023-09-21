@@ -48,6 +48,21 @@ type Affects struct {
 	Range *[]AffectedVersions `json:"versions,omitempty" xml:"versions>version,omitempty"`
 }
 
+type Annotation struct {
+	BOMRef    string          `json:"bom-ref,omitempty" xml:"bom-ref,attr,omitempty"`
+	Subjects  *[]BOMReference `json:"subjects,omitempty" xml:"subjects>subject,omitempty"`
+	Annotator *Annotator      `json:"annotator,omitempty" xml:"annotator,omitempty"`
+	Timestamp string          `json:"timestamp,omitempty" xml:"timestamp,omitempty"`
+	Text      string          `json:"text,omitempty" xml:"text,omitempty"`
+}
+
+type Annotator struct {
+	Organization *OrganizationalEntity  `json:"organization,omitempty" xml:"organization,omitempty"`
+	Individual   *OrganizationalContact `json:"individual,omitempty" xml:"individual,omitempty"`
+	Component    *Component             `json:"component,omitempty" xml:"component,omitempty"`
+	Service      *Service               `json:"service,omitempty" xml:"service,omitempty"`
+}
+
 type AttachedText struct {
 	Content     string `json:"content" xml:",chardata"`
 	ContentType string `json:"contentType,omitempty" xml:"content-type,attr,omitempty"`
@@ -74,14 +89,15 @@ type BOM struct {
 	Compositions       *[]Composition       `json:"compositions,omitempty" xml:"compositions>composition,omitempty"`
 	Properties         *[]Property          `json:"properties,omitempty" xml:"properties>property,omitempty"`
 	Vulnerabilities    *[]Vulnerability     `json:"vulnerabilities,omitempty" xml:"vulnerabilities>vulnerability,omitempty"`
+	Annotations        *[]Annotation        `json:"annotations,omitempty" xml:"annotations>annotation,omitempty"`
 }
 
 func NewBOM() *BOM {
 	return &BOM{
-		JSONSchema:  jsonSchemas[SpecVersion1_4],
-		XMLNS:       xmlNamespaces[SpecVersion1_4],
+		JSONSchema:  jsonSchemas[SpecVersion1_5],
+		XMLNS:       xmlNamespaces[SpecVersion1_5],
 		BOMFormat:   BOMFormat,
-		SpecVersion: SpecVersion1_4,
+		SpecVersion: SpecVersion1_5,
 		Version:     1,
 	}
 }
@@ -103,14 +119,18 @@ type BOMReference string
 type ComponentType string
 
 const (
-	ComponentTypeApplication ComponentType = "application"
-	ComponentTypeContainer   ComponentType = "container"
-	ComponentTypeDevice      ComponentType = "device"
-	ComponentTypeFile        ComponentType = "file"
-	ComponentTypeFirmware    ComponentType = "firmware"
-	ComponentTypeFramework   ComponentType = "framework"
-	ComponentTypeLibrary     ComponentType = "library"
-	ComponentTypeOS          ComponentType = "operating-system"
+	ComponentTypeApplication          ComponentType = "application"
+	ComponentTypeContainer            ComponentType = "container"
+	ComponentTypeData                 ComponentType = "data"
+	ComponentTypeDevice               ComponentType = "device"
+	ComponentTypeDeviceDriver         ComponentType = "device-driver"
+	ComponentTypeFile                 ComponentType = "file"
+	ComponentTypeFirmware             ComponentType = "firmware"
+	ComponentTypeFramework            ComponentType = "framework"
+	ComponentTypeLibrary              ComponentType = "library"
+	ComponentTypeMachineLearningModel ComponentType = "machine-learning-model"
+	ComponentTypeOS                   ComponentType = "operating-system"
+	ComponentTypePlatform             ComponentType = "platform"
 )
 
 type Commit struct {
@@ -213,22 +233,39 @@ type ExternalReference struct {
 type ExternalReferenceType string
 
 const (
-	ERTypeAdvisories    ExternalReferenceType = "advisories"
-	ERTypeBOM           ExternalReferenceType = "bom"
-	ERTypeBuildMeta     ExternalReferenceType = "build-meta"
-	ERTypeBuildSystem   ExternalReferenceType = "build-system"
-	ERTypeChat          ExternalReferenceType = "chat"
-	ERTypeDistribution  ExternalReferenceType = "distribution"
-	ERTypeDocumentation ExternalReferenceType = "documentation"
-	ERTypeLicense       ExternalReferenceType = "license"
-	ERTypeMailingList   ExternalReferenceType = "mailing-list"
-	ERTypeOther         ExternalReferenceType = "other"
-	ERTypeIssueTracker  ExternalReferenceType = "issue-tracker"
-	ERTypeReleaseNotes  ExternalReferenceType = "release-notes"
-	ERTypeSocial        ExternalReferenceType = "social"
-	ERTypeSupport       ExternalReferenceType = "support"
-	ERTypeVCS           ExternalReferenceType = "vcs"
-	ERTypeWebsite       ExternalReferenceType = "website"
+	ERTypeAdversaryModel          ExternalReferenceType = "adversary-model"
+	ERTypeAdvisories              ExternalReferenceType = "advisories"
+	ERTypeAttestation             ExternalReferenceType = "attestation"
+	ERTypeBOM                     ExternalReferenceType = "bom"
+	ERTypeBuildMeta               ExternalReferenceType = "build-meta"
+	ERTypeBuildSystem             ExternalReferenceType = "build-system"
+	ERTypeCertificationReport     ExternalReferenceType = "certification-report"
+	ERTypeChat                    ExternalReferenceType = "chat"
+	ERTypeCodifiedInfrastructure  ExternalReferenceType = "codified-infrastructure"
+	ERTypeComponentAnalysisReport ExternalReferenceType = "component-analysis-report"
+	ERTypeDistribution            ExternalReferenceType = "distribution"
+	ERTypeDistributionIntake      ExternalReferenceType = "distribution-intake"
+	ERTypeDocumentation           ExternalReferenceType = "documentation"
+	ERTypeDynamicAnalysisReport   ExternalReferenceType = "dynamic-analysis-report"
+	ERTypeExploitabilityStatement ExternalReferenceType = "exploitability-statement"
+	ERTypeIssueTracker            ExternalReferenceType = "issue-tracker"
+	ERTypeLicense                 ExternalReferenceType = "license"
+	ERTypeMailingList             ExternalReferenceType = "mailing-list"
+	ERTypeMaturityReport          ExternalReferenceType = "maturity-report"
+	ERTypeOther                   ExternalReferenceType = "other"
+	ERTypePentestReport           ExternalReferenceType = "pentest-report"
+	ERTypeQualityMetrics          ExternalReferenceType = "quality-metrics"
+	ERTypeReleaseNotes            ExternalReferenceType = "release-notes"
+	ERTypeRiskAssessment          ExternalReferenceType = "risk-assessment"
+	ERTypeRuntimeAnalysisReport   ExternalReferenceType = "runtime-analysis-report"
+	ERTypeSecurityContact         ExternalReferenceType = "security-contact"
+	ERTypeSocial                  ExternalReferenceType = "social"
+	ERTypeStaticAnalysisReport    ExternalReferenceType = "static-analysis-report"
+	ERTypeSupport                 ExternalReferenceType = "support"
+	ERTypeThreatModel             ExternalReferenceType = "threat-model"
+	ERTypeVCS                     ExternalReferenceType = "vcs"
+	ERTypeVulnerabilityAssertion  ExternalReferenceType = "vulnerability-assertion"
+	ERTypeWebsite                 ExternalReferenceType = "website"
 )
 
 type Hash struct {
@@ -312,10 +349,13 @@ const (
 )
 
 type License struct {
-	ID   string        `json:"id,omitempty" xml:"id,omitempty"`
-	Name string        `json:"name,omitempty" xml:"name,omitempty"`
-	Text *AttachedText `json:"text,omitempty" xml:"text,omitempty"`
-	URL  string        `json:"url,omitempty" xml:"url,omitempty"`
+	BOMRef     string        `json:"bom-ref,omitempty" xml:"bom-ref,attr,omitempty"`
+	ID         string        `json:"id,omitempty" xml:"id,omitempty"`
+	Name       string        `json:"name,omitempty" xml:"name,omitempty"`
+	Text       *AttachedText `json:"text,omitempty" xml:"text,omitempty"`
+	URL        string        `json:"url,omitempty" xml:"url,omitempty"`
+	Licensing  *Licensing    `json:"licensing,omitempty" xml:"licensing,omitempty"`
+	Properties *[]Property   `json:"properties,omitempty" xml:"properties>property,omitempty"`
 }
 
 type Licenses []LicenseChoice
@@ -324,6 +364,56 @@ type LicenseChoice struct {
 	License    *License `json:"license,omitempty" xml:"-"`
 	Expression string   `json:"expression,omitempty" xml:"-"`
 }
+
+type LicenseType string
+
+const (
+	LicenseTypeAcademic        LicenseType = "academic"
+	LicenseTypeAppliance       LicenseType = "appliance"
+	LicenseTypeClientAccess    LicenseType = "client-access"
+	LicenseTypeConcurrentUser  LicenseType = "concurrent-user"
+	LicenseTypeCorePoints      LicenseType = "core-points"
+	LicenseTypeCustomMetric    LicenseType = "custom-metric"
+	LicenseTypeDevice          LicenseType = "device"
+	LicenseTypeEvaluation      LicenseType = "evaluation"
+	LicenseTypeNamedUser       LicenseType = "named-user"
+	LicenseTypeNodeLocked      LicenseType = "node-locked"
+	LicenseTypeOEM             LicenseType = "oem"
+	LicenseTypeOther           LicenseType = "other"
+	LicenseTypePerpetual       LicenseType = "perpetual"
+	LicenseTypeProcessorPoints LicenseType = "processor-points"
+	LicenseTypeSubscription    LicenseType = "subscription"
+	LicenseTypeUser            LicenseType = "user"
+)
+
+type Licensing struct {
+	AltIDs        *[]string                      `json:"altIds,omitempty" xml:"altIds>altId,omitempty"`
+	Licensor      *OrganizationalEntityOrContact `json:"licensor,omitempty" xml:"licensor,omitempty"`
+	Licensee      *OrganizationalEntityOrContact `json:"licensee,omitempty" xml:"licensee,omitempty"`
+	Purchaser     *OrganizationalEntityOrContact `json:"purchaser,omitempty" xml:"purchaser,omitempty"`
+	PurchaseOrder string                         `json:"purchaseOrder,omitempty" xml:"purchaseOrder,omitempty"`
+	LicenseTypes  *[]LicenseType                 `json:"licenseTypes,omitempty" xml:"licenseTypes>licenseType,omitempty"`
+	LastRenewal   string                         `json:"lastRenewal,omitempty" xml:"lastRenewal,omitempty"`
+	Expiration    string                         `json:"expiration,omitempty" xml:"expiration,omitempty"`
+}
+
+type Lifecycle struct {
+	Name        string         `json:"name,omitempty" xml:"name,omitempty"`
+	Phase       LifecyclePhase `json:"phase,omitempty" xml:"phase,omitempty"`
+	Description string         `json:"description,omitempty" xml:"description,omitempty"`
+}
+
+type LifecyclePhase string
+
+const (
+	LifecyclePhaseBuild        LifecyclePhase = "build"
+	LifecyclePhaseDecommission LifecyclePhase = "decommission"
+	LifecyclePhaseDesign       LifecyclePhase = "design"
+	LifecyclePhaseDiscovery    LifecyclePhase = "discovery"
+	LifecyclePhaseOperations   LifecyclePhase = "operations"
+	LifecyclePhasePostBuild    LifecyclePhase = "post-build"
+	LifecyclePhasePreBuild     LifecyclePhase = "pre-build"
+)
 
 // MediaType defines the official media types for CycloneDX BOMs.
 // See https://cyclonedx.org/specification/overview/#registered-media-types
@@ -345,6 +435,7 @@ func (mt MediaType) WithVersion(specVersion SpecVersion) (string, error) {
 
 type Metadata struct {
 	Timestamp   string                   `json:"timestamp,omitempty" xml:"timestamp,omitempty"`
+	Lifecycles  *[]Lifecycle             `json:"lifecycles,omitempty" xml:"lifecycles>lifecycle,omitempty"`
 	Tools       *[]Tool                  `json:"tools,omitempty" xml:"tools>tool,omitempty"`
 	Authors     *[]OrganizationalContact `json:"authors,omitempty" xml:"authors>author,omitempty"`
 	Component   *Component               `json:"component,omitempty" xml:"component,omitempty"`
@@ -369,6 +460,11 @@ type OrganizationalEntity struct {
 	Name    string                   `json:"name" xml:"name"`
 	URL     *[]string                `json:"url,omitempty" xml:"url,omitempty"`
 	Contact *[]OrganizationalContact `json:"contact,omitempty" xml:"contact,omitempty"`
+}
+
+type OrganizationalEntityOrContact struct {
+	Organization *OrganizationalEntity  `json:"organization,omitempty" xml:"organization,omitempty"`
+	Individual   *OrganizationalContact `json:"individual,omitempty" xml:"individual,omitempty"`
 }
 
 type Patch struct {
@@ -477,6 +573,7 @@ const (
 	SpecVersion1_2                        // 1.2
 	SpecVersion1_3                        // 1.3
 	SpecVersion1_4                        // 1.4
+	SpecVersion1_5                        // 1.5
 )
 
 type SWID struct {
