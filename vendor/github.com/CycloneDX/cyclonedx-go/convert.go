@@ -48,11 +48,17 @@ func (b *BOM) convert(specVersion SpecVersion) {
 	if specVersion < SpecVersion1_4 {
 		b.Vulnerabilities = nil
 	}
+	if specVersion < SpecVersion1_5 {
+		b.Annotations = nil
+	}
 
 	if b.Metadata != nil {
 		if specVersion < SpecVersion1_3 {
 			b.Metadata.Licenses = nil
 			b.Metadata.Properties = nil
+		}
+		if specVersion < SpecVersion1_5 {
+			b.Metadata.Lifecycles = nil
 		}
 
 		recurseComponent(b.Metadata.Component, componentConverter(specVersion))
@@ -133,9 +139,15 @@ func convertExternalReferences(extRefs *[]ExternalReference, specVersion SpecVer
 		return
 	}
 
-	if specVersion < SpecVersion1_3 {
-		for i := range *extRefs {
-			(*extRefs)[i].Hashes = nil
+	for i := range *extRefs {
+		extRef := &(*extRefs)[i]
+
+		if !specVersion.supportsExternalReferenceType(extRef.Type) {
+			extRef.Type = ERTypeOther
+		}
+
+		if specVersion < SpecVersion1_3 {
+			extRef.Hashes = nil
 		}
 	}
 }
@@ -191,6 +203,17 @@ func convertLicenses(licenses *Licenses, specVersion SpecVersion) {
 			*licenses = nil
 		} else {
 			*licenses = converted
+		}
+	}
+
+	if specVersion < SpecVersion1_5 {
+		for i := range *licenses {
+			choice := &(*licenses)[i]
+			if choice.License != nil {
+				choice.License.BOMRef = ""
+				choice.License.Licensing = nil
+				choice.License.Properties = nil
+			}
 		}
 	}
 }
@@ -277,9 +300,35 @@ func (sv SpecVersion) supportsComponentType(cType ComponentType) bool {
 		return sv >= SpecVersion1_1
 	case ComponentTypeContainer, ComponentTypeFirmware:
 		return sv >= SpecVersion1_2
+	case ComponentTypeData, ComponentTypeDeviceDriver, ComponentTypeMachineLearningModel, ComponentTypePlatform:
+		return sv >= SpecVersion1_5
 	}
 
 	return false
+}
+
+func (sv SpecVersion) supportsExternalReferenceType(ert ExternalReferenceType) bool {
+	switch ert {
+	case ERTypeAdversaryModel,
+		ERTypeAttestation,
+		ERTypeCertificationReport,
+		ERTypeCodifiedInfrastructure,
+		ERTypeComponentAnalysisReport,
+		ERTypeDistributionIntake,
+		ERTypeDynamicAnalysisReport,
+		ERTypeExploitabilityStatement,
+		ERTypeMaturityReport,
+		ERTypePentestReport,
+		ERTypeQualityMetrics,
+		ERTypeRiskAssessment,
+		ERTypeRuntimeAnalysisReport,
+		ERTypeStaticAnalysisReport,
+		ERTypeThreatModel,
+		ERTypeVulnerabilityAssertion:
+		return sv >= SpecVersion1_5
+	}
+
+	return sv >= SpecVersion1_1
 }
 
 func (sv SpecVersion) supportsHashAlgorithm(algo HashAlgorithm) bool {

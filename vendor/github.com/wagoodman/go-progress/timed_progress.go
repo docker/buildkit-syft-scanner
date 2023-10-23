@@ -1,13 +1,14 @@
 package progress
 
 import (
+	"sync/atomic"
 	"time"
 )
 
 type TimedProgress struct {
 	start    time.Time
 	duration time.Duration
-	complete bool
+	complete atomic.Bool
 }
 
 func NewTimedProgress(duration time.Duration) *TimedProgress {
@@ -18,12 +19,12 @@ func NewTimedProgress(duration time.Duration) *TimedProgress {
 }
 
 func (r *TimedProgress) Current() int64 {
-	if r.complete {
+	if r.complete.Load() {
 		return r.duration.Milliseconds()
 	}
 	current := time.Since(r.start).Milliseconds()
 	if current > r.duration.Milliseconds() {
-		r.complete = true
+		r.complete.Store(true)
 		current = r.duration.Milliseconds()
 	}
 	return current
@@ -38,5 +39,5 @@ func (r *TimedProgress) Error() error {
 }
 
 func (r *TimedProgress) SetCompleted() {
-	r.complete = true
+	r.complete.Store(true)
 }

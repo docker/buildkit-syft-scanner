@@ -270,7 +270,8 @@ func (a *application) Run() {
 	}()
 
 	if err := a.root.Execute(); err != nil {
-		color.Red.Println(strings.TrimSpace(err.Error()))
+		msg := color.Red.Render(strings.TrimSpace(err.Error()))
+		fmt.Fprintln(os.Stderr, msg)
 		exitCode = 1
 	}
 }

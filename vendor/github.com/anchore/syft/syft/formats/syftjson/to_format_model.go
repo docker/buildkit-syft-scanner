@@ -106,12 +106,31 @@ func toFile(s sbom.SBOM) []model.File {
 			contents = contentsForLocation
 		}
 
+		var licenses []model.FileLicense
+		for _, l := range artifacts.FileLicenses[coordinates] {
+			var evidence *model.FileLicenseEvidence
+			if e := l.LicenseEvidence; e != nil {
+				evidence = &model.FileLicenseEvidence{
+					Confidence: e.Confidence,
+					Offset:     e.Offset,
+					Extent:     e.Extent,
+				}
+			}
+			licenses = append(licenses, model.FileLicense{
+				Value:          l.Value,
+				SPDXExpression: l.SPDXExpression,
+				Type:           l.Type,
+				Evidence:       evidence,
+			})
+		}
+
 		results = append(results, model.File{
 			ID:       string(coordinates.ID()),
 			Location: coordinates,
 			Metadata: toFileMetadataEntry(coordinates, metadata),
 			Digests:  digests,
 			Contents: contents,
+			Licenses: licenses,
 		})
 	}
 
@@ -195,11 +214,18 @@ func toLicenseModel(pkgLicenses []pkg.License) (modelLicenses []model.License) {
 		if v := l.Locations.ToSlice(); v != nil {
 			locations = v
 		}
+
+		// format model must have allocated collections
+		urls := l.URLs
+		if urls == nil {
+			urls = []string{}
+		}
+
 		modelLicenses = append(modelLicenses, model.License{
 			Value:          l.Value,
 			SPDXExpression: l.SPDXExpression,
 			Type:           l.Type,
-			URLs:           l.URLs.ToSlice(),
+			URLs:           urls,
 			Locations:      locations,
 		})
 	}
