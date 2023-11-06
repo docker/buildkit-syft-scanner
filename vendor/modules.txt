@@ -134,7 +134,7 @@ github.com/anchore/stereoscope/pkg/image/sif
 github.com/anchore/stereoscope/pkg/tree
 github.com/anchore/stereoscope/pkg/tree/node
 # github.com/anchore/syft v0.94.0
-## explicit; go 1.21
+## explicit; go 1.21.0
 github.com/anchore/syft/internal
 github.com/anchore/syft/internal/bus
 github.com/anchore/syft/internal/file
