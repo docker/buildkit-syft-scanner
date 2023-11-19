@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"os"
 	"runtime"
 
 	"github.com/iancoleman/strcase"
@@ -27,17 +26,10 @@ type runtimeInfo struct {
 	Platform  string `json:"platform,omitempty"`  // GOOS and GOARCH at build-time
 }
 
-type additions = func() (name string, value string)
+type versionAddition = func() (name string, value any)
 
-func VersionCommand(id Identification, additions ...additions) *cobra.Command {
+func VersionCommand(id Identification, additions ...versionAddition) *cobra.Command {
 	var format string
-
-	info := runtimeInfo{
-		Identification: id,
-		GoVersion:      runtime.Version(),
-		Compiler:       runtime.Compiler,
-		Platform:       fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH),
-	}
 
 	cmd := &cobra.Command{
 		Use:   "version",
@@ -45,61 +37,18 @@ func VersionCommand(id Identification, additions ...additions) *cobra.Command {
 		Args:  cobra.NoArgs,
 		// note: we intentionally do not execute through the application infrastructure (no app config is required for this command)
 		RunE: func(cmd *cobra.Command, args []string) error {
-			switch format {
-			case "text", "":
-				printIfNotEmpty("Application", info.Name)
-				printIfNotEmpty("Version", info.Identification.Version)
-				printIfNotEmpty("BuildDate", info.BuildDate)
-				printIfNotEmpty("GitCommit", info.GitCommit)
-				printIfNotEmpty("GitDescription", info.GitDescription)
-				printIfNotEmpty("Platform", info.Platform)
-				printIfNotEmpty("GoVersion", info.GoVersion)
-				printIfNotEmpty("Compiler", info.Compiler)
-
-				for _, addition := range additions {
-					name, value := addition()
-					printIfNotEmpty(name, value)
-				}
-			case "json":
-				var info any = info
-
-				if len(additions) > 0 {
-					buf := &bytes.Buffer{}
-					enc := json.NewEncoder(buf)
-					enc.SetEscapeHTML(false)
-					err := enc.Encode(info)
-					if err != nil {
-						return fmt.Errorf("failed to show version information: %w", err)
-					}
-
-					var data map[string]any
-					dec := json.NewDecoder(buf)
-					err = dec.Decode(&data)
-					if err != nil {
-						return fmt.Errorf("failed to show version information: %w", err)
-					}
-
-					for _, addition := range additions {
-						name, value := addition()
-						name = strcase.ToLowerCamel(name)
-						data[name] = value
-					}
-
-					info = data
-				}
-
-				enc := json.NewEncoder(os.Stdout)
-				enc.SetEscapeHTML(false)
-				enc.SetIndent("", " ")
-				err := enc.Encode(info)
-				if err != nil {
-					return fmt.Errorf("failed to show version information: %w", err)
-				}
-			default:
-				return fmt.Errorf("unsupported output format: %s", format)
+			info := runtimeInfo{
+				Identification: id,
+				GoVersion:      runtime.Version(),
+				Compiler:       runtime.Compiler,
+				Platform:       fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH),
 			}
 
-			return nil
+			value, err := versionInfo(info, format, additions...)
+			if err == nil {
+				fmt.Print(value)
+			}
+			return err
 		},
 	}
 
@@ -109,10 +58,86 @@ func VersionCommand(id Identification, additions ...additions) *cobra.Command {
 	return cmd
 }
 
-func printIfNotEmpty(title, value string) {
-	if value == "" {
+func versionInfo(info runtimeInfo, format string, additions ...versionAddition) (string, error) {
+	buf := &bytes.Buffer{}
+
+	switch format {
+	case "text", "":
+		type additionType struct {
+			name  string
+			value any
+		}
+		var add []additionType
+		pad := 10
+		for _, addition := range additions {
+			name, value := addition()
+			if fmt.Sprintf("%v", value) == "" {
+				continue
+			}
+			if pad < len(name) {
+				pad = len(name)
+			}
+			add = append(add, additionType{name: name, value: value})
+		}
+
+		appendLine(buf, "Application", pad, info.Name)
+		appendLine(buf, "Version", pad, info.Identification.Version)
+		appendLine(buf, "BuildDate", pad, info.BuildDate)
+		appendLine(buf, "GitCommit", pad, info.GitCommit)
+		appendLine(buf, "GitDescription", pad, info.GitDescription)
+		appendLine(buf, "Platform", pad, info.Platform)
+		appendLine(buf, "GoVersion", pad, info.GoVersion)
+		appendLine(buf, "Compiler", pad, info.Compiler)
+
+		for _, a := range add {
+			appendLine(buf, a.name, pad, a.value)
+		}
+	case "json":
+		var info any = info
+
+		if len(additions) > 0 {
+			buf := &bytes.Buffer{}
+			enc := json.NewEncoder(buf)
+			enc.SetEscapeHTML(false)
+			err := enc.Encode(info)
+			if err != nil {
+				return "", fmt.Errorf("failed to show version information: %w", err)
+			}
+
+			var data map[string]any
+			dec := json.NewDecoder(buf)
+			err = dec.Decode(&data)
+			if err != nil {
+				return "", fmt.Errorf("failed to show version information: %w", err)
+			}
+
+			for _, addition := range additions {
+				name, value := addition()
+				name = strcase.ToLowerCamel(name)
+				data[name] = value
+			}
+
+			info = data
+		}
+
+		enc := json.NewEncoder(buf)
+		enc.SetEscapeHTML(false)
+		enc.SetIndent("", " ")
+		err := enc.Encode(info)
+		if err != nil {
+			return "", fmt.Errorf("failed to show version information: %w", err)
+		}
+	default:
+		return "", fmt.Errorf("unsupported output format: %s", format)
+	}
+
+	return buf.String(), nil
+}
+
+func appendLine(buf *bytes.Buffer, title string, width int, value any) {
+	if fmt.Sprintf("%v", value) == "" {
 		return
 	}
 
-	fmt.Printf("%-16s %s\n", title+":", value)
+	_, _ = fmt.Fprintf(buf, "%-*s %v\n", width+1, title+":", value)
 }

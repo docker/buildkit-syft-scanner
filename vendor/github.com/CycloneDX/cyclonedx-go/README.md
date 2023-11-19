@@ -31,7 +31,8 @@ Also, checkout the [`examples`](./example_test.go) to get an idea of how this li
 |       < v0.4.0        |         1.14+         |           1.2            |
 |       == v0.4.0       |         1.14+         |           1.3            |
 |  >= v0.5.0, < v0.7.0  |         1.15+         |           1.4            |
-|       >= v0.7.0       |         1.17+         |         1.0-1.4          |
+|  >= v0.7.0, < v0.8.0  |         1.17+         |         1.0-1.4          |
+|       >= v0.8.0       |         1.18+         |         1.0-1.5          |
 
 We're aiming to support all [officially supported](https://golang.org/doc/devel/release.html#policy) Go versions, plus
 an additional older version.
@@ -57,9 +58,3 @@ Pull requests are welcome. But please read the
 
 It is generally expected that pull requests will include relevant tests. Tests are automatically run against all
 supported Go versions (see [Compatibility](#compatibility)) for every pull request.
-
-### Running Tests
-
-Some tests make use of the [CycloneDX CLI](https://github.com/CycloneDX/cyclonedx-cli), e.g. to validate BOMs.  
-Make sure to download the CLI binary and make it available as `cyclonedx` in your `$PATH`.  
-This is done automatically for [Gitpod](https://gitpod.io/#https://github.com/CycloneDX/cyclonedx-go).
