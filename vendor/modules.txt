@@ -1,10 +1,10 @@
 # dario.cat/mergo v1.0.0
 ## explicit; go 1.13
 dario.cat/mergo
-# github.com/AdaLogics/go-fuzz-headers v0.0.0-20230106234847-43070de90fa1
-## explicit; go 1.18
+# github.com/AdaLogics/go-fuzz-headers v0.0.0-20230811130428-ced1acdcaa24
+## explicit; go 1.20
 github.com/AdaLogics/go-fuzz-headers
-# github.com/AdamKorcz/go-118-fuzz-build v0.0.0-20221215162035-5330a85ea652
+# github.com/AdamKorcz/go-118-fuzz-build v0.0.0-20230306123547-8075edf89bb0
 ## explicit; go 1.18
 github.com/AdamKorcz/go-118-fuzz-build/testing
 # github.com/CycloneDX/cyclonedx-go v0.7.2
@@ -13,18 +13,9 @@ github.com/CycloneDX/cyclonedx-go
 # github.com/DataDog/zstd v1.4.5
 ## explicit
 github.com/DataDog/zstd
-# github.com/Masterminds/goutils v1.1.1
-## explicit
-github.com/Masterminds/goutils
 # github.com/Masterminds/semver v1.5.0
 ## explicit
 github.com/Masterminds/semver
-# github.com/Masterminds/semver/v3 v3.2.0
-## explicit; go 1.18
-github.com/Masterminds/semver/v3
-# github.com/Masterminds/sprig/v3 v3.2.3
-## explicit; go 1.13
-github.com/Masterminds/sprig/v3
 # github.com/Microsoft/go-winio v0.6.1
 ## explicit; go 1.17
 github.com/Microsoft/go-winio
@@ -32,10 +23,11 @@ github.com/Microsoft/go-winio/backuptar
 github.com/Microsoft/go-winio/internal/fs
 github.com/Microsoft/go-winio/internal/socket
 github.com/Microsoft/go-winio/internal/stringbuffer
+github.com/Microsoft/go-winio/pkg/bindfilter
 github.com/Microsoft/go-winio/pkg/guid
 github.com/Microsoft/go-winio/tools/mkwinsyscall
 github.com/Microsoft/go-winio/vhd
-# github.com/Microsoft/hcsshim v0.10.0-rc.7
+# github.com/Microsoft/hcsshim v0.11.1
 ## explicit; go 1.18
 github.com/Microsoft/hcsshim
 github.com/Microsoft/hcsshim/computestorage
@@ -114,7 +106,7 @@ github.com/anchore/go-struct-converter
 # github.com/anchore/packageurl-go v0.1.1-0.20230104203445-02e0a6721501
 ## explicit; go 1.17
 github.com/anchore/packageurl-go
-# github.com/anchore/stereoscope v0.0.0-20230925132944-bf05af58eb44
+# github.com/anchore/stereoscope v0.0.0-20231117203853-3610f4ef3e83
 ## explicit; go 1.19
 github.com/anchore/stereoscope
 github.com/anchore/stereoscope/internal/bus
@@ -133,7 +125,7 @@ github.com/anchore/stereoscope/pkg/image/oci
 github.com/anchore/stereoscope/pkg/image/sif
 github.com/anchore/stereoscope/pkg/tree
 github.com/anchore/stereoscope/pkg/tree/node
-# github.com/anchore/syft v0.94.0
+# github.com/anchore/syft v0.97.1
 ## explicit; go 1.21.0
 github.com/anchore/syft/internal
 github.com/anchore/syft/internal/bus
@@ -148,40 +140,40 @@ github.com/anchore/syft/syft/cpe
 github.com/anchore/syft/syft/event
 github.com/anchore/syft/syft/event/monitor
 github.com/anchore/syft/syft/file
-github.com/anchore/syft/syft/formats
-github.com/anchore/syft/syft/formats/common
-github.com/anchore/syft/syft/formats/common/cyclonedxhelpers
-github.com/anchore/syft/syft/formats/common/spdxhelpers
-github.com/anchore/syft/syft/formats/common/util
-github.com/anchore/syft/syft/formats/cyclonedxjson
-github.com/anchore/syft/syft/formats/cyclonedxxml
-github.com/anchore/syft/syft/formats/github
-github.com/anchore/syft/syft/formats/spdxjson
-github.com/anchore/syft/syft/formats/spdxtagvalue
-github.com/anchore/syft/syft/formats/syftjson
-github.com/anchore/syft/syft/formats/syftjson/model
-github.com/anchore/syft/syft/formats/table
-github.com/anchore/syft/syft/formats/template
-github.com/anchore/syft/syft/formats/text
+github.com/anchore/syft/syft/format
+github.com/anchore/syft/syft/format/common
+github.com/anchore/syft/syft/format/common/cyclonedxhelpers
+github.com/anchore/syft/syft/format/common/spdxhelpers
+github.com/anchore/syft/syft/format/common/util
+github.com/anchore/syft/syft/format/cyclonedxjson
+github.com/anchore/syft/syft/format/cyclonedxxml
+github.com/anchore/syft/syft/format/internal/cyclonedxutil
+github.com/anchore/syft/syft/format/internal/spdxutil
+github.com/anchore/syft/syft/format/spdxjson
+github.com/anchore/syft/syft/format/spdxtagvalue
+github.com/anchore/syft/syft/format/syftjson
+github.com/anchore/syft/syft/format/syftjson/model
 github.com/anchore/syft/syft/internal/fileresolver
+github.com/anchore/syft/syft/internal/packagemetadata
 github.com/anchore/syft/syft/internal/sourcemetadata
 github.com/anchore/syft/syft/internal/windows
 github.com/anchore/syft/syft/license
 github.com/anchore/syft/syft/linux
 github.com/anchore/syft/syft/pkg
 github.com/anchore/syft/syft/pkg/cataloger
-github.com/anchore/syft/syft/pkg/cataloger/alpm
-github.com/anchore/syft/syft/pkg/cataloger/apkdb
+github.com/anchore/syft/syft/pkg/cataloger/alpine
+github.com/anchore/syft/syft/pkg/cataloger/arch
 github.com/anchore/syft/syft/pkg/cataloger/binary
 github.com/anchore/syft/syft/pkg/cataloger/common/cpe
 github.com/anchore/syft/syft/pkg/cataloger/common/cpe/dictionary
 github.com/anchore/syft/syft/pkg/cataloger/cpp
 github.com/anchore/syft/syft/pkg/cataloger/dart
-github.com/anchore/syft/syft/pkg/cataloger/deb
+github.com/anchore/syft/syft/pkg/cataloger/debian
 github.com/anchore/syft/syft/pkg/cataloger/dotnet
 github.com/anchore/syft/syft/pkg/cataloger/elixir
 github.com/anchore/syft/syft/pkg/cataloger/erlang
 github.com/anchore/syft/syft/pkg/cataloger/generic
+github.com/anchore/syft/syft/pkg/cataloger/gentoo
 github.com/anchore/syft/syft/pkg/cataloger/githubactions
 github.com/anchore/syft/syft/pkg/cataloger/golang
 github.com/anchore/syft/syft/pkg/cataloger/golang/internal/xcoff
@@ -192,10 +184,9 @@ github.com/anchore/syft/syft/pkg/cataloger/javascript
 github.com/anchore/syft/syft/pkg/cataloger/kernel
 github.com/anchore/syft/syft/pkg/cataloger/nix
 github.com/anchore/syft/syft/pkg/cataloger/php
-github.com/anchore/syft/syft/pkg/cataloger/portage
 github.com/anchore/syft/syft/pkg/cataloger/python
 github.com/anchore/syft/syft/pkg/cataloger/r
-github.com/anchore/syft/syft/pkg/cataloger/rpm
+github.com/anchore/syft/syft/pkg/cataloger/redhat
 github.com/anchore/syft/syft/pkg/cataloger/ruby
 github.com/anchore/syft/syft/pkg/cataloger/rust
 github.com/anchore/syft/syft/pkg/cataloger/sbom
@@ -214,7 +205,7 @@ github.com/aquasecurity/go-version/pkg/part
 # github.com/becheran/wildmatch-go v1.0.0
 ## explicit; go 1.15
 github.com/becheran/wildmatch-go
-# github.com/bmatcuk/doublestar/v4 v4.6.0
+# github.com/bmatcuk/doublestar/v4 v4.6.1
 ## explicit; go 1.16
 github.com/bmatcuk/doublestar/v4
 # github.com/cloudflare/circl v1.3.3
@@ -234,7 +225,7 @@ github.com/cloudflare/circl/sign/ed448
 # github.com/containerd/cgroups v1.1.0
 ## explicit; go 1.17
 github.com/containerd/cgroups/stats/v1
-# github.com/containerd/containerd v1.7.0
+# github.com/containerd/containerd v1.7.8
 ## explicit; go 1.19
 github.com/containerd/containerd
 github.com/containerd/containerd/api/runtime/sandbox/v1
@@ -265,6 +256,7 @@ github.com/containerd/containerd/content/local
 github.com/containerd/containerd/content/proxy
 github.com/containerd/containerd/defaults
 github.com/containerd/containerd/diff
+github.com/containerd/containerd/diff/proxy
 github.com/containerd/containerd/errdefs
 github.com/containerd/containerd/events
 github.com/containerd/containerd/events/exchange
@@ -316,21 +308,24 @@ github.com/containerd/containerd/snapshots
 github.com/containerd/containerd/snapshots/proxy
 github.com/containerd/containerd/tracing
 github.com/containerd/containerd/version
-# github.com/containerd/continuity v0.3.0
-## explicit; go 1.17
+# github.com/containerd/continuity v0.4.2
+## explicit; go 1.19
 github.com/containerd/continuity/fs
 github.com/containerd/continuity/sysx
 # github.com/containerd/fifo v1.1.0
 ## explicit; go 1.18
 github.com/containerd/fifo
+# github.com/containerd/log v0.1.0
+## explicit; go 1.20
+github.com/containerd/log
 # github.com/containerd/stargz-snapshotter/estargz v0.14.3
 ## explicit; go 1.19
 github.com/containerd/stargz-snapshotter/estargz
 github.com/containerd/stargz-snapshotter/estargz/errorutil
-# github.com/containerd/ttrpc v1.2.1
+# github.com/containerd/ttrpc v1.2.2
 ## explicit; go 1.13
 github.com/containerd/ttrpc
-# github.com/containerd/typeurl/v2 v2.1.0
+# github.com/containerd/typeurl/v2 v2.1.1
 ## explicit; go 1.13
 github.com/containerd/typeurl/v2
 # github.com/cyphar/filepath-securejoin v0.2.4
@@ -357,7 +352,7 @@ github.com/docker/cli/cli/connhelper/ssh
 ## explicit
 github.com/docker/distribution/reference
 github.com/docker/distribution/registry/client/auth/challenge
-# github.com/docker/docker v24.0.6+incompatible
+# github.com/docker/docker v24.0.7+incompatible
 ## explicit
 github.com/docker/docker/api
 github.com/docker/docker/api/types
@@ -447,7 +442,7 @@ github.com/go-git/go-billy/v5/helper/polyfill
 github.com/go-git/go-billy/v5/memfs
 github.com/go-git/go-billy/v5/osfs
 github.com/go-git/go-billy/v5/util
-# github.com/go-git/go-git/v5 v5.9.0
+# github.com/go-git/go-git/v5 v5.10.0
 ## explicit; go 1.19
 github.com/go-git/go-git/v5
 github.com/go-git/go-git/v5/config
@@ -564,7 +559,7 @@ github.com/google/licensecheck/internal/match
 # github.com/google/pprof v0.0.0-20221118152302-e6195bd50e26
 ## explicit; go 1.18
 github.com/google/pprof/profile
-# github.com/google/uuid v1.3.1
+# github.com/google/uuid v1.4.0
 ## explicit
 github.com/google/uuid
 # github.com/gookit/color v1.5.4
@@ -588,15 +583,9 @@ github.com/hashicorp/hcl/hcl/token
 github.com/hashicorp/hcl/json/parser
 github.com/hashicorp/hcl/json/scanner
 github.com/hashicorp/hcl/json/token
-# github.com/huandu/xstrings v1.3.3
-## explicit; go 1.12
-github.com/huandu/xstrings
 # github.com/iancoleman/strcase v0.3.0
 ## explicit; go 1.16
 github.com/iancoleman/strcase
-# github.com/imdario/mergo v0.3.15
-## explicit; go 1.13
-github.com/imdario/mergo
 # github.com/in-toto/in-toto-golang v0.9.0
 ## explicit; go 1.20
 github.com/in-toto/in-toto-golang/in_toto
@@ -651,9 +640,6 @@ github.com/mattn/go-colorable
 # github.com/mattn/go-isatty v0.0.18
 ## explicit; go 1.15
 github.com/mattn/go-isatty
-# github.com/mattn/go-runewidth v0.0.15
-## explicit; go 1.9
-github.com/mattn/go-runewidth
 # github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d
 ## explicit
 github.com/mgutz/ansi
@@ -663,9 +649,6 @@ github.com/mholt/archiver/v3
 # github.com/microsoft/go-rustaudit v0.0.0-20220730194248-4b17361d90a5
 ## explicit; go 1.18
 github.com/microsoft/go-rustaudit
-# github.com/mitchellh/copystructure v1.2.0
-## explicit; go 1.15
-github.com/mitchellh/copystructure
 # github.com/mitchellh/go-homedir v1.1.0
 ## explicit
 github.com/mitchellh/go-homedir
@@ -675,9 +658,6 @@ github.com/mitchellh/hashstructure/v2
 # github.com/mitchellh/mapstructure v1.5.0
 ## explicit; go 1.14
 github.com/mitchellh/mapstructure
-# github.com/mitchellh/reflectwalk v1.0.2
-## explicit
-github.com/mitchellh/reflectwalk
 # github.com/moby/locker v1.0.1
 ## explicit; go 1.13
 github.com/moby/locker
@@ -693,9 +673,6 @@ github.com/moby/sys/signal
 # github.com/nwaples/rardecode v1.1.0
 ## explicit
 github.com/nwaples/rardecode
-# github.com/olekukonko/tablewriter v0.0.5
-## explicit; go 1.12
-github.com/olekukonko/tablewriter
 # github.com/opencontainers/go-digest v1.0.0
 ## explicit; go 1.13
 github.com/opencontainers/go-digest
@@ -747,9 +724,6 @@ github.com/pkg/errors
 # github.com/pkg/profile v1.7.0
 ## explicit; go 1.13
 github.com/pkg/profile
-# github.com/rivo/uniseg v0.2.0
-## explicit; go 1.12
-github.com/rivo/uniseg
 # github.com/saferwall/pe v1.4.7
 ## explicit; go 1.15
 github.com/saferwall/pe
@@ -777,9 +751,6 @@ github.com/sergi/go-diff/diffmatchpatch
 # github.com/shibumi/go-pathspec v1.3.0
 ## explicit; go 1.17
 github.com/shibumi/go-pathspec
-# github.com/shopspring/decimal v1.2.0
-## explicit; go 1.13
-github.com/shopspring/decimal
 # github.com/sirupsen/logrus v1.9.3
 ## explicit; go 1.13
 github.com/sirupsen/logrus
@@ -812,7 +783,7 @@ github.com/spf13/afero/mem
 # github.com/spf13/cast v1.5.1
 ## explicit; go 1.18
 github.com/spf13/cast
-# github.com/spf13/cobra v1.7.0
+# github.com/spf13/cobra v1.8.0
 ## explicit; go 1.15
 github.com/spf13/cobra
 # github.com/spf13/jwalterweatherman v1.1.0
@@ -911,10 +882,9 @@ go.opentelemetry.io/otel/semconv/v1.17.0/httpconv
 go.opentelemetry.io/otel/trace
 # go.uber.org/goleak v1.2.0
 ## explicit; go 1.18
-# golang.org/x/crypto v0.14.0
-## explicit; go 1.17
+# golang.org/x/crypto v0.15.0
+## explicit; go 1.18
 golang.org/x/crypto/argon2
-golang.org/x/crypto/bcrypt
 golang.org/x/crypto/blake2b
 golang.org/x/crypto/blowfish
 golang.org/x/crypto/cast5
@@ -930,22 +900,20 @@ golang.org/x/crypto/openpgp/elgamal
 golang.org/x/crypto/openpgp/errors
 golang.org/x/crypto/openpgp/packet
 golang.org/x/crypto/openpgp/s2k
-golang.org/x/crypto/pbkdf2
 golang.org/x/crypto/ripemd160
-golang.org/x/crypto/scrypt
 golang.org/x/crypto/sha3
 golang.org/x/crypto/ssh
 golang.org/x/crypto/ssh/agent
 golang.org/x/crypto/ssh/internal/bcrypt_pbkdf
 golang.org/x/crypto/ssh/knownhosts
-# golang.org/x/mod v0.13.0
+# golang.org/x/mod v0.14.0
 ## explicit; go 1.18
 golang.org/x/mod/internal/lazyregexp
 golang.org/x/mod/modfile
 golang.org/x/mod/module
 golang.org/x/mod/semver
-# golang.org/x/net v0.17.0
-## explicit; go 1.17
+# golang.org/x/net v0.18.0
+## explicit; go 1.18
 golang.org/x/net/context
 golang.org/x/net/html
 golang.org/x/net/html/atom
@@ -962,18 +930,18 @@ golang.org/x/net/trace
 ## explicit; go 1.17
 golang.org/x/sync/errgroup
 golang.org/x/sync/semaphore
-# golang.org/x/sys v0.13.0
-## explicit; go 1.17
+# golang.org/x/sys v0.14.0
+## explicit; go 1.18
 golang.org/x/sys/cpu
 golang.org/x/sys/execabs
 golang.org/x/sys/plan9
 golang.org/x/sys/unix
 golang.org/x/sys/windows
-# golang.org/x/term v0.13.0
-## explicit; go 1.17
+# golang.org/x/term v0.14.0
+## explicit; go 1.18
 golang.org/x/term
-# golang.org/x/text v0.13.0
-## explicit; go 1.17
+# golang.org/x/text v0.14.0
+## explicit; go 1.18
 golang.org/x/text/encoding
 golang.org/x/text/encoding/charmap
 golang.org/x/text/encoding/htmlindex
@@ -1017,13 +985,15 @@ golang.org/x/tools/internal/typesinternal
 ## explicit; go 1.17
 golang.org/x/xerrors
 golang.org/x/xerrors/internal
-# google.golang.org/genproto v0.0.0-20230410155749-daa745c078e1
+# google.golang.org/genproto v0.0.0-20230711160842-782d3b101e98
+## explicit; go 1.19
+google.golang.org/genproto/protobuf/field_mask
+# google.golang.org/genproto/googleapis/rpc v0.0.0-20230711160842-782d3b101e98
 ## explicit; go 1.19
 google.golang.org/genproto/googleapis/rpc/code
 google.golang.org/genproto/googleapis/rpc/status
-google.golang.org/genproto/protobuf/field_mask
-# google.golang.org/grpc v1.55.0
-## explicit; go 1.17
+# google.golang.org/grpc v1.58.3
+## explicit; go 1.19
 google.golang.org/grpc
 google.golang.org/grpc/attributes
 google.golang.org/grpc/backoff
@@ -1054,6 +1024,7 @@ google.golang.org/grpc/internal/grpclog
 google.golang.org/grpc/internal/grpcrand
 google.golang.org/grpc/internal/grpcsync
 google.golang.org/grpc/internal/grpcutil
+google.golang.org/grpc/internal/idle
 google.golang.org/grpc/internal/metadata
 google.golang.org/grpc/internal/pretty
 google.golang.org/grpc/internal/resolver
@@ -1073,7 +1044,7 @@ google.golang.org/grpc/serviceconfig
 google.golang.org/grpc/stats
 google.golang.org/grpc/status
 google.golang.org/grpc/tap
-# google.golang.org/protobuf v1.30.0
+# google.golang.org/protobuf v1.31.0
 ## explicit; go 1.11
 google.golang.org/protobuf/encoding/protojson
 google.golang.org/protobuf/encoding/prototext
