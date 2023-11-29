@@ -19,8 +19,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/anchore/syft/syft"
-	"github.com/anchore/syft/syft/formats/spdxjson"
+	"github.com/anchore/syft/syft/format"
+	"github.com/anchore/syft/syft/format/spdxjson"
 	intoto "github.com/in-toto/in-toto-golang/in_toto"
 	"github.com/pkg/errors"
 )
@@ -38,7 +38,12 @@ func (s Scanner) Scan() error {
 			return err
 		}
 
-		output, err := syft.Encode(result, spdxjson.Format())
+		enc, err := spdxjson.NewFormatEncoderWithConfig(spdxjson.DefaultEncoderConfig())
+		if err != nil {
+			return err
+		}
+
+		output, err := format.Encode(result, enc)
 		if err != nil {
 			return err
 		}
