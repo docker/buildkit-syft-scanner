@@ -26,6 +26,9 @@ import (
 	"github.com/docker/buildkit-syft-scanner/internal"
 	"github.com/docker/buildkit-syft-scanner/version"
 	"github.com/sirupsen/logrus"
+
+	// register sqlite driver for RPMDBs scan support with syft
+	_ "modernc.org/sqlite"
 )
 
 func main() {
