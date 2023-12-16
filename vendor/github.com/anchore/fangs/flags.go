@@ -41,7 +41,9 @@ func addFlags(log logger.Logger, flags FlagSet, o any) {
 			v := v.Field(i)
 
 			if isPtr(v.Type()) {
-				if v.IsNil() {
+				// check if this is a pointer to a struct, if so, we need to initialize it
+				kind := v.Type().Elem().Kind()
+				if v.IsNil() && kind == reflect.Struct {
 					newV := reflect.New(v.Type().Elem())
 					v.Set(newV)
 				}
