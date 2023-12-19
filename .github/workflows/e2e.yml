@@ -14,8 +14,8 @@ on:
   pull_request:
 
 env:
-  BUILDX_VERSION: v0.10.0
-  BUILDKIT_IMAGE: moby/buildkit:v0.11.2
+  BUILDX_VERSION: latest
+  BUILDKIT_IMAGE: moby/buildkit:latest
   IMAGE_LOCAL: localhost:5000/buildkit-syft-scanner:latest
 
 jobs:
