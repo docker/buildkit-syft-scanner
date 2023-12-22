@@ -50,7 +50,7 @@ func summarize(cfg Config, descriptions DescriptionProvider, s *section, value r
 
 	for i := 0; i < t.NumField(); i++ {
 		f := t.Field(i)
-		if !f.IsExported() {
+		if !includeField(f) {
 			continue
 		}
 
@@ -104,6 +104,7 @@ func summarize(cfg Config, descriptions DescriptionProvider, s *section, value r
 }
 
 // printVal prints a value in YAML format
+// nolint:gocognit
 func printVal(cfg Config, value reflect.Value, indent string) string {
 	buf := bytes.Buffer{}
 
@@ -134,7 +135,7 @@ func printVal(cfg Config, value reflect.Value, indent string) string {
 	case isStruct(t):
 		for i := 0; i < t.NumField(); i++ {
 			f := t.Field(i)
-			if !f.IsExported() {
+			if !includeField(f) {
 				continue
 			}
 
@@ -168,6 +169,9 @@ func printVal(cfg Config, value reflect.Value, indent string) string {
 		}
 
 	case v.CanInterface():
+		if v.Kind() == reflect.Ptr && v.IsNil() {
+			return ""
+		}
 		v := v.Interface()
 		switch v.(type) {
 		case string:
@@ -188,7 +192,15 @@ func base(v reflect.Value) (reflect.Value, reflect.Type) {
 	for isPtr(t) {
 		t = t.Elem()
 		if v.IsNil() {
-			v = reflect.New(t)
+			newV := reflect.New(t)
+			// If the field we're looking at is nil, and is a pointer to a struct,
+			// change it to point to an empty instance of the struct, so that we can
+			// continue recursing on the config structure. However, if it's a nil pointer
+			// to a primitive type, leave it as nil so that we can tell later in the summary
+			// that it wasn't set.
+			if newV.Kind() == reflect.Struct {
+				v = newV
+			}
 		} else {
 			v = v.Elem()
 		}
@@ -292,8 +304,10 @@ func stringifySection(cfg Config, out *bytes.Buffer, s *section, indent string) 
 		out.WriteString(":")
 
 		if s.value.IsValid() {
-			out.WriteString(" ")
 			val := printVal(cfg, s.value, indent+"  ")
+			if val != "" {
+				out.WriteString(" ")
+			}
 			out.WriteString(val)
 		}
 

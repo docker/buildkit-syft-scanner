@@ -18,6 +18,7 @@ In order to use this library, a consumer will need to:
 * Define configuration structs
     * By default, use `mapstructure` struct tags (can be changed in the `Config`)
     * For embedded structs to be inline, these must use the nonstandard `,squash` option
+    * For embedded structs, the embedded type must exported if it is embedded via a pointer
 * Define Cobra commands
 * Add flags to Cobra using the `*Var*` flag variants
 * Call `config.Load` during command invocation

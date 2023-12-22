@@ -69,7 +69,7 @@ func (d *directDescriber) GetDescription(v reflect.Value, _ reflect.StructField)
 
 func addFieldDescriptions(d FieldDescriptionSet, v reflect.Value) {
 	t := v.Type()
-	for isPtr(t) {
+	for isPtr(t) && v.CanInterface() {
 		o := v.Interface()
 		if p, ok := o.(FieldDescriber); ok && !isPromotedMethod(o, "DescribeFields") {
 			p.DescribeFields(d)
@@ -84,7 +84,7 @@ func addFieldDescriptions(d FieldDescriptionSet, v reflect.Value) {
 
 	for i := 0; i < v.NumField(); i++ {
 		f := t.Field(i)
-		if !f.IsExported() {
+		if !includeField(f) {
 			continue
 		}
 		v := v.Field(i)
