@@ -337,22 +337,6 @@ func (a *application) setupCommand(cmd *cobra.Command, flags *pflag.FlagSet, fn 
 	return cmd
 }
 
-func (a *application) summarizeConfig(cmd *cobra.Command) string {
-	cfg := a.setupConfig.FangsConfig
-
-	summary := "Application Configuration:\n\n"
-	summary += indent.String("  ", strings.TrimSuffix(fangs.SummarizeCommand(cfg, cmd, a.state.Config.FromCommands...), "\n"))
-	summary += "\n"
-	summary += "Config Search Locations:\n"
-	for _, f := range fangs.SummarizeLocations(cfg) {
-		if !strings.HasSuffix(f, ".yaml") {
-			continue
-		}
-		summary += "  - " + f + "\n"
-	}
-	return strings.TrimSpace(summary)
-}
-
 func async(cmd *cobra.Command, args []string, f func(cmd *cobra.Command, args []string) error) <-chan error {
 	errs := make(chan error)
 	go func() {

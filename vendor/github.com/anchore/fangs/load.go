@@ -89,6 +89,8 @@ func loadConfig(cfg Config, flags flagRefs, configurations ...any) error {
 // configureViper loads the default configuration values into the viper instance,
 // before the config values are read and parsed. the value _must_ be a pointer but
 // may be a pointer to a pointer
+//
+//nolint:gocognit
 func configureViper(cfg Config, vpr *viper.Viper, v reflect.Value, flags flagRefs, path []string) {
 	t := v.Type()
 	if !isPtr(t) {
@@ -128,7 +130,7 @@ func configureViper(cfg Config, vpr *viper.Viper, v reflect.Value, flags flagRef
 	// for each field in the configuration struct, see if the field implements the defaultValueLoader interface and invoke it if it does
 	for i := 0; i < t.NumField(); i++ {
 		f := t.Field(i)
-		if !f.IsExported() {
+		if !includeField(f) {
 			continue
 		}
 
@@ -152,6 +154,12 @@ func configureViper(cfg Config, vpr *viper.Viper, v reflect.Value, flags flagRef
 			path = append(path, f.Name)
 		}
 
+		if !v.IsValid() {
+			// v is an unitialized embedded struct pointer to an unexported type.
+			// This is considered private, and we won't be able to set any values on it.
+			// Skipping this to avoid a panic.
+			continue
+		}
 		v := v.Field(i)
 
 		t := f.Type
@@ -159,7 +167,11 @@ func configureViper(cfg Config, vpr *viper.Viper, v reflect.Value, flags flagRef
 			t = t.Elem()
 			if isStruct(t) {
 				newV := reflect.New(t)
-				v.Set(newV)
+				// v.CanSet can be false if we're trying to set a field on a struct
+				// embedded via pointer when the embedded struct is unexported
+				if v.CanSet() {
+					v.Set(newV)
+				}
 			}
 		}
 
@@ -196,13 +208,14 @@ func postLoad(v reflect.Value) error {
 			return nil
 		}
 
-		obj := v.Interface()
-		if p, ok := obj.(PostLoader); ok && !isPromotedMethod(obj, "PostLoad") {
-			if err := p.PostLoad(); err != nil {
-				return err
+		if v.CanInterface() {
+			obj := v.Interface()
+			if p, ok := obj.(PostLoader); ok && !isPromotedMethod(obj, "PostLoad") {
+				if err := p.PostLoad(); err != nil {
+					return err
+				}
 			}
 		}
-
 		t = t.Elem()
 		v = v.Elem()
 	}
@@ -225,7 +238,7 @@ func postLoadStruct(v reflect.Value) error {
 
 	for i := 0; i < v.NumField(); i++ {
 		f := t.Field(i)
-		if !f.IsExported() {
+		if !includeField(f) {
 			continue
 		}
 
@@ -382,4 +395,10 @@ func isNil(v reflect.Value) bool {
 func isNotFoundErr(err error) bool {
 	var notFound *viper.ConfigFileNotFoundError
 	return err != nil && errors.As(err, &notFound)
+}
+
+// includeField determines whether to include or skip a field when processing the application's nested configuration load.
+// fields that are processed include: public/exported fields, embedded structs (not pointer private/unexported embedding)
+func includeField(f reflect.StructField) bool {
+	return (f.Anonymous && !isPtr(f.Type)) || f.IsExported()
 }

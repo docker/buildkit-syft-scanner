@@ -15,11 +15,12 @@
 package internal
 
 import (
+	"context"
 	"fmt"
 	"path/filepath"
 
 	"github.com/anchore/syft/syft"
-	"github.com/anchore/syft/syft/pkg/cataloger"
+	"github.com/anchore/syft/syft/cataloging/pkgcataloging"
 	"github.com/anchore/syft/syft/sbom"
 	"github.com/anchore/syft/syft/source"
 	"github.com/docker/buildkit-syft-scanner/version"
@@ -44,34 +45,13 @@ func (t Target) Scan() (sbom.SBOM, error) {
 	if err != nil {
 		return sbom.SBOM{}, fmt.Errorf("failed to create source from %q: %w", t.Path, err)
 	}
-	result := sbom.SBOM{
-		Source: src.Describe(),
-		Descriptor: sbom.Descriptor{
-			Name:    "syft",
-			Version: version.SyftVersion,
-		},
-	}
 
-	// Enable all the image catalogers to mimic same cataloging behavior as syft running on an image
-	config := cataloger.DefaultConfig()
-	catalogers := cataloger.ImageCatalogers(config)
-	config.Catalogers = make([]string, len(catalogers))
-	for i, c := range catalogers {
-		config.Catalogers[i] = c.Name()
-	}
-
-	packageCatalog, relationships, theDistro, err := syft.CatalogPackages(src, config)
+	result, err := syft.CreateSBOM(context.Background(), src, syft.DefaultCreateSBOMConfig().WithCatalogerSelection(pkgcataloging.NewSelectionRequest().WithDefaults(pkgcataloging.ImageTag)))
 	if err != nil {
 		return sbom.SBOM{}, err
 	}
 
-	result.Artifacts.Packages = packageCatalog
-	result.Artifacts.LinuxDistribution = theDistro
-	result.Relationships = relationships
-
-	if err != nil {
-		return sbom.SBOM{}, err
-	}
-
-	return result, nil
+	result.Descriptor.Name = "syft"
+	result.Descriptor.Version = version.SyftVersion
+	return *result, nil
 }
