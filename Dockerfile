@@ -15,8 +15,8 @@
 # limitations under the License.
 
 ARG GO_VERSION="1.21"
-ARG ALPINE_VERSION="3.17"
-ARG XX_VERSION="1.1.2"
+ARG ALPINE_VERSION="3.19"
+ARG XX_VERSION="1.4.0"
 
 FROM --platform=$BUILDPLATFORM tonistiigi/xx:${XX_VERSION} AS xx
 
