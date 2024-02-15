@@ -123,5 +123,5 @@ func (c *SetupConfig) WithGlobalLoggingFlags() *SetupConfig {
 }
 
 func (c *SetupConfig) WithConfigInRootHelp() *SetupConfig {
-	return c.withPostConstructs(updateHelpUsageTemplate, showConfigInRootHelp)
+	return c
 }

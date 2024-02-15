@@ -5,7 +5,6 @@ import (
 	"errors"
 	"os"
 
-	"github.com/hashicorp/go-multierror"
 	"github.com/wagoodman/go-partybus"
 
 	"github.com/anchore/go-logger"
@@ -38,7 +37,7 @@ func eventloop(ctx context.Context, log logger.Logger, subscription *partybus.Su
 		break
 	}
 
-	var retErr error
+	var retErr []error
 	var forceTeardown bool
 
 	for {
@@ -54,7 +53,7 @@ func eventloop(ctx context.Context, log logger.Logger, subscription *partybus.Su
 			}
 			if err != nil {
 				// capture the error from the worker and unsubscribe to complete a graceful shutdown
-				retErr = multierror.Append(retErr, err)
+				retErr = append(retErr, err)
 				if subscription != nil {
 					_ = subscription.Unsubscribe()
 				}
@@ -102,7 +101,7 @@ func eventloop(ctx context.Context, log logger.Logger, subscription *partybus.Su
 				if errors.Is(err, partybus.ErrUnsubscribe) {
 					events = nil
 				} else {
-					retErr = multierror.Append(retErr, err)
+					retErr = append(retErr, err)
 					// TODO: should we unsubscribe? should we try to halt execution? or continue?
 				}
 			}
@@ -123,9 +122,9 @@ func eventloop(ctx context.Context, log logger.Logger, subscription *partybus.Su
 	}
 	if ux != nil {
 		if err := ux.Teardown(forceTeardown); err != nil {
-			retErr = multierror.Append(retErr, err)
+			retErr = append(retErr, err)
 		}
 	}
 
-	return retErr
+	return errors.Join(retErr...)
 }

@@ -177,7 +177,7 @@ func (s FileSource) FileResolver(_ Scope) (file.Resolver, error) {
 		exclusionFunctions = append([]fileresolver.PathIndexVisitor{
 
 			// note: we should exclude these kinds of paths first before considering any other user-provided exclusions
-			func(p string, info os.FileInfo, err error) error {
+			func(_, p string, _ os.FileInfo, _ error) error {
 				if p == absParentDir {
 					// this is the root directory... always include it
 					return nil
@@ -189,7 +189,7 @@ func (s FileSource) FileResolver(_ Scope) (file.Resolver, error) {
 					return fs.SkipDir
 				}
 
-				if path.Base(p) != path.Base(s.config.Path) {
+				if filepath.Base(p) != filepath.Base(s.config.Path) {
 					// we're in the root directory, but this is not the file we want to scan...
 					// we should selectively skip this file (not the directory we're in).
 					return fileresolver.ErrSkipPath

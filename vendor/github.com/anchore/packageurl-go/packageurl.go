@@ -66,8 +66,6 @@ var (
 	TypeDebian = "deb"
 	// TypeDocker is a pkg:docker purl.
 	TypeDocker = "docker"
-	// TypeDotnet is a pkg:dotnet purl.
-	TypeDotnet = "dotnet"
 	// TypeGem is a pkg:gem purl.
 	TypeGem = "gem"
 	// TypeGeneric is a pkg:generic purl.
@@ -80,6 +78,8 @@ var (
 	TypeHackage = "hackage"
 	// TypeHex is a pkg:hex purl.
 	TypeHex = "hex"
+	// TypeOTP is a pkg:otp purl.
+	TypeOTP = "otp"
 	// TypeMaven is a pkg:maven purl.
 	TypeMaven = "maven"
 	// TypeNPM is a pkg:npm purl.
@@ -188,6 +188,7 @@ func (p *PackageURL) ToString() string {
 		purl = purl + strings.Join(ns, "/") + "/"
 	}
 	// The name is always required and must be a percent-encoded string
+	// Use custom pathEscape instead of PathEscape, as it handles @ signs
 	purl = purl + pathEscape(p.Name)
 	// If a version is provided, add it after the at symbol
 	if p.Version != "" {
