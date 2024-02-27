@@ -114,7 +114,7 @@ github.com/anchore/go-version
 # github.com/anchore/packageurl-go v0.1.1-0.20240202171727-877e1747d426
 ## explicit; go 1.17
 github.com/anchore/packageurl-go
-# github.com/anchore/stereoscope v0.0.2-0.20240208195325-681f6715b0e3
+# github.com/anchore/stereoscope v0.0.2-0.20240216182029-6171ee21e1d5
 ## explicit; go 1.19
 github.com/anchore/stereoscope
 github.com/anchore/stereoscope/internal/bus
@@ -133,7 +133,7 @@ github.com/anchore/stereoscope/pkg/image/oci
 github.com/anchore/stereoscope/pkg/image/sif
 github.com/anchore/stereoscope/pkg/tree
 github.com/anchore/stereoscope/pkg/tree/node
-# github.com/anchore/syft v0.105.0
+# github.com/anchore/syft v0.105.1
 ## explicit; go 1.21.0
 github.com/anchore/syft/internal
 github.com/anchore/syft/internal/bus
@@ -1230,7 +1230,7 @@ modernc.org/mathutil
 # modernc.org/memory v1.7.2
 ## explicit; go 1.18
 modernc.org/memory
-# modernc.org/sqlite v1.29.1
+# modernc.org/sqlite v1.29.2
 ## explicit; go 1.20
 modernc.org/sqlite
 modernc.org/sqlite/lib

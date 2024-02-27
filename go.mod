@@ -4,12 +4,12 @@ go 1.21.0
 
 require (
 	github.com/anchore/go-logger v0.0.0-20230725134548-c21dafa1ec5a
-	github.com/anchore/stereoscope v0.0.2-0.20240208195325-681f6715b0e3
-	github.com/anchore/syft v0.105.0
+	github.com/anchore/stereoscope v0.0.2-0.20240216182029-6171ee21e1d5
+	github.com/anchore/syft v0.105.1
 	github.com/in-toto/in-toto-golang v0.9.0
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.9.3
-	modernc.org/sqlite v1.29.1
+	modernc.org/sqlite v1.29.2
 )
 
 require (
