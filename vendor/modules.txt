@@ -96,6 +96,9 @@ github.com/anchore/clio
 # github.com/anchore/fangs v0.0.0-20231201140849-5075d28d6d8b
 ## explicit; go 1.19
 github.com/anchore/fangs
+# github.com/anchore/go-collections v0.0.0-20240216171411-9321230ce537
+## explicit; go 1.21.0
+github.com/anchore/go-collections
 # github.com/anchore/go-logger v0.0.0-20230725134548-c21dafa1ec5a
 ## explicit; go 1.17
 github.com/anchore/go-logger
@@ -114,8 +117,8 @@ github.com/anchore/go-version
 # github.com/anchore/packageurl-go v0.1.1-0.20240202171727-877e1747d426
 ## explicit; go 1.17
 github.com/anchore/packageurl-go
-# github.com/anchore/stereoscope v0.0.2-0.20240208195325-681f6715b0e3
-## explicit; go 1.19
+# github.com/anchore/stereoscope v0.0.2-0.20240221144950-cf0e754f5b56
+## explicit; go 1.21.0
 github.com/anchore/stereoscope
 github.com/anchore/stereoscope/internal/bus
 github.com/anchore/stereoscope/internal/containerd
@@ -130,10 +133,11 @@ github.com/anchore/stereoscope/pkg/image
 github.com/anchore/stereoscope/pkg/image/containerd
 github.com/anchore/stereoscope/pkg/image/docker
 github.com/anchore/stereoscope/pkg/image/oci
+github.com/anchore/stereoscope/pkg/image/podman
 github.com/anchore/stereoscope/pkg/image/sif
 github.com/anchore/stereoscope/pkg/tree
 github.com/anchore/stereoscope/pkg/tree/node
-# github.com/anchore/syft v0.105.0
+# github.com/anchore/syft v1.0.0
 ## explicit; go 1.21.0
 github.com/anchore/syft/internal
 github.com/anchore/syft/internal/bus
@@ -220,6 +224,11 @@ github.com/anchore/syft/syft/pkg/cataloger/swift
 github.com/anchore/syft/syft/pkg/cataloger/wordpress
 github.com/anchore/syft/syft/sbom
 github.com/anchore/syft/syft/source
+github.com/anchore/syft/syft/source/directorysource
+github.com/anchore/syft/syft/source/filesource
+github.com/anchore/syft/syft/source/internal
+github.com/anchore/syft/syft/source/sourceproviders
+github.com/anchore/syft/syft/source/stereoscopesource
 # github.com/andybalholm/brotli v1.0.4
 ## explicit; go 1.12
 github.com/andybalholm/brotli
@@ -229,12 +238,18 @@ github.com/aquasecurity/go-pep440-version
 # github.com/aquasecurity/go-version v0.0.0-20210121072130-637058cfe492
 ## explicit; go 1.15
 github.com/aquasecurity/go-version/pkg/part
+# github.com/aymanbagabas/go-osc52/v2 v2.0.1
+## explicit; go 1.16
+github.com/aymanbagabas/go-osc52/v2
 # github.com/becheran/wildmatch-go v1.0.0
 ## explicit; go 1.15
 github.com/becheran/wildmatch-go
 # github.com/bmatcuk/doublestar/v4 v4.6.1
 ## explicit; go 1.16
 github.com/bmatcuk/doublestar/v4
+# github.com/charmbracelet/lipgloss v0.9.1
+## explicit; go 1.17
+github.com/charmbracelet/lipgloss
 # github.com/cloudflare/circl v1.3.7
 ## explicit; go 1.19
 github.com/cloudflare/circl/dh/x25519
@@ -678,6 +693,9 @@ github.com/knqyf263/go-rpmdb/pkg/bdb
 github.com/knqyf263/go-rpmdb/pkg/db
 github.com/knqyf263/go-rpmdb/pkg/ndb
 github.com/knqyf263/go-rpmdb/pkg/sqlite3
+# github.com/lucasb-eyer/go-colorful v1.2.0
+## explicit; go 1.12
+github.com/lucasb-eyer/go-colorful
 # github.com/magiconair/properties v1.8.7
 ## explicit; go 1.19
 github.com/magiconair/properties
@@ -717,7 +735,7 @@ github.com/mitchellh/reflectwalk
 # github.com/moby/locker v1.0.1
 ## explicit; go 1.13
 github.com/moby/locker
-# github.com/moby/sys/mountinfo v0.6.2
+# github.com/moby/sys/mountinfo v0.7.1
 ## explicit; go 1.16
 github.com/moby/sys/mountinfo
 # github.com/moby/sys/sequential v0.5.0
@@ -726,6 +744,15 @@ github.com/moby/sys/sequential
 # github.com/moby/sys/signal v0.7.0
 ## explicit; go 1.16
 github.com/moby/sys/signal
+# github.com/muesli/reflow v0.3.0
+## explicit; go 1.13
+github.com/muesli/reflow/ansi
+github.com/muesli/reflow/truncate
+github.com/muesli/reflow/wordwrap
+github.com/muesli/reflow/wrap
+# github.com/muesli/termenv v0.15.2
+## explicit; go 1.17
+github.com/muesli/termenv
 # github.com/ncruces/go-strftime v0.1.9
 ## explicit; go 1.17
 github.com/ncruces/go-strftime
@@ -1230,7 +1257,7 @@ modernc.org/mathutil
 # modernc.org/memory v1.7.2
 ## explicit; go 1.18
 modernc.org/memory
-# modernc.org/sqlite v1.29.1
+# modernc.org/sqlite v1.29.2
 ## explicit; go 1.20
 modernc.org/sqlite
 modernc.org/sqlite/lib
