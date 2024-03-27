@@ -3,8 +3,9 @@ package rpmdb
 import (
 	"bytes"
 	"encoding/binary"
+	"encoding/hex"
 	"fmt"
-	"path/filepath"
+	"path"
 	"strings"
 	"time"
 
@@ -24,7 +25,9 @@ type PackageInfo struct {
 	Modularitylabel string
 	Summary         string
 	PGP             string
+	SigMD5          string
 	DigestAlgorithm DigestAlgorithm
+	InstallTime     int
 	BaseNames       []string
 	DirIndexes      []int32
 	DirNames        []string
@@ -220,6 +223,19 @@ func getNEVRA(indexEntries []indexEntry) (*PackageInfo, error) {
 			}
 			// since this is an international string, getting the first null terminated string
 			pkgInfo.Summary = string(bytes.Split(ie.Data, []byte{0})[0])
+		case RPMTAG_INSTALLTIME:
+			if ie.Info.Type != RPM_INT32_TYPE {
+				return nil, xerrors.New("invalid tag installtime")
+			}
+			installTime, err := parseInt32(ie.Data)
+			if err != nil {
+				return nil, xerrors.Errorf("failed to parse installtime: %w", err)
+			}
+			pkgInfo.InstallTime = installTime
+		case RPMTAG_SIGMD5:
+			// It is just string that we need to encode to hex
+			digest := ie.Data
+			pkgInfo.SigMD5 = hex.EncodeToString(digest)
 		case RPMTAG_PGP:
 			type pgpSig struct {
 				_          [3]byte
@@ -384,8 +400,12 @@ func (p *PackageInfo) InstalledFileNames() ([]string, error) {
 
 	var filePaths []string
 	for i, baseName := range p.BaseNames {
-		dir := p.DirNames[p.DirIndexes[i]]
-		filePaths = append(filePaths, filepath.Join(dir, baseName))
+		idx := p.DirIndexes[i]
+		if len(p.DirNames) <= int(idx) {
+			return nil, xerrors.Errorf("invalid rpm %s", p.Name)
+		}
+		dir := p.DirNames[idx]
+		filePaths = append(filePaths, path.Join(dir, baseName)) // should be slash-separated
 	}
 	return filePaths, nil
 }

@@ -39,6 +39,14 @@
 //
 // https://modern-c.appspot.com/-/builder/?importpath=modernc.org%2fsqlite
 //
+// # Fragile modernc.org/libc dependency
+//
+// When you import this package you should use in your go.mod file the exact
+// same version of modernc.org/libc as seen in the go.mod file of this
+// repository.
+//
+// See the discussion at https://gitlab.com/cznic/sqlite/-/issues/177 for more details.
+//
 // # Changelog
 //
 // 2024-02-13: v1.29.0
