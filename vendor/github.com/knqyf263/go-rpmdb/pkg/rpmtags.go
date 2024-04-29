@@ -10,10 +10,12 @@ const (
 
 	// rpmTag_e
 	// ref. https://github.com/rpm-software-management/rpm/blob/rpm-4.14.3-release/lib/rpmtag.h#L34
+	RPMTAG_SIGMD5         = 261  /* x */
 	RPMTAG_NAME           = 1000 /* s */
 	RPMTAG_VERSION        = 1001 /* s */
 	RPMTAG_RELEASE        = 1002 /* s */
 	RPMTAG_EPOCH          = 1003 /* i */
+	RPMTAG_INSTALLTIME    = 1008 /* i */
 	RPMTAG_SIZE           = 1009 /* i */
 	RPMTAG_VENDOR         = 1011 /* s */
 	RPMTAG_LICENSE        = 1014 /* s */
