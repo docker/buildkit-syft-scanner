@@ -181,7 +181,7 @@ func toRootPackage(s source.Description) *spdx.Package {
 	purpose := ""
 	var checksums []spdx.Checksum
 	switch m := s.Metadata.(type) {
-	case source.StereoscopeImageSourceMetadata:
+	case source.ImageMetadata:
 		prefix = prefixImage
 		purpose = spdxPrimaryPurposeContainer
 
@@ -211,11 +211,11 @@ func toRootPackage(s source.Description) *spdx.Package {
 			}
 		}
 
-	case source.DirectorySourceMetadata:
+	case source.DirectoryMetadata:
 		prefix = prefixDirectory
 		purpose = spdxPrimaryPurposeFile
 
-	case source.FileSourceMetadata:
+	case source.FileMetadata:
 		prefix = prefixFile
 		purpose = spdxPrimaryPurposeFile
 
@@ -245,6 +245,8 @@ func toRootPackage(s source.Description) *spdx.Package {
 			Supplier: helpers.NOASSERTION,
 		},
 		PackageDownloadLocation: helpers.NOASSERTION,
+		PackageLicenseConcluded: helpers.NOASSERTION,
+		PackageLicenseDeclared:  helpers.NOASSERTION,
 	}
 
 	if purl != nil {
@@ -517,9 +519,7 @@ func toPackageOriginator(p pkg.Package) *spdx.Originator {
 }
 
 func toPackageSupplier(p pkg.Package) *spdx.Supplier {
-	// this uses the Originator function for now until
-	// a better distinction can be made for supplier
-	kind, supplier := helpers.Originator(p)
+	kind, supplier := helpers.Supplier(p)
 	if kind == "" || supplier == "" {
 		return &spdx.Supplier{
 			Supplier: helpers.NOASSERTION,
@@ -624,6 +624,9 @@ func toFiles(s sbom.SBOM) (results []*spdx.File) {
 			Checksums:        toFileChecksums(digests),
 			FileName:         coordinates.RealPath,
 			FileTypes:        toFileTypes(metadata),
+			LicenseInfoInFiles: []string{ // required in SPDX 2.2
+				helpers.NOASSERTION,
+			},
 		})
 	}
 
