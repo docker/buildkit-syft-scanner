@@ -19,25 +19,34 @@
 //
 //	OS      Arch    SQLite version
 //	------------------------------
-//	darwin	amd64   3.45.1
-//	darwin	arm64   3.45.1
-//	freebsd	amd64   3.45.1
-//	freebsd	arm64   3.45.1
-//	linux	386     3.45.1
-//	linux	amd64   3.45.1
-//	linux	arm     3.45.1
-//	linux	arm64   3.45.1
-//	linux	ppc64le 3.45.1
-//	linux	riscv64 3.45.1
-//	linux	s390x   3.45.1
-//	windows	amd64   3.45.1
-//	windows	arm64   3.45.1
+//	darwin	amd64   3.45.3
+//	darwin	arm64   3.45.3
+//	freebsd	amd64   3.45.3
+//	freebsd	arm64   3.45.3
+//	linux	386     3.45.3
+//	linux	amd64   3.45.3
+//	linux	arm     3.45.3
+//	linux	arm64   3.45.3
+//	linux	loong64 3.45.3
+//	linux	ppc64le 3.45.3
+//	linux	riscv64 3.45.3
+//	linux	s390x   3.45.3
+//	windows	amd64   3.45.3
+//	windows	arm64   3.45.3
 //
 // # Builders
 //
 // Builder results available at:
 //
 // https://modern-c.appspot.com/-/builder/?importpath=modernc.org%2fsqlite
+//
+// # Fragile modernc.org/libc dependency
+//
+// When you import this package you should use in your go.mod file the exact
+// same version of modernc.org/libc as seen in the go.mod file of this
+// repository.
+//
+// See the discussion at https://gitlab.com/cznic/sqlite/-/issues/177 for more details.
 //
 // # Changelog
 //
