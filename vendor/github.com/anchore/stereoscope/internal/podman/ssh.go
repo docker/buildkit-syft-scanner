@@ -3,6 +3,7 @@ package podman
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -13,7 +14,6 @@ import (
 	"time"
 
 	"github.com/docker/docker/pkg/homedir"
-	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/knownhosts"
 
@@ -74,7 +74,7 @@ func getSigners(keyPath, passphrase string) (signers []ssh.Signer, err error) {
 
 	s, err := getSignerFromPrivateKey(key, []byte(passphrase))
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to parse identity %q", keyPath)
+		return nil, fmt.Errorf("failed to parse identity %q: %w", keyPath, err)
 	}
 
 	signers = append(signers, s)
@@ -169,7 +169,7 @@ func httpClientOverSSH(params *sshClientConfig) (*http.Client, error) {
 
 	return &http.Client{
 		Transport: &http.Transport{
-			DialContext: func(ctx context.Context, _, _ string) (net.Conn, error) {
+			DialContext: func(_ context.Context, _, _ string) (net.Conn, error) {
 				return bastion.Dial("unix", params.path)
 			},
 		}}, nil
