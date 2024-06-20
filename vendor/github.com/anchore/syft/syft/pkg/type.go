@@ -34,9 +34,11 @@ const (
 	NixPkg                  Type = "nix"
 	NpmPkg                  Type = "npm"
 	PhpComposerPkg          Type = "php-composer"
+	PhpPeclPkg              Type = "php-pecl"
 	PortagePkg              Type = "portage"
 	PythonPkg               Type = "python"
 	Rpkg                    Type = "R-package"
+	LuaRocksPkg             Type = "lua-rocks"
 	RpmPkg                  Type = "rpm"
 	RustPkg                 Type = "rust-crate"
 	SwiftPkg                Type = "swift"
@@ -68,9 +70,11 @@ var AllPkgs = []Type{
 	NixPkg,
 	NpmPkg,
 	PhpComposerPkg,
+	PhpPeclPkg,
 	PortagePkg,
 	PythonPkg,
 	Rpkg,
+	LuaRocksPkg,
 	RpmPkg,
 	RustPkg,
 	SwiftPkg,
@@ -117,6 +121,8 @@ func (t Type) PackageURLType() string {
 		return packageurl.TypeGeneric
 	case PhpComposerPkg:
 		return packageurl.TypeComposer
+	case PhpPeclPkg:
+		return "pecl"
 	case PythonPkg:
 		return packageurl.TypePyPi
 	case PortagePkg:
@@ -127,6 +133,8 @@ func (t Type) PackageURLType() string {
 		return packageurl.TypeNPM
 	case Rpkg:
 		return packageurl.TypeCran
+	case LuaRocksPkg:
+		return packageurl.TypeLuaRocks
 	case RpmPkg:
 		return packageurl.TypeRPM
 	case RustPkg:
@@ -161,6 +169,8 @@ func TypeByName(name string) Type {
 		return DebPkg
 	case packageurl.TypeRPM:
 		return RpmPkg
+	case packageurl.TypeLuaRocks:
+		return LuaRocksPkg
 	case "alpm":
 		return AlpmPkg
 	case packageurl.TypeAlpine, "alpine":
@@ -169,6 +179,8 @@ func TypeByName(name string) Type {
 		return JavaPkg
 	case packageurl.TypeComposer:
 		return PhpComposerPkg
+	case "pecl":
+		return PhpPeclPkg
 	case packageurl.TypeGolang:
 		return GoModulePkg
 	case packageurl.TypeNPM:

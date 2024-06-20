@@ -11,6 +11,7 @@ import (
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/dustin/go-humanize"
 
+	"github.com/anchore/syft/internal"
 	"github.com/anchore/syft/internal/bus"
 	"github.com/anchore/syft/internal/log"
 	"github.com/anchore/syft/internal/mimetype"
@@ -60,24 +61,8 @@ func (i *Cataloger) Catalog(resolver file.Resolver) (map[file.Coordinates]file.E
 	for _, loc := range locs {
 		prog.AtomicStage.Set(loc.Path())
 
-		reader, err := resolver.FileContentsByLocation(loc)
-		if err != nil {
-			// TODO: known-unknowns
-			log.WithFields("error", err).Warnf("unable to get file contents for %q", loc.RealPath)
-			continue
-		}
+		exec := processExecutableLocation(loc, resolver)
 
-		uReader, err := unionreader.GetUnionReader(reader)
-		if err != nil {
-			// TODO: known-unknowns
-			log.WithFields("error", err).Warnf("unable to get union reader for %q", loc.RealPath)
-			continue
-		}
-
-		exec, err := processExecutable(loc, uReader)
-		if err != nil {
-			log.WithFields("error", err).Warnf("unable to process executable %q", loc.RealPath)
-		}
 		if exec != nil {
 			prog.Increment()
 			results[loc.Coordinates] = *exec
@@ -90,6 +75,29 @@ func (i *Cataloger) Catalog(resolver file.Resolver) (map[file.Coordinates]file.E
 	prog.SetCompleted()
 
 	return results, nil
+}
+
+func processExecutableLocation(loc file.Location, resolver file.Resolver) *file.Executable {
+	reader, err := resolver.FileContentsByLocation(loc)
+	if err != nil {
+		// TODO: known-unknowns
+		log.WithFields("error", err).Warnf("unable to get file contents for %q", loc.RealPath)
+		return nil
+	}
+	defer internal.CloseAndLogError(reader, loc.RealPath)
+
+	uReader, err := unionreader.GetUnionReader(reader)
+	if err != nil {
+		// TODO: known-unknowns
+		log.WithFields("error", err).Warnf("unable to get union reader for %q", loc.RealPath)
+		return nil
+	}
+
+	exec, err := processExecutable(loc, uReader)
+	if err != nil {
+		log.WithFields("error", err).Warnf("unable to process executable %q", loc.RealPath)
+	}
+	return exec
 }
 
 func catalogingProgress(locations int64) *monitor.CatalogerTaskProgress {
@@ -155,13 +163,25 @@ func processExecutable(loc file.Location, reader unionreader.UnionReader) (*file
 
 	data.Format = format
 
-	securityFeatures, err := findSecurityFeatures(format, reader)
-	if err != nil {
-		log.WithFields("error", err).Tracef("unable to determine security features for %q", loc.RealPath)
-		return nil, nil
+	switch format {
+	case file.ELF:
+		if err := findELFFeatures(&data, reader); err != nil {
+			log.WithFields("error", err).Tracef("unable to determine ELF features for %q", loc.RealPath)
+		}
+	case file.PE:
+		if err := findPEFeatures(&data, reader); err != nil {
+			log.WithFields("error", err).Tracef("unable to determine PE features for %q", loc.RealPath)
+		}
+	case file.MachO:
+		if err := findMachoFeatures(&data, reader); err != nil {
+			log.WithFields("error", err).Tracef("unable to determine Macho features for %q", loc.RealPath)
+		}
 	}
 
-	data.SecurityFeatures = securityFeatures
+	// always allocate collections for presentation
+	if data.ImportedLibraries == nil {
+		data.ImportedLibraries = []string{}
+	}
 
 	return &data, nil
 }
@@ -229,19 +249,4 @@ func isPE(by []byte) bool {
 
 func isELF(by []byte) bool {
 	return bytes.HasPrefix(by, []byte(elf.ELFMAG))
-}
-
-func findSecurityFeatures(format file.ExecutableFormat, reader unionreader.UnionReader) (*file.ELFSecurityFeatures, error) {
-	// TODO: add support for PE and MachO
-	switch format { //nolint: gocritic
-	case file.ELF:
-		return findELFSecurityFeatures(reader) //nolint: gocritic
-	case file.PE:
-		// return findPESecurityFeatures(reader)
-		return nil, nil
-	case file.MachO:
-		// return findMachOSecurityFeatures(reader)
-		return nil, nil
-	}
-	return nil, fmt.Errorf("unsupported executable format: %q", format)
 }
