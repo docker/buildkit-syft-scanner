@@ -58,7 +58,7 @@ jobs:
       -
         uses: actions/setup-go@v5
         with:
-          go-version: '1.21'
+          go-version: '1.23'
       -
         name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -83,7 +83,7 @@ jobs:
           tree ./examples/${{ matrix.example }}/build
       -
         name: Print SBOM
-        if: matrix.example != 'scratch'
+        if: matrix.example != 'scratch' && matrix.example != 'sbom' && matrix.example != 'npm-lock'
         run: |
           jq . ./examples/${{ matrix.example }}/build/sbom-base.spdx.json
       -
