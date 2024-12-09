@@ -16,6 +16,12 @@
 
 FROM centos:7 AS base
 ARG BUILDKIT_SBOM_SCAN_STAGE=true
+
+# fix name of Centos repos as mirror.centos.org no longer exists
+RUN sed -i s/mirror.centos.org/vault.centos.org/g /etc/yum.repos.d/CentOS-*.repo
+RUN sed -i s/^#.*baseurl=http/baseurl=http/g /etc/yum.repos.d/CentOS-*.repo
+RUN sed -i s/^mirrorlist=http/#mirrorlist=http/g /etc/yum.repos.d/CentOS-*.repo
+
 RUN yum install -y findutils
 COPY <<EOF /empty
 EOF
