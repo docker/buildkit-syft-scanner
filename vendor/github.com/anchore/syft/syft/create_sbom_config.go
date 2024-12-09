@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"runtime/debug"
 	"strings"
 
 	"github.com/anchore/syft/internal/task"
@@ -18,8 +19,10 @@ import (
 // CreateSBOMConfig specifies all parameters needed for creating an SBOM.
 type CreateSBOMConfig struct {
 	// required configuration input to specify how cataloging should be performed
+	Compliance         cataloging.ComplianceConfig
 	Search             cataloging.SearchConfig
 	Relationships      cataloging.RelationshipsConfig
+	Unknowns           cataloging.UnknownsConfig
 	DataGeneration     cataloging.DataGenerationConfig
 	Packages           pkgcataloging.Config
 	Files              filecataloging.Config
@@ -37,6 +40,7 @@ type CreateSBOMConfig struct {
 
 func DefaultCreateSBOMConfig() *CreateSBOMConfig {
 	return &CreateSBOMConfig{
+		Compliance:           cataloging.DefaultComplianceConfig(),
 		Search:               cataloging.DefaultSearchConfig(),
 		Relationships:        cataloging.DefaultRelationshipsConfig(),
 		DataGeneration:       cataloging.DefaultDataGenerationConfig(),
@@ -44,7 +48,32 @@ func DefaultCreateSBOMConfig() *CreateSBOMConfig {
 		Files:                filecataloging.DefaultConfig(),
 		Parallelism:          1,
 		packageTaskFactories: task.DefaultPackageTaskFactories(),
+
+		// library consumers are free to override the tool values to fit their needs, however, we have some sane defaults
+		// to ensure that SBOMs generated don't have missing tool metadata.
+		ToolName:    "syft",
+		ToolVersion: syftVersion(),
 	}
+}
+
+func syftVersion() string {
+	// extract the syft version from the go module info from the current binary that is running. This is useful for
+	// library consumers to at least encode the version of syft that was used to generate the SBOM. Note: we don't
+	// use the version info from main because it's baked in with ldflags, which we don't control for library consumers.
+	// This approach won't work in all cases though, such as when the binary is stripped of the buildinfo section.
+
+	buildInfo, ok := debug.ReadBuildInfo()
+	if !ok {
+		return ""
+	}
+
+	for _, d := range buildInfo.Deps {
+		if d.Path == "github.com/anchore/syft" && d.Version != "(devel)" {
+			return d.Version
+		}
+	}
+
+	return ""
 }
 
 // WithTool allows for setting the specific name, version, and any additional configuration that is not captured
@@ -67,6 +96,12 @@ func (c *CreateSBOMConfig) WithParallelism(p int) *CreateSBOMConfig {
 	return c
 }
 
+// WithComplianceConfig allows for setting the specific compliance configuration for cataloging.
+func (c *CreateSBOMConfig) WithComplianceConfig(cfg cataloging.ComplianceConfig) *CreateSBOMConfig {
+	c.Compliance = cfg
+	return c
+}
+
 // WithSearchConfig allows for setting the specific search configuration for cataloging.
 func (c *CreateSBOMConfig) WithSearchConfig(cfg cataloging.SearchConfig) *CreateSBOMConfig {
 	c.Search = cfg
@@ -76,6 +111,12 @@ func (c *CreateSBOMConfig) WithSearchConfig(cfg cataloging.SearchConfig) *Create
 // WithRelationshipsConfig allows for defining the specific relationships that should be captured during cataloging.
 func (c *CreateSBOMConfig) WithRelationshipsConfig(cfg cataloging.RelationshipsConfig) *CreateSBOMConfig {
 	c.Relationships = cfg
+	return c
+}
+
+// WithUnknownsConfig allows for defining the specific behavior dealing with unknowns
+func (c *CreateSBOMConfig) WithUnknownsConfig(cfg cataloging.UnknownsConfig) *CreateSBOMConfig {
+	c.Unknowns = cfg
 	return c
 }
 
@@ -139,6 +180,7 @@ func (c *CreateSBOMConfig) makeTaskGroups(src source.Description) ([][]task.Task
 	// generate package and file tasks based on the configuration
 	environmentTasks := c.environmentTasks()
 	relationshipsTasks := c.relationshipTasks(src)
+	unknownTasks := c.unknownsTasks()
 	fileTasks := c.fileTasks()
 	pkgTasks, selectionEvidence, err := c.packageTasks(src)
 	if err != nil {
@@ -156,6 +198,11 @@ func (c *CreateSBOMConfig) makeTaskGroups(src source.Description) ([][]task.Task
 	// all relationship work must be done after all nodes (files and packages) have been cataloged
 	if len(relationshipsTasks) > 0 {
 		taskGroups = append(taskGroups, relationshipsTasks)
+	}
+
+	// all unknowns tasks should happen after all scanning is complete
+	if len(unknownTasks) > 0 {
+		taskGroups = append(taskGroups, unknownTasks)
 	}
 
 	// identifying the environment (i.e. the linux release) must be done first as this is required for package cataloging
@@ -199,6 +246,7 @@ func (c *CreateSBOMConfig) packageTasks(src source.Description) ([]task.Task, *t
 		RelationshipsConfig:  c.Relationships,
 		DataGenerationConfig: c.DataGeneration,
 		PackagesConfig:       c.Packages,
+		ComplianceConfig:     c.Compliance,
 	}
 
 	persistentTasks, selectableTasks, err := c.allPackageTasks(cfg)
@@ -303,6 +351,18 @@ func (c *CreateSBOMConfig) environmentTasks() []task.Task {
 	return tsks
 }
 
+// unknownsTasks returns a set of tasks that perform any necessary post-processing
+// to identify SBOM elements as unknowns
+func (c *CreateSBOMConfig) unknownsTasks() []task.Task {
+	var tasks []task.Task
+
+	if t := task.NewUnknownsLabelerTask(c.Unknowns); t != nil {
+		tasks = append(tasks, t)
+	}
+
+	return tasks
+}
+
 func (c *CreateSBOMConfig) validate() error {
 	if c.Relationships.ExcludeBinaryPackagesWithFileOwnershipOverlap {
 		if !c.Relationships.PackageFileOwnershipOverlap {
@@ -319,9 +379,9 @@ func (c *CreateSBOMConfig) Create(ctx context.Context, src source.Source) (*sbom
 
 func findDefaultTag(src source.Description) (string, error) {
 	switch m := src.Metadata.(type) {
-	case source.StereoscopeImageSourceMetadata:
+	case source.ImageMetadata:
 		return pkgcataloging.ImageTag, nil
-	case source.FileSourceMetadata, source.DirectorySourceMetadata:
+	case source.FileMetadata, source.DirectoryMetadata:
 		return pkgcataloging.DirectoryTag, nil
 	default:
 		return "", fmt.Errorf("unable to determine default cataloger tag for source type=%T", m)

@@ -36,7 +36,7 @@ func VersionCommand(id Identification, additions ...versionAddition) *cobra.Comm
 		Short: "show version information",
 		Args:  cobra.NoArgs,
 		// note: we intentionally do not execute through the application infrastructure (no app config is required for this command)
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			info := runtimeInfo{
 				Identification: id,
 				GoVersion:      runtime.Version(),

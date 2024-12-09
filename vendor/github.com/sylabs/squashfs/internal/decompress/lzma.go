@@ -1,6 +1,7 @@
 package decompress
 
 import (
+	"bytes"
 	"io"
 
 	"github.com/ulikunitz/xz/lzma"
@@ -8,11 +9,10 @@ import (
 
 type Lzma struct{}
 
-func (l Lzma) Reader(r io.Reader) (io.ReadCloser, error) {
-	rdr, err := lzma.NewReader(r)
-	return io.NopCloser(rdr), err
+func (l Lzma) Decompress(data []byte) ([]byte, error) {
+	rdr, err := lzma.NewReader(bytes.NewReader(data))
+	if err != nil {
+		return nil, err
+	}
+	return io.ReadAll(rdr)
 }
-
-func (l Lzma) Resetable() bool { return false }
-
-func (l Lzma) Reset(old, src io.Reader) error { return ErrNotResetable }

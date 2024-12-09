@@ -39,12 +39,23 @@ func ToSyftModel(bom *cyclonedx.BOM) (*sbom.SBOM, error) {
 }
 
 func collectBomPackages(bom *cyclonedx.BOM, s *sbom.SBOM, idMap map[string]interface{}) error {
-	if bom.Components == nil {
+	componentsPresent := false
+	if bom.Components != nil {
+		for i := range *bom.Components {
+			collectPackages(&(*bom.Components)[i], s, idMap)
+		}
+		componentsPresent = true
+	}
+
+	if bom.Metadata != nil && bom.Metadata.Component != nil {
+		collectPackages(bom.Metadata.Component, s, idMap)
+		componentsPresent = true
+	}
+
+	if !componentsPresent {
 		return fmt.Errorf("no components are defined in the CycloneDX BOM")
 	}
-	for i := range *bom.Components {
-		collectPackages(&(*bom.Components)[i], s, idMap)
-	}
+
 	return nil
 }
 
@@ -222,7 +233,7 @@ func extractComponents(meta *cyclonedx.Metadata) source.Description {
 			ID: "",
 			// TODO: can we decode alias name-version somehow? (it isn't be encoded in the first place yet)
 
-			Metadata: source.StereoscopeImageSourceMetadata{
+			Metadata: source.ImageMetadata{
 				UserInput:      c.Name,
 				ID:             c.BOMRef,
 				ManifestDigest: c.Version,
@@ -235,7 +246,7 @@ func extractComponents(meta *cyclonedx.Metadata) source.Description {
 		// TODO: this is lossy... we can't know if this is a file or a directory
 		return source.Description{
 			ID:       "",
-			Metadata: source.FileSourceMetadata{Path: c.Name},
+			Metadata: source.FileMetadata{Path: c.Name},
 		}
 	}
 	return source.Description{}

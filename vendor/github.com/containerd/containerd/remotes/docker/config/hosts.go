@@ -32,10 +32,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/containerd/containerd/errdefs"
-	"github.com/containerd/containerd/log"
-	"github.com/containerd/containerd/remotes/docker"
+	"github.com/containerd/log"
 	"github.com/pelletier/go-toml"
+
+	"github.com/containerd/containerd/errdefs"
+	"github.com/containerd/containerd/remotes/docker"
 )
 
 // UpdateClientFunc is a function that lets you to amend http Client behavior used by registry clients.
@@ -247,16 +248,16 @@ func ConfigureHosts(ctx context.Context, options HostOptions) docker.RegistryHos
 
 			// When TLS has been configured for the operation or host and
 			// the protocol from the port number is ambiguous, use the
-			// docker.HTTPFallback roundtripper to catch TLS errors and re-attempt the
+			// docker.NewHTTPFallback roundtripper to catch TLS errors and re-attempt the
 			// request as http. This allows preference for https when configured but
 			// also catches TLS errors early enough in the request to avoid sending
 			// the request twice or consuming the request body.
 			if host.scheme == "http" && explicitTLS {
 				_, port, _ := net.SplitHostPort(host.host)
-				if port != "" && port != "80" {
+				if port != "80" {
 					log.G(ctx).WithField("host", host.host).Info("host will try HTTPS first since it is configured for HTTP with a TLS configuration, consider changing host to HTTPS or removing unused TLS configuration")
 					host.scheme = "https"
-					rhosts[i].Client.Transport = docker.HTTPFallback{RoundTripper: rhosts[i].Client.Transport}
+					rhosts[i].Client.Transport = docker.NewHTTPFallback(rhosts[i].Client.Transport)
 				}
 			}
 
@@ -365,7 +366,6 @@ func parseHostsFile(baseDir string, b []byte) ([]hostConfig, error) {
 
 	// HACK: we want to keep toml parsing structures private in this package, however go-toml ignores private embedded types.
 	// so we remap it to a public type within the func body, so technically it's public, but not possible to import elsewhere.
-	//nolint:unused
 	type HostFileConfig = hostFileConfig
 
 	c := struct {

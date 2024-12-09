@@ -101,6 +101,11 @@ func toFile(s sbom.SBOM) []model.File {
 			contents = contentsForLocation
 		}
 
+		var unknowns []string
+		if unknownsForLocation, exists := artifacts.Unknowns[coordinates]; exists {
+			unknowns = unknownsForLocation
+		}
+
 		var licenses []model.FileLicense
 		for _, l := range artifacts.FileLicenses[coordinates] {
 			var evidence *model.FileLicenseEvidence
@@ -132,6 +137,7 @@ func toFile(s sbom.SBOM) []model.File {
 			Contents:   contents,
 			Licenses:   licenses,
 			Executable: executable,
+			Unknowns:   unknowns,
 		})
 	}
 
@@ -303,7 +309,7 @@ func toSourceModel(src source.Description) model.Source {
 		Metadata: src.Metadata,
 	}
 
-	if metadata, ok := src.Metadata.(source.StereoscopeImageSourceMetadata); ok {
+	if metadata, ok := src.Metadata.(source.ImageMetadata); ok {
 		// ensure that empty collections are not shown as null
 		if metadata.RepoDigests == nil {
 			metadata.RepoDigests = []string{}

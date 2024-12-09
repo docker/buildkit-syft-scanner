@@ -1,0 +1,40 @@
+tools:
+  # we want to use a pinned version of binny to manage the toolchain (so binny manages itself!)
+  - name: binny
+    version:
+      want: v0.8.0
+    method: github-release
+    with:
+      repo: anchore/binny
+
+  # used for linting
+  - name: golangci-lint
+    version:
+      want: v1.61.0
+    method: github-release
+    with:
+      repo: golangci/golangci-lint
+
+  # used for organizing imports during static analysis
+  - name: gosimports
+    version:
+      want: v0.3.8
+    method: github-release
+    with:
+      repo: rinchsan/gosimports
+
+  # used during static analysis for license compliance
+  - name: bouncer
+    version:
+      want: v0.4.0
+    method: github-release
+    with:
+      repo: wagoodman/go-bouncer
+
+  # used for running all local and CI tasks
+  - name: task
+    version:
+      want: v3.39.0
+    method: github-release
+    with:
+      repo: go-task/task
