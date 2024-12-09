@@ -1,0 +1,35 @@
+{
+  "_type": "https://in-toto.io/Statement/v0.1",
+  "predicateType": "https://spdx.dev/Document",
+  "subject": [
+    {
+      "name": "empty",
+      "digest": {
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    }
+  ],
+  "predicate": {
+    "SPDXID": "SPDXRef-DOCUMENT",
+    "name": "sbom-base",
+    "packages": [
+      {
+        "SPDXID": "=package",
+        "name": "git"
+      }
+    ],
+    "files": [
+      {
+        "SPDXID": "=filename",
+        "fileName": "/usr/bin/git"
+      }
+    ],
+    "relationships": [
+      {
+        "spdxElementId": "==package",
+        "relationshipType": "CONTAINS",
+        "relatedSpdxElement": "==filename"
+      }
+    ]
+  }
+}

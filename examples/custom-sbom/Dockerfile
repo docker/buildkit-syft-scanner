@@ -14,17 +14,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM centos:7 AS base
-
-# fix name of Centos repos as mirror.centos.org no longer exists
-RUN sed -i s/mirror.centos.org/vault.centos.org/g /etc/yum.repos.d/CentOS-*.repo
-RUN sed -i s/^#.*baseurl=http/baseurl=http/g /etc/yum.repos.d/CentOS-*.repo
-RUN sed -i s/^mirrorlist=http/#mirrorlist=http/g /etc/yum.repos.d/CentOS-*.repo
-
+FROM alpine AS base
 ARG BUILDKIT_SBOM_SCAN_STAGE=true
-RUN yum install -y findutils
+RUN apk add git
 COPY <<EOF /empty
 EOF
 
 FROM scratch
-COPY --from=0 /empty /
+COPY --from=base /empty /
+
+COPY ./spdx.json /stuff.spdx.json

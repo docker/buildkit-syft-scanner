@@ -46,7 +46,7 @@ func (t Target) Scan() (sbom.SBOM, error) {
 		return sbom.SBOM{}, fmt.Errorf("failed to create source from %q: %w", t.Path, err)
 	}
 
-	result, err := syft.CreateSBOM(context.Background(), src, syft.DefaultCreateSBOMConfig().WithCatalogerSelection(pkgcataloging.NewSelectionRequest().WithDefaults(pkgcataloging.ImageTag)))
+	result, err := syft.CreateSBOM(context.Background(), src, syft.DefaultCreateSBOMConfig().WithCatalogerSelection(pkgcataloging.NewSelectionRequest().WithDefaults(pkgcataloging.ImageTag).WithAdditions("sbom-cataloger")))
 	if err != nil {
 		return sbom.SBOM{}, err
 	}
