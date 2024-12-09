@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"reflect"
+	"regexp"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -11,16 +12,24 @@ import (
 	"github.com/anchore/go-logger"
 )
 
-func Summarize(cfg Config, descriptions DescriptionProvider, values ...any) string {
+var trailingSpace = regexp.MustCompile(`[ \r]+\n`)
+
+func Summarize(cfg Config, descriptions DescriptionProvider, filter ValueFilterFunc, values ...any) string {
 	root := &section{}
 	for _, value := range values {
 		v := reflect.ValueOf(value)
 		summarize(cfg, descriptions, root, v, nil)
 	}
-	return root.stringify(cfg)
+	if filter == nil {
+		filter = func(s string) string {
+			return s
+		}
+	}
+
+	return root.stringify(cfg, filter)
 }
 
-func SummarizeCommand(cfg Config, cmd *cobra.Command, values ...any) string {
+func SummarizeCommand(cfg Config, cmd *cobra.Command, filter ValueFilterFunc, values ...any) string {
 	root := cmd
 	for root.Parent() != nil {
 		root = root.Parent()
@@ -30,7 +39,7 @@ func SummarizeCommand(cfg Config, cmd *cobra.Command, values ...any) string {
 		NewStructDescriptionTagProvider(),
 		NewCommandFlagDescriptionProvider(cfg.TagName, root),
 	)
-	return Summarize(cfg, descriptions, values...)
+	return Summarize(cfg, descriptions, filter, values...)
 }
 
 func SummarizeLocations(cfg Config) (out []string) {
@@ -39,6 +48,8 @@ func SummarizeLocations(cfg Config) (out []string) {
 	}
 	return
 }
+
+type ValueFilterFunc func(string) string
 
 //nolint:gocognit
 func summarize(cfg Config, descriptions DescriptionProvider, s *section, value reflect.Value, path []string) {
@@ -105,7 +116,7 @@ func summarize(cfg Config, descriptions DescriptionProvider, s *section, value r
 
 // printVal prints a value in YAML format
 // nolint:gocognit
-func printVal(cfg Config, value reflect.Value, indent string) string {
+func printVal(cfg Config, filter ValueFilterFunc, value reflect.Value, indent string) string {
 	buf := bytes.Buffer{}
 
 	v, t := base(value)
@@ -121,7 +132,7 @@ func printVal(cfg Config, value reflect.Value, indent string) string {
 			buf.WriteString(indent)
 			buf.WriteString("- ")
 
-			val := printVal(cfg, v, indent+"  ")
+			val := printVal(cfg, filter, v, indent+"  ")
 			val = strings.TrimSpace(val)
 			buf.WriteString(val)
 
@@ -161,7 +172,7 @@ func printVal(cfg Config, value reflect.Value, indent string) string {
 			buf.WriteString("\n")
 			buf.WriteString(indent)
 
-			val := printVal(cfg, v, indent+"  ")
+			val := printVal(cfg, filter, v, indent+"  ")
 
 			val = fmt.Sprintf("%s: %s", name, val)
 
@@ -169,16 +180,13 @@ func printVal(cfg Config, value reflect.Value, indent string) string {
 		}
 
 	case v.CanInterface():
-		if v.Kind() == reflect.Ptr && v.IsNil() {
+		if v.Kind() == reflect.Pointer && v.IsNil() {
 			return ""
 		}
-		v := v.Interface()
-		switch v.(type) {
-		case string:
-			return fmt.Sprintf("'%s'", v)
-		default:
-			return fmt.Sprintf("%v", v)
+		if v.Kind() == reflect.String {
+			return fmt.Sprintf("'%s'", filter(v.String()))
 		}
+		return filter(fmt.Sprintf("%v", v.Interface()))
 	}
 
 	val := buf.String()
@@ -261,13 +269,15 @@ func (s *section) add(log logger.Logger, name string, value reflect.Value, descr
 	return add
 }
 
-func (s *section) stringify(cfg Config) string {
+func (s *section) stringify(cfg Config, filter ValueFilterFunc) string {
 	out := &bytes.Buffer{}
-	stringifySection(cfg, out, s, "")
-	return out.String()
+	stringifySection(cfg, filter, out, s, "")
+
+	// remove any extra trailing whitespace from final config
+	return trailingSpace.ReplaceAllString(out.String(), "\n")
 }
 
-func stringifySection(cfg Config, out *bytes.Buffer, s *section, indent string) {
+func stringifySection(cfg Config, filter ValueFilterFunc, out *bytes.Buffer, s *section, indent string) {
 	nextIndent := indent
 
 	if s.name != "" {
@@ -304,7 +314,7 @@ func stringifySection(cfg Config, out *bytes.Buffer, s *section, indent string) 
 		out.WriteString(":")
 
 		if s.value.IsValid() {
-			val := printVal(cfg, s.value, indent+"  ")
+			val := printVal(cfg, filter, s.value, indent+"  ")
 			if val != "" {
 				out.WriteString(" ")
 			}
@@ -315,7 +325,7 @@ func stringifySection(cfg Config, out *bytes.Buffer, s *section, indent string) 
 	}
 
 	for _, s := range s.subsections {
-		stringifySection(cfg, out, s, nextIndent)
+		stringifySection(cfg, filter, out, s, nextIndent)
 		if len(s.subsections) == 0 {
 			out.WriteString(nextIndent)
 			out.WriteString("\n")

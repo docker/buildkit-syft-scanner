@@ -6,9 +6,9 @@ package pe
 
 import (
 	"errors"
+	"github.com/edsrzf/mmap-go"
 	"os"
 
-	"github.com/edsrzf/mmap-go"
 	"github.com/saferwall/pe/log"
 )
 
@@ -27,7 +27,7 @@ type File struct {
 	TLS          TLSDirectory                `json:"tls,omitempty"`
 	LoadConfig   LoadConfig                  `json:"load_config,omitempty"`
 	Exceptions   []Exception                 `json:"exceptions,omitempty"`
-	Certificates Certificate                 `json:"certificates,omitempty"`
+	Certificates CertificateSection          `json:"certificates,omitempty"`
 	DelayImports []DelayImport               `json:"delay_imports,omitempty"`
 	BoundImports []BoundImportDescriptorData `json:"bound_imports,omitempty"`
 	GlobalPtr    uint32                      `json:"global_ptr,omitempty"`
@@ -112,16 +112,23 @@ type Options struct {
 
 	// OmitCLRHeaderDirectory determines if CLR header directory parsing is skipped, by default (false).
 	OmitCLRHeaderDirectory bool
+
+	// OmitCLRMetadata determines if CLR metadata parsing is skipped, by default (false).
+	OmitCLRMetadata bool
 }
 
 // New instantiates a file instance with options given a file name.
 func New(name string, opts *Options) (*File, error) {
-
 	f, err := os.Open(name)
 	if err != nil {
 		return nil, err
 	}
 
+	return NewFile(f, opts)
+}
+
+// NewFile instantiates a file instance with options given a file handle.
+func NewFile(f *os.File, opts *Options) (*File, error) {
 	// Memory map the file instead of using read/write.
 	data, err := mmap.Map(f, mmap.RDONLY, 0)
 	if err != nil {
@@ -144,12 +151,12 @@ func New(name string, opts *Options) (*File, error) {
 	}
 
 	var logger log.Logger
-	if opts.Logger == nil {
+	if file.opts.Logger == nil {
 		logger = log.NewStdLogger(os.Stdout)
 		file.logger = log.NewHelper(log.NewFilter(logger,
 			log.FilterLevel(log.LevelError)))
 	} else {
-		file.logger = log.NewHelper(opts.Logger)
+		file.logger = log.NewHelper(file.opts.Logger)
 	}
 
 	file.data = data
@@ -176,7 +183,7 @@ func NewBytes(data []byte, opts *Options) (*File, error) {
 	}
 
 	var logger log.Logger
-	if opts.Logger == nil {
+	if file.opts.Logger == nil {
 		logger = log.NewStdLogger(os.Stdout)
 		file.logger = log.NewHelper(log.NewFilter(logger,
 			log.FilterLevel(log.LevelError)))

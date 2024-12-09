@@ -21,7 +21,7 @@ ARG ADDLICENSE_VERSION="v1.0.0"
 
 FROM ghcr.io/google/addlicense:${ADDLICENSE_VERSION} AS addlicense
 
-FROM alpine:3.16 AS base
+FROM alpine:3.20 AS base
 WORKDIR /src
 RUN apk add --no-cache cpio findutils git
 

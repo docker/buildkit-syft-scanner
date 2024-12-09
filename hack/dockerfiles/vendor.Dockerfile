@@ -16,8 +16,8 @@
 
 # upstream at https://github.com/moby/buildkit/blob/master/hack/dockerfiles/vendor.Dockerfile
 
-ARG GO_VERSION="1.21"
-ARG ALPINE_VERSION="3.17"
+ARG GO_VERSION="1.23"
+ARG ALPINE_VERSION="3.20"
 
 FROM golang:${GO_VERSION}-alpine${ALPINE_VERSION} AS base
 RUN apk add --no-cache git rsync

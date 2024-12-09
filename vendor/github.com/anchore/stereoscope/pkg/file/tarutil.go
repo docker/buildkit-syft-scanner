@@ -2,19 +2,19 @@ package file
 
 import (
 	"archive/tar"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
 
-	"github.com/pkg/errors"
 	"github.com/spf13/afero"
 
 	"github.com/anchore/stereoscope/internal/log"
 )
 
-const perFileReadLimit = 2 * GB
+var perFileReadLimit int64 = 2 * GB
 
 var ErrTarStopIteration = fmt.Errorf("halt iterating tar")
 
@@ -37,6 +37,12 @@ type TarFileVisitor func(TarFileEntry) error
 // ErrFileNotFound returned from ReaderFromTar if a file is not found in the given archive.
 type ErrFileNotFound struct {
 	Path string
+}
+
+func SetPerFileReadLimit(maxBytes int64) {
+	if maxBytes > 0 {
+		perFileReadLimit = maxBytes
+	}
 }
 
 func (e *ErrFileNotFound) Error() string {
@@ -147,7 +153,9 @@ func (v tarVisitor) visit(entry TarFileEntry) error {
 	target := filepath.Join(v.destination, entry.Header.Name)
 
 	// we should not allow for any destination path to be outside of where we are unarchiving to
-	if !strings.HasPrefix(target, v.destination) {
+	// "." is a special case that we allow (it is the root of the unarchived content)
+	withinDir := v.destination + string(os.PathSeparator)
+	if !strings.HasPrefix(target, withinDir) && entry.Header.Name != "." {
 		return fmt.Errorf("potential path traversal attack with entry: %q", entry.Header.Name)
 	}
 
@@ -157,6 +165,10 @@ func (v tarVisitor) visit(entry TarFileEntry) error {
 		log.WithFields("path", entry.Header.Name).Trace("skipping symlink/link entry in image tar")
 
 	case tar.TypeDir:
+		// we don't need to do anything for directories, they are created as needed
+		if entry.Header.Name == "." {
+			return nil
+		}
 		if _, err := v.fs.Stat(target); err != nil {
 			if err := v.fs.MkdirAll(target, 0755); err != nil {
 				return err
@@ -172,7 +184,7 @@ func (v tarVisitor) visit(entry TarFileEntry) error {
 		// limit the reader on each file read to prevent decompression bomb attacks
 		numBytes, err := io.Copy(f, io.LimitReader(entry.Reader, perFileReadLimit))
 		if numBytes >= perFileReadLimit || errors.Is(err, io.EOF) {
-			return fmt.Errorf("zip read limit hit (potential decompression bomb attack)")
+			return fmt.Errorf("zip read limit hit (potential decompression bomb attack): copied %v, limit %v", numBytes, perFileReadLimit)
 		}
 		if err != nil {
 			return fmt.Errorf("unable to copy file: %w", err)

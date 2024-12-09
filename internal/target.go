@@ -34,19 +34,23 @@ func (t Target) Name() string {
 	return filepath.Base(t.Path)
 }
 
-func (t Target) Scan() (sbom.SBOM, error) {
-	src, err := source.NewFromDirectory(source.DirectoryConfig{
-		Path: t.Path,
-		Base: t.Path,
-		Alias: source.Alias{
-			Name: t.Name(),
-		},
-	})
+func (t Target) Scan(ctx context.Context) (sbom.SBOM, error) {
+	src, err := syft.GetSource(context.Background(), t.Path,
+		syft.DefaultGetSourceConfig().
+			WithBasePath(t.Path).
+			WithAlias(source.Alias{Name: t.Name()}))
 	if err != nil {
-		return sbom.SBOM{}, fmt.Errorf("failed to create source from %q: %w", t.Path, err)
+		return sbom.SBOM{}, fmt.Errorf("failed to get source from %q: %w", t.Path, err)
 	}
 
-	result, err := syft.CreateSBOM(context.Background(), src, syft.DefaultCreateSBOMConfig().WithCatalogerSelection(pkgcataloging.NewSelectionRequest().WithDefaults(pkgcataloging.ImageTag)))
+	result, err := syft.CreateSBOM(
+		ctx,
+		src,
+		syft.DefaultCreateSBOMConfig().
+			WithCatalogerSelection(
+				pkgcataloging.NewSelectionRequest().
+					WithDefaults(pkgcataloging.ImageTag).
+					WithAdditions("sbom-cataloger")))
 	if err != nil {
 		return sbom.SBOM{}, err
 	}

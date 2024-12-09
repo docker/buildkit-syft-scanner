@@ -208,9 +208,15 @@ func toDependencies(relationships []artifact.Relationship) []cyclonedx.Dependenc
 }
 
 func toBomProperties(srcMetadata source.Description) *[]cyclonedx.Property {
-	metadata, ok := srcMetadata.Metadata.(source.StereoscopeImageSourceMetadata)
+	metadata, ok := srcMetadata.Metadata.(source.ImageMetadata)
 	if ok {
 		props := helpers.EncodeProperties(metadata.Labels, "syft:image:labels")
+		// return nil if props is nil to avoid creating a pointer to a nil slice,
+		// which results in a null JSON value that does not comply with the CycloneDX schema.
+		// https://github.com/anchore/grype/issues/1759
+		if props == nil {
+			return nil
+		}
 		return &props
 	}
 	return nil
@@ -220,7 +226,7 @@ func toBomDescriptorComponent(srcMetadata source.Description) *cyclonedx.Compone
 	name := srcMetadata.Name
 	version := srcMetadata.Version
 	switch metadata := srcMetadata.Metadata.(type) {
-	case source.StereoscopeImageSourceMetadata:
+	case source.ImageMetadata:
 		if name == "" {
 			name = metadata.UserInput
 		}
@@ -237,7 +243,7 @@ func toBomDescriptorComponent(srcMetadata source.Description) *cyclonedx.Compone
 			Name:    name,
 			Version: version,
 		}
-	case source.DirectorySourceMetadata:
+	case source.DirectoryMetadata:
 		if name == "" {
 			name = metadata.Path
 		}
@@ -252,7 +258,7 @@ func toBomDescriptorComponent(srcMetadata source.Description) *cyclonedx.Compone
 			Name:    name,
 			Version: version,
 		}
-	case source.FileSourceMetadata:
+	case source.FileMetadata:
 		if name == "" {
 			name = metadata.Path
 		}

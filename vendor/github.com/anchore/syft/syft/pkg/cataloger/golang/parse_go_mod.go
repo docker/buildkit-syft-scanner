@@ -10,6 +10,8 @@ import (
 
 	"golang.org/x/mod/modfile"
 
+	"github.com/anchore/syft/internal"
+	"github.com/anchore/syft/internal/licenses"
 	"github.com/anchore/syft/internal/log"
 	"github.com/anchore/syft/syft/artifact"
 	"github.com/anchore/syft/syft/file"
@@ -18,14 +20,22 @@ import (
 )
 
 type goModCataloger struct {
-	licenses goLicenses
+	licenseResolver goLicenseResolver
+}
+
+func newGoModCataloger(opts CatalogerConfig) *goModCataloger {
+	return &goModCataloger{
+		licenseResolver: newGoLicenseResolver(modFileCatalogerName, opts),
+	}
 }
 
 // parseGoModFile takes a go.mod and lists all packages discovered.
 //
 //nolint:funlen
-func (c *goModCataloger) parseGoModFile(_ context.Context, resolver file.Resolver, _ *generic.Environment, reader file.LocationReadCloser) ([]pkg.Package, []artifact.Relationship, error) {
+func (c *goModCataloger) parseGoModFile(ctx context.Context, resolver file.Resolver, _ *generic.Environment, reader file.LocationReadCloser) ([]pkg.Package, []artifact.Relationship, error) {
 	packages := make(map[string]pkg.Package)
+
+	licenseScanner := licenses.ContextLicenseScanner(ctx)
 
 	contents, err := io.ReadAll(reader)
 	if err != nil {
@@ -43,7 +53,7 @@ func (c *goModCataloger) parseGoModFile(_ context.Context, resolver file.Resolve
 	}
 
 	for _, m := range f.Require {
-		licenses, err := c.licenses.getLicenses(resolver, m.Mod.Path, m.Mod.Version)
+		lics, err := c.licenseResolver.getLicenses(ctx, licenseScanner, resolver, m.Mod.Path, m.Mod.Version)
 		if err != nil {
 			log.Tracef("error getting licenses for package: %s %v", m.Mod.Path, err)
 		}
@@ -51,7 +61,7 @@ func (c *goModCataloger) parseGoModFile(_ context.Context, resolver file.Resolve
 		packages[m.Mod.Path] = pkg.Package{
 			Name:      m.Mod.Path,
 			Version:   m.Mod.Version,
-			Licenses:  pkg.NewLicenseSet(licenses...),
+			Licenses:  pkg.NewLicenseSet(lics...),
 			Locations: file.NewLocationSet(reader.Location.WithAnnotation(pkg.EvidenceAnnotationKey, pkg.PrimaryEvidenceAnnotation)),
 			PURL:      packageURL(m.Mod.Path, m.Mod.Version),
 			Language:  pkg.Go,
@@ -64,15 +74,19 @@ func (c *goModCataloger) parseGoModFile(_ context.Context, resolver file.Resolve
 
 	// remove any old packages and replace with new ones...
 	for _, m := range f.Replace {
-		licenses, err := c.licenses.getLicenses(resolver, m.New.Path, m.New.Version)
+		lics, err := c.licenseResolver.getLicenses(ctx, licenseScanner, resolver, m.New.Path, m.New.Version)
 		if err != nil {
 			log.Tracef("error getting licenses for package: %s %v", m.New.Path, err)
 		}
 
+		// the old path and new path may be the same, in which case this is a noop,
+		// but if they're different we need to remove the old package.
+		delete(packages, m.Old.Path)
+
 		packages[m.New.Path] = pkg.Package{
 			Name:      m.New.Path,
 			Version:   m.New.Version,
-			Licenses:  pkg.NewLicenseSet(licenses...),
+			Licenses:  pkg.NewLicenseSet(lics...),
 			Locations: file.NewLocationSet(reader.Location.WithAnnotation(pkg.EvidenceAnnotationKey, pkg.PrimaryEvidenceAnnotation)),
 			PURL:      packageURL(m.New.Path, m.New.Version),
 			Language:  pkg.Go,
@@ -119,6 +133,7 @@ func parseGoSumFile(resolver file.Resolver, reader file.LocationReadCloser) (map
 	if err != nil {
 		return nil, err
 	}
+	defer internal.CloseAndLogError(contents, goSumLocation.AccessPath)
 
 	// go.sum has the format like:
 	// github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
