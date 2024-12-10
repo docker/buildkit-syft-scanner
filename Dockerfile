@@ -14,9 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-ARG GO_VERSION="1.21"
-ARG ALPINE_VERSION="3.19"
-ARG XX_VERSION="1.4.0"
+ARG GO_VERSION="1.23"
+ARG ALPINE_VERSION="3.21"
+ARG XX_VERSION="1.6.1"
 
 FROM --platform=$BUILDPLATFORM tonistiigi/xx:${XX_VERSION} AS xx
 
