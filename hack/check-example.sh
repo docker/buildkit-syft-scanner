@@ -20,14 +20,14 @@ GENERATOR=$1
 
 for example in "${@:2}"; do
   example=$(basename "$example")
+  selectCatalogers=""
   echo "[-] Building example ${example}..."
 
-  if [[ ${example} == "npm-lock" ]]; then
-     docker buildx build "./examples/${example}" --sbom="generator=${GENERATOR},SELECT_CATALOGERS=+javascript-lock-cataloger" --output="./examples/${example}/build"
-  else
-     docker buildx build "./examples/${example}" --sbom="generator=${GENERATOR}" --output="./examples/${example}/build"
+  if [ "${example}" = "npm-lock" ]; then
+    selectCatalogers=",SELECT_CATALOGERS=+javascript-lock-cataloger"
   fi
 
+  (set -x ; docker buildx build "./examples/${example}" --sbom="generator=${GENERATOR}${selectCatalogers}" --output="./examples/${example}/build")
 
   echo "[-] Checking example ${example}..."
   for file in "./examples/${example}"/checks/*.json; do
