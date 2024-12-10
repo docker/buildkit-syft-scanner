@@ -1,0 +1,72 @@
+{
+  "_type": "https://in-toto.io/Statement/v0.1",
+  "predicateType": "https://spdx.dev/Document",
+  "subject": [
+    {
+      "name": "empty",
+      "digest": {
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    }
+  ],
+  "predicate": {
+    "SPDXID": "SPDXRef-DOCUMENT",
+    "name": "sbom-base",
+    "packages": [
+      {
+        "SPDXID": "SPDXRef-Package-apk-alpine-baselayout-5ede89861c73ee0f",
+        "copyrightText": "NOASSERTION",
+        "description": "Alpine base dir structure and init scripts",
+        "downloadLocation": "https://git.alpinelinux.org/cgit/aports/tree/main/alpine-baselayout",
+        "externalRefs": [
+          {
+            "referenceCategory": "SECURITY",
+            "referenceLocator": "cpe:2.3:a:alpine-baselayout:alpine-baselayout:3.2.0-r18:*:*:*:*:*:*:*",
+            "referenceType": "cpe23Type"
+          },
+          {
+            "referenceCategory": "SECURITY",
+            "referenceLocator": "cpe:2.3:a:alpine-baselayout:alpine_baselayout:3.2.0-r18:*:*:*:*:*:*:*",
+            "referenceType": "cpe23Type"
+          },
+          {
+            "referenceCategory": "SECURITY",
+            "referenceLocator": "cpe:2.3:a:alpine_baselayout:alpine-baselayout:3.2.0-r18:*:*:*:*:*:*:*",
+            "referenceType": "cpe23Type"
+          },
+          {
+            "referenceCategory": "SECURITY",
+            "referenceLocator": "cpe:2.3:a:alpine_baselayout:alpine_baselayout:3.2.0-r18:*:*:*:*:*:*:*",
+            "referenceType": "cpe23Type"
+          },
+          {
+            "referenceCategory": "SECURITY",
+            "referenceLocator": "cpe:2.3:a:alpine:alpine-baselayout:3.2.0-r18:*:*:*:*:*:*:*",
+            "referenceType": "cpe23Type"
+          },
+          {
+            "referenceCategory": "SECURITY",
+            "referenceLocator": "cpe:2.3:a:alpine:alpine_baselayout:3.2.0-r18:*:*:*:*:*:*:*",
+            "referenceType": "cpe23Type"
+          },
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:apk/alpine/alpine-baselayout@3.2.0-r18?arch=x86_64\u0026distro=alpine-3.15.11",
+            "referenceType": "purl"
+          }
+        ],
+        "filesAnalyzed": true,
+        "licenseConcluded": "NOASSERTION",
+        "licenseDeclared": "GPL-2.0-only",
+        "name": "alpine-baselayout",
+        "originator": "Person: Natanael Copa (ncopa@alpinelinux.org)",
+        "packageVerificationCode": {
+          "packageVerificationCodeValue": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+        },
+        "sourceInfo": "acquired package info from APK DB: /lib/apk/db/installed",
+        "supplier": "Person: Natanael Copa (ncopa@alpinelinux.org)",
+        "versionInfo": "3.2.0-r18"
+      }
+    ]
+  }
+}
