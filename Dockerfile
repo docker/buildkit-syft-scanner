@@ -40,7 +40,7 @@ RUN --mount=target=. <<EOT
   echo "-extldflags -static -X ${pkg}/version.Version=${version} -X ${pkg}/version.SyftVersion=$(go list -mod=mod -u -m -f '{{.Version}}' 'github.com/anchore/syft')" | tee /tmp/.ldflags
 EOT
 
-FROM base as build
+FROM base AS build
 ARG TARGETPLATFORM
 RUN --mount=type=bind,target=. \
     --mount=type=bind,from=version,source=/tmp/.ldflags,target=/tmp/.ldflags \
