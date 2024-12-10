@@ -17,7 +17,9 @@ package internal
 import (
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/anchore/syft/syft"
 	"github.com/anchore/syft/syft/cataloging/pkgcataloging"
@@ -43,14 +45,19 @@ func (t Target) Scan(ctx context.Context) (sbom.SBOM, error) {
 		return sbom.SBOM{}, fmt.Errorf("failed to get source from %q: %w", t.Path, err)
 	}
 
+	sr := pkgcataloging.NewSelectionRequest().
+		WithDefaults(pkgcataloging.ImageTag).
+		WithAdditions("sbom-cataloger")
+
+	if v, ok := os.LookupEnv("BUILDKIT_SCAN_SELECT_CATALOGERS"); ok {
+		sr = pkgcataloging.NewSelectionRequest().WithExpression(strings.Split(v, ",")...)
+	}
+
 	result, err := syft.CreateSBOM(
 		ctx,
 		src,
 		syft.DefaultCreateSBOMConfig().
-			WithCatalogerSelection(
-				pkgcataloging.NewSelectionRequest().
-					WithDefaults(pkgcataloging.ImageTag).
-					WithAdditions("sbom-cataloger")))
+			WithCatalogerSelection(sr))
 	if err != nil {
 		return sbom.SBOM{}, err
 	}
