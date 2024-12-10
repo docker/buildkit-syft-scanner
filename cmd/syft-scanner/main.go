@@ -15,6 +15,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -36,6 +37,8 @@ func main() {
 		panic(fmt.Sprintf("unable to initialize logger: %+v", err))
 	}
 
+	ctx := context.Background()
+
 	// HACK: ensure that /tmp exists, as syft will fail if it does not
 	if err := os.Mkdir("/tmp", 0o777); err != nil && !errors.Is(err, os.ErrExist) {
 		panic("could not create /tmp directory")
@@ -47,7 +50,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	if err := scanner.Scan(); err != nil {
+	if err := scanner.Scan(ctx); err != nil {
 		panic(err)
 	}
 }

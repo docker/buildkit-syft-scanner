@@ -15,6 +15,7 @@
 package internal
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -31,9 +32,9 @@ type Scanner struct {
 	Destination string
 }
 
-func (s Scanner) Scan() error {
+func (s Scanner) Scan(ctx context.Context) error {
 	for _, target := range append([]Target{s.Core}, s.Extras...) {
-		result, err := target.Scan()
+		result, err := target.Scan(ctx)
 		if err != nil {
 			return err
 		}

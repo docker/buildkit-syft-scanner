@@ -14,6 +14,7 @@ import (
 type FlagSet interface {
 	BoolVarP(p *bool, name, shorthand, usage string)
 	BoolPtrVarP(p **bool, name, shorthand, usage string)
+	Float64VarP(p *float64, name, shorthand, usage string)
 	CountVarP(p *int, name, shorthand, usage string)
 	IntVarP(p *int, name, shorthand, usage string)
 	StringVarP(p *string, name, shorthand, usage string)
@@ -78,6 +79,13 @@ func (f *pflagSet) BoolPtrVarP(p **bool, name, shorthand, usage string) {
 		return
 	}
 	BoolPtrVarP(f.flagSet, p, name, shorthand, usage)
+}
+
+func (f *pflagSet) Float64VarP(p *float64, name, shorthand, usage string) {
+	if f.exists(name, shorthand) {
+		return
+	}
+	f.flagSet.Float64VarP(p, name, shorthand, *p, usage)
 }
 
 func (f *pflagSet) CountVarP(p *int, name, shorthand, usage string) {

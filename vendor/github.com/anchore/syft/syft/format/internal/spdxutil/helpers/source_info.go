@@ -6,7 +6,7 @@ import (
 	"github.com/anchore/syft/syft/pkg"
 )
 
-//nolint:funlen
+//nolint:funlen, gocyclo
 func SourceInfo(p pkg.Package) string {
 	answer := ""
 	switch p.Type {
@@ -36,6 +36,8 @@ func SourceInfo(p pkg.Package) string {
 		answer = "acquired package info from rust cargo manifest"
 	case pkg.PhpComposerPkg:
 		answer = "acquired package info from PHP composer manifest"
+	case pkg.PhpPeclPkg:
+		answer = "acquired package info from PHP Pecl manifest"
 	case pkg.CocoapodsPkg:
 		answer = "acquired package info from installed cocoapods manifest file"
 	case pkg.ConanPkg:
@@ -56,8 +58,14 @@ func SourceInfo(p pkg.Package) string {
 		answer = "acquired package info from nix store path"
 	case pkg.Rpkg:
 		answer = "acquired package info from R-package DESCRIPTION file"
+	case pkg.LuaRocksPkg:
+		answer = "acquired package info from Rockspec package file"
 	case pkg.SwiftPkg:
 		answer = "acquired package info from resolved Swift package manifest"
+	case pkg.SwiplPackPkg:
+		answer = "acquired package info from SWI Prolo pack package file"
+	case pkg.OpamPkg:
+		answer = "acquired package info from OCaml opam package file"
 	case pkg.GithubActionPkg, pkg.GithubActionWorkflowPkg:
 		answer = "acquired package info from GitHub Actions workflow file or composite action file"
 	case pkg.WordpressPluginPkg:

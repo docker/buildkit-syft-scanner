@@ -8,6 +8,22 @@ import (
 	"strings"
 )
 
+// Flatten takes multiple entries and creates a "flattened" list by further splitting
+// comma-separated entries and removing empty entries
+func Flatten(commaSeparatedEntries ...string) []string {
+	var out []string
+	for _, v := range commaSeparatedEntries {
+		for _, s := range strings.Split(v, ",") {
+			s = strings.TrimSpace(s)
+			if s == "" {
+				continue
+			}
+			out = append(out, s)
+		}
+	}
+	return out
+}
+
 func contains(parts []string, value string) bool {
 	for _, v := range parts {
 		if v == value {
@@ -29,8 +45,8 @@ func envVar(appName string, parts ...string) string {
 }
 
 func fileExists(name string) bool {
-	_, err := os.Stat(name)
-	return err == nil
+	fi, err := os.Stat(name)
+	return err == nil && !fi.IsDir()
 }
 
 // isPromotedMethod returns true if the method with the given name is promoted from

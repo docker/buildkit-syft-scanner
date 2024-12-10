@@ -3,6 +3,7 @@ package clio
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 
 	"github.com/wagoodman/go-partybus"
@@ -15,7 +16,7 @@ import (
 // an eventual graceful exit.
 //
 //nolint:gocognit,funlen
-func eventloop(ctx context.Context, log logger.Logger, subscription *partybus.Subscription, workerErrs <-chan error, uis ...UI) error {
+func eventloop(ctx context.Context, log logger.Logger, subscription *partybus.Subscription, workerErrs <-chan error, ux UI) error {
 	var events <-chan partybus.Event
 	if subscription != nil {
 		events = subscription.Events()
@@ -25,16 +26,11 @@ func eventloop(ctx context.Context, log logger.Logger, subscription *partybus.Su
 		events = noEvents
 	}
 
-	var ux UI
-
-	for _, ui := range uis {
-		if err := ui.Setup(subscription); err != nil {
-			log.Warnf("unable to setup given UI, falling back to alternative UI: %+v", err)
-			continue
+	if ux != nil {
+		err := ux.Setup(subscription)
+		if err != nil {
+			return fmt.Errorf("unable to setup UI: %w", err)
 		}
-
-		ux = ui
-		break
 	}
 
 	var retErr []error

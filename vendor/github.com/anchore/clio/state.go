@@ -15,7 +15,7 @@ type State struct {
 	Subscription *partybus.Subscription
 	Logger       logger.Logger
 	RedactStore  redact.Store
-	UIs          []UI
+	UI           *UICollection
 }
 
 type Config struct {
@@ -69,6 +69,6 @@ func (s *State) setupUI(cx UIConstructor) error {
 		cx = newUI
 	}
 	var err error
-	s.UIs, err = cx(s.Config)
+	s.UI, err = cx(s.Config)
 	return err
 }

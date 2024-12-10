@@ -1,6 +1,7 @@
 package decompress
 
 import (
+	"bytes"
 	"io"
 
 	"github.com/therootcompany/xz"
@@ -8,13 +9,10 @@ import (
 
 type Xz struct{}
 
-func (x Xz) Reader(r io.Reader) (io.ReadCloser, error) {
-	rdr, err := xz.NewReader(r, 0)
-	return io.NopCloser(rdr), err
-}
-
-func (x Xz) Resetable() bool { return true }
-
-func (x Xz) Reset(old, src io.Reader) error {
-	return old.(*xz.Reader).Reset(src)
+func (x Xz) Decompress(data []byte) ([]byte, error) {
+	rdr, err := xz.NewReader(bytes.NewReader(data), 0)
+	if err != nil {
+		return nil, err
+	}
+	return io.ReadAll(rdr)
 }
