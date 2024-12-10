@@ -3,18 +3,6 @@
   "predicateType": "https://spdx.dev/Document",
   "predicate": {
     "SPDXID": "SPDXRef-DOCUMENT",
-    "name": "sbom",
-    "packages": [
-      {
-        "SPDXID": "SPDXRef-DocumentRoot-Directory-sbom",
-        "downloadLocation": "NOASSERTION",
-        "filesAnalyzed": false,
-        "licenseConcluded": "NOASSERTION",
-        "licenseDeclared": "NOASSERTION",
-        "name": "sbom",
-        "primaryPackagePurpose": "FILE",
-        "supplier": "NOASSERTION"
-      }
-    ]
+    "name": "sbom"
   }
 }
