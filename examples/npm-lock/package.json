@@ -1,0 +1,8 @@
+{
+  "name": "npm-lock",
+  "version": "1.0.0",
+  "description": "BuildKit Syft Scanner",
+  "dependencies": {
+    "lodash": "^4.17.21"
+  }
+}

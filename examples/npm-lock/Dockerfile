@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-# Copyright 2022 buildkit-syft-scanner authors
+# Copyright 2024 buildkit-syft-scanner authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,6 +14,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM scratch
+FROM node:20-alpine3.20 AS base
+ARG BUILDKIT_SBOM_SCAN_STAGE=true
+WORKDIR /work
+COPY package*.json .
+RUN npm install
+COPY <<EOF /empty
+EOF
 
-COPY package-lock.json /package-lock.json
+FROM scratch
+COPY --from=base /empty /
