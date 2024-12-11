@@ -14,8 +14,43 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM alpine:3.15@sha256:19b4bcc4f60e99dd5ebdca0cbce22c503bbcff197549d7e19dab4f22254dc864 AS base
+FROM scratch AS base
 ARG BUILDKIT_SBOM_SCAN_STAGE=true
+COPY <<EOF /var/share/sbom/foo.spdx.json
+{
+ "spdxVersion": "SPDX-2.3",
+ "dataLicense": "CC0-1.0",
+ "SPDXID": "SPDXRef-DOCUMENT",
+ "packages": [
+  {
+   "name": "foo",
+   "SPDXID": "SPDXRef-Package-foo-0d50d654eb648ebd",
+   "versionInfo": "1.0",
+   "supplier": "NOASSERTION",
+   "downloadLocation": "NOASSERTION",
+   "filesAnalyzed": true,
+   "packageVerificationCode": {
+    "packageVerificationCodeValue": "ee259e59ebc5bf49005492c1a393d32158491196"
+   },
+   "licenseConcluded": "NOASSERTION",
+   "licenseDeclared": "GPL-2.0-only AND GPL-2.0-or-later",
+   "copyrightText": "NOASSERTION",
+   "externalRefs": [
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:deb:deb:1.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "PACKAGE-MANAGER",
+     "referenceType": "purl",
+     "referenceLocator": "pkg:generic/foo@1.0"
+    }
+   ]
+  }
+ ]
+}
+EOF
 COPY <<EOF /empty
 EOF
 
