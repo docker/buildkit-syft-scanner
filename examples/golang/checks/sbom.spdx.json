@@ -13,7 +13,7 @@
     "files": [
       {
         "SPDXID": "=filename",
-        "fileName": "/bin/app"
+        "fileName": "bin/app"
       }
     ],
     "relationships": [
