@@ -12,28 +12,28 @@ import (
 )
 
 type FileBase struct {
-	Inode *inode.Inode
+	Inode inode.Inode
 	Name  string
 }
 
-func (r *Reader) BaseFromInode(i *inode.Inode, name string) *FileBase {
-	return &FileBase{Inode: i, Name: name}
+func (r *Reader) BaseFromInode(i inode.Inode, name string) FileBase {
+	return FileBase{Inode: i, Name: name}
 }
 
-func (r *Reader) BaseFromEntry(e directory.Entry) (*FileBase, error) {
+func (r *Reader) BaseFromEntry(e directory.Entry) (FileBase, error) {
 	in, err := r.InodeFromEntry(e)
 	if err != nil {
-		return nil, err
+		return FileBase{}, err
 	}
-	return &FileBase{Inode: in, Name: e.Name}, nil
+	return FileBase{Inode: in, Name: e.Name}, nil
 }
 
-func (r *Reader) BaseFromRef(ref uint64, name string) (*FileBase, error) {
+func (r *Reader) BaseFromRef(ref uint64, name string) (FileBase, error) {
 	in, err := r.InodeFromRef(ref)
 	if err != nil {
-		return nil, err
+		return FileBase{}, err
 	}
-	return &FileBase{Inode: in, Name: name}, nil
+	return FileBase{Inode: in, Name: name}, nil
 }
 
 func (b *FileBase) Uid(r *Reader) (uint32, error) {
@@ -48,7 +48,7 @@ func (b *FileBase) IsDir() bool {
 	return b.Inode.Type == inode.Dir || b.Inode.Type == inode.EDir
 }
 
-func (b *FileBase) ToDir(r *Reader) (*Directory, error) {
+func (b *FileBase) ToDir(r *Reader) (Directory, error) {
 	var blockStart uint32
 	var size uint32
 	var offset uint16
@@ -62,19 +62,19 @@ func (b *FileBase) ToDir(r *Reader) (*Directory, error) {
 		size = b.Inode.Data.(inode.EDirectory).Size
 		offset = b.Inode.Data.(inode.EDirectory).Offset
 	default:
-		return nil, errors.New("not a directory")
+		return Directory{}, errors.New("not a directory")
 	}
 	dirRdr := metadata.NewReader(toreader.NewReader(r.r, int64(r.Superblock.DirTableStart)+int64(blockStart)), r.d)
 	defer dirRdr.Close()
 	_, err := dirRdr.Read(make([]byte, offset))
 	if err != nil {
-		return nil, err
+		return Directory{}, err
 	}
 	entries, err := directory.ReadDirectory(dirRdr, size)
 	if err != nil {
-		return nil, err
+		return Directory{}, err
 	}
-	return &Directory{
+	return Directory{
 		FileBase: *b,
 		Entries:  entries,
 	}, nil

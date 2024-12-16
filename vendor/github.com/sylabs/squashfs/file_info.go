@@ -21,7 +21,7 @@ func (r Reader) newFileInfo(e directory.Entry) (fileInfo, error) {
 	if err != nil {
 		return fileInfo{}, err
 	}
-	return newFileInfo(e.Name, i), nil
+	return newFileInfo(e.Name, &i), nil
 }
 
 func newFileInfo(name string, i *inode.Inode) fileInfo {
