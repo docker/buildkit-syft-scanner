@@ -15,13 +15,13 @@ import (
 // FS is a fs.FS representation of a squashfs directory.
 // Implements fs.GlobFS, fs.ReadDirFS, fs.ReadFileFS, fs.StatFS, and fs.SubFS
 type FS struct {
-	d      *squashfslow.Directory
 	r      *Reader
 	parent *FS
+	d      squashfslow.Directory
 }
 
 // Creates a new *FS from the given squashfs.directory
-func (r *Reader) FSFromDirectory(d *squashfslow.Directory, parent *FS) *FS {
+func (r *Reader) FSFromDirectory(d squashfslow.Directory, parent *FS) *FS {
 	return &FS{
 		d:      d,
 		r:      r,
@@ -142,7 +142,7 @@ func (f *FS) Open(name string) (fs.File, error) {
 			Err:  fs.ErrNotExist,
 		}
 	}
-	d, err := b.ToDir(f.r.Low)
+	d, err := b.ToDir(&f.r.Low)
 	if err != nil {
 		return nil, err
 	}
@@ -255,7 +255,7 @@ func (f *FS) ExtractWithOptions(folder string, op *ExtractionOptions) error {
 // Returns the FS as a *File
 func (f *FS) File() *File {
 	return &File{
-		b:      &f.d.FileBase,
+		b:      f.d.FileBase,
 		parent: f.parent,
 		r:      f.r,
 	}

@@ -32,7 +32,7 @@ var (
 type Reader struct {
 	r           io.ReaderAt
 	d           decompress.Decompressor
-	Root        *Directory
+	Root        Directory
 	fragTable   []fragEntry
 	idTable     []uint32
 	exportTable []uint64
@@ -86,7 +86,7 @@ func (r *Reader) Id(i uint16) (uint32, error) {
 	// Populate the id table as needed
 	var blockNum uint32
 	if i != 0 { // If i == 0, we go negatives causing issues with uint32s
-		blockNum = uint32(math.Ceil(float64(i)/2048)) - 1
+		blockNum = uint32(math.Ceil(float64(i+1)/2048)) - 1
 	} else {
 		blockNum = 0
 	}
@@ -129,7 +129,7 @@ func (r *Reader) fragEntry(i uint32) (fragEntry, error) {
 	// Populate the fragment table as needed
 	var blockNum uint32
 	if i != 0 { // If i == 0, we go negatives causing issues with uint32s
-		blockNum = uint32(math.Ceil(float64(i)/512)) - 1
+		blockNum = uint32(math.Ceil(float64(i+1)/512)) - 1
 	} else {
 		blockNum = 0
 	}
@@ -175,7 +175,7 @@ func (r *Reader) inodeRef(i uint32) (uint64, error) {
 	// Populate the export table as needed
 	var blockNum uint32
 	if i != 0 { // If i == 0, we go negatives causing issues with uint32s
-		blockNum = uint32(math.Ceil(float64(i)/1024)) - 1
+		blockNum = uint32(math.Ceil(float64(i+1)/1024)) - 1
 	} else {
 		blockNum = 0
 	}
@@ -208,10 +208,10 @@ func (r *Reader) inodeRef(i uint32) (uint64, error) {
 	return r.exportTable[i], nil
 }
 
-func (r *Reader) Inode(i uint32) (*inode.Inode, error) {
+func (r *Reader) Inode(i uint32) (inode.Inode, error) {
 	ref, err := r.inodeRef(i)
 	if err != nil {
-		return nil, err
+		return inode.Inode{}, err
 	}
 	return r.InodeFromRef(ref)
 }

@@ -18,10 +18,10 @@ type Directory struct {
 	Entries []directory.Entry
 }
 
-func (r *Reader) directoryFromRef(ref uint64, name string) (*Directory, error) {
+func (r *Reader) directoryFromRef(ref uint64, name string) (Directory, error) {
 	i, err := r.InodeFromRef(ref)
 	if err != nil {
-		return nil, err
+		return Directory{}, err
 	}
 	var blockStart uint32
 	var size uint32
@@ -36,48 +36,48 @@ func (r *Reader) directoryFromRef(ref uint64, name string) (*Directory, error) {
 		size = i.Data.(inode.EDirectory).Size
 		offset = i.Data.(inode.EDirectory).Offset
 	default:
-		return nil, errors.New("not a directory")
+		return Directory{}, errors.New("not a directory")
 	}
 	dirRdr := metadata.NewReader(toreader.NewReader(r.r, int64(r.Superblock.DirTableStart)+int64(blockStart)), r.d)
 	defer dirRdr.Close()
 	_, err = dirRdr.Read(make([]byte, offset))
 	if err != nil {
-		return nil, err
+		return Directory{}, err
 	}
 	entries, err := directory.ReadDirectory(dirRdr, size)
 	if err != nil {
-		return nil, err
+		return Directory{}, err
 	}
-	return &Directory{
-		FileBase: *r.BaseFromInode(i, name),
+	return Directory{
+		FileBase: r.BaseFromInode(i, name),
 		Entries:  entries,
 	}, nil
 }
 
-func (d *Directory) Open(r *Reader, path string) (*FileBase, error) {
+func (d *Directory) Open(r *Reader, path string) (FileBase, error) {
 	path = filepath.Clean(path)
 	if path == "." || path == "" {
-		return &d.FileBase, nil
+		return d.FileBase, nil
 	}
 	split := strings.Split(path, "/")
 	i, found := slices.BinarySearchFunc(d.Entries, split[0], func(e directory.Entry, name string) int {
 		return strings.Compare(e.Name, name)
 	})
 	if !found {
-		return nil, fs.ErrNotExist
+		return FileBase{}, fs.ErrNotExist
 	}
 	b, err := r.BaseFromEntry(d.Entries[i])
 	if err != nil {
-		return nil, err
+		return FileBase{}, err
 	}
 	if len(split) == 1 {
 		return b, nil
 	} else if !b.IsDir() {
-		return nil, fs.ErrNotExist
+		return FileBase{}, fs.ErrNotExist
 	}
 	dir, err := b.ToDir(r)
 	if err != nil {
-		return nil, err
+		return FileBase{}, err
 	}
 	return dir.Open(r, strings.Join(split[1:], "/"))
 }

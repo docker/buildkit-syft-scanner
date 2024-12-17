@@ -67,7 +67,7 @@ github.com/Microsoft/hcsshim/internal/wclayer
 github.com/Microsoft/hcsshim/internal/winapi
 github.com/Microsoft/hcsshim/osversion
 github.com/Microsoft/hcsshim/pkg/ociwclayer
-# github.com/ProtonMail/go-crypto v1.1.2
+# github.com/ProtonMail/go-crypto v1.1.3
 ## explicit; go 1.17
 github.com/ProtonMail/go-crypto/bitcurves
 github.com/ProtonMail/go-crypto/brainpool
@@ -99,6 +99,9 @@ github.com/acobaugh/osrelease
 github.com/adrg/xdg
 github.com/adrg/xdg/internal/pathutil
 github.com/adrg/xdg/internal/userdirs
+# github.com/anchore/archiver/v3 v3.5.3-0.20241210171143-5b1d8d1c7c51
+## explicit; go 1.23
+github.com/anchore/archiver/v3
 # github.com/anchore/clio v0.0.0-20241115144204-29e89f9fa837
 ## explicit; go 1.22
 github.com/anchore/clio
@@ -126,7 +129,7 @@ github.com/anchore/go-version
 # github.com/anchore/packageurl-go v0.1.1-0.20241018175412-5c22e6360c4f
 ## explicit; go 1.18
 github.com/anchore/packageurl-go
-# github.com/anchore/stereoscope v0.0.10
+# github.com/anchore/stereoscope v0.0.11
 ## explicit; go 1.22.9
 github.com/anchore/stereoscope
 github.com/anchore/stereoscope/internal/bus
@@ -146,8 +149,8 @@ github.com/anchore/stereoscope/pkg/image/podman
 github.com/anchore/stereoscope/pkg/image/sif
 github.com/anchore/stereoscope/pkg/tree
 github.com/anchore/stereoscope/pkg/tree/node
-# github.com/anchore/syft v1.18.0
-## explicit; go 1.22.9
+# github.com/anchore/syft v1.18.1
+## explicit; go 1.23.2
 github.com/anchore/syft/internal
 github.com/anchore/syft/internal/bus
 github.com/anchore/syft/internal/cache
@@ -247,9 +250,10 @@ github.com/anchore/syft/syft/source/filesource
 github.com/anchore/syft/syft/source/internal
 github.com/anchore/syft/syft/source/sourceproviders
 github.com/anchore/syft/syft/source/stereoscopesource
-# github.com/andybalholm/brotli v1.0.4
-## explicit; go 1.12
+# github.com/andybalholm/brotli v1.1.1
+## explicit; go 1.13
 github.com/andybalholm/brotli
+github.com/andybalholm/brotli/matchfinder
 # github.com/aquasecurity/go-pep440-version v0.0.0-20210121094942-22b2f8951d46
 ## explicit; go 1.15
 github.com/aquasecurity/go-pep440-version
@@ -409,7 +413,7 @@ github.com/deitch/magic/pkg/magic/parser
 # github.com/distribution/reference v0.6.0
 ## explicit; go 1.20
 github.com/distribution/reference
-# github.com/docker/cli v27.3.1+incompatible
+# github.com/docker/cli v27.4.0+incompatible
 ## explicit
 github.com/docker/cli/cli/config
 github.com/docker/cli/cli/config/configfile
@@ -421,7 +425,7 @@ github.com/docker/cli/cli/connhelper/ssh
 # github.com/docker/distribution v2.8.3+incompatible
 ## explicit
 github.com/docker/distribution/registry/client/auth/challenge
-# github.com/docker/docker v27.3.1+incompatible
+# github.com/docker/docker v27.4.0+incompatible
 ## explicit
 github.com/docker/docker/api
 github.com/docker/docker/api/types
@@ -691,19 +695,20 @@ github.com/kastenhq/goversion/version
 # github.com/kevinburke/ssh_config v1.2.0
 ## explicit
 github.com/kevinburke/ssh_config
-# github.com/klauspost/compress v1.17.8
-## explicit; go 1.20
+# github.com/klauspost/compress v1.17.11
+## explicit; go 1.21
 github.com/klauspost/compress
 github.com/klauspost/compress/flate
 github.com/klauspost/compress/fse
 github.com/klauspost/compress/gzip
 github.com/klauspost/compress/huff0
 github.com/klauspost/compress/internal/cpuinfo
+github.com/klauspost/compress/internal/godebug
 github.com/klauspost/compress/internal/snapref
 github.com/klauspost/compress/zip
 github.com/klauspost/compress/zstd
 github.com/klauspost/compress/zstd/internal/xxhash
-# github.com/klauspost/pgzip v1.2.5
+# github.com/klauspost/pgzip v1.2.6
 ## explicit
 github.com/klauspost/pgzip
 # github.com/knqyf263/go-rpmdb v0.1.1
@@ -731,9 +736,6 @@ github.com/mattn/go-runewidth
 # github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d
 ## explicit
 github.com/mgutz/ansi
-# github.com/mholt/archiver/v3 v3.5.1
-## explicit; go 1.13
-github.com/mholt/archiver/v3
 # github.com/microsoft/go-rustaudit v0.0.0-20220730194248-4b17361d90a5
 ## explicit; go 1.18
 github.com/microsoft/go-rustaudit
@@ -779,7 +781,7 @@ github.com/muesli/termenv
 # github.com/ncruces/go-strftime v0.1.9
 ## explicit; go 1.17
 github.com/ncruces/go-strftime
-# github.com/nwaples/rardecode v1.1.0
+# github.com/nwaples/rardecode v1.1.3
 ## explicit
 github.com/nwaples/rardecode
 # github.com/olekukonko/tablewriter v0.0.5
@@ -814,7 +816,7 @@ github.com/pelletier/go-toml/v2/internal/characters
 github.com/pelletier/go-toml/v2/internal/danger
 github.com/pelletier/go-toml/v2/internal/tracker
 github.com/pelletier/go-toml/v2/unstable
-# github.com/pierrec/lz4/v4 v4.1.19
+# github.com/pierrec/lz4/v4 v4.1.21
 ## explicit; go 1.14
 github.com/pierrec/lz4/v4
 github.com/pierrec/lz4/v4/internal/lz4block
@@ -938,11 +940,11 @@ github.com/spf13/viper/internal/features
 # github.com/subosito/gotenv v1.6.0
 ## explicit; go 1.18
 github.com/subosito/gotenv
-# github.com/sylabs/sif/v2 v2.20.0
+# github.com/sylabs/sif/v2 v2.20.1
 ## explicit; go 1.22.8
 github.com/sylabs/sif/v2/pkg/sif
-# github.com/sylabs/squashfs v1.0.0
-## explicit; go 1.21.5
+# github.com/sylabs/squashfs v1.0.4
+## explicit; go 1.22.5
 github.com/sylabs/squashfs
 github.com/sylabs/squashfs/internal/decompress
 github.com/sylabs/squashfs/internal/metadata
@@ -1025,7 +1027,7 @@ go.uber.org/atomic
 # go.uber.org/multierr v1.9.0
 ## explicit; go 1.19
 go.uber.org/multierr
-# golang.org/x/crypto v0.30.0
+# golang.org/x/crypto v0.31.0
 ## explicit; go 1.20
 golang.org/x/crypto/argon2
 golang.org/x/crypto/bcrypt
