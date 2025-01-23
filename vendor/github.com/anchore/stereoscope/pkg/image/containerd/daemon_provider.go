@@ -319,7 +319,7 @@ func (p *daemonImageProvider) fetchPlatformFromConfig(ctx context.Context, clien
 }
 
 func (p *daemonImageProvider) pullImageIfMissing(ctx context.Context, client *containerd.Client) (string, *platforms.Platform, error) {
-	p.imageStr = checkRegistryHostMissing(p.imageStr)
+	p.imageStr = ensureRegistryHostPrefix(p.imageStr)
 
 	// try to get the image first before pulling
 	resolvedImage, resolvedPlatform, err := p.resolveImage(ctx, client, p.imageStr)
@@ -341,35 +341,42 @@ func (p *daemonImageProvider) pullImageIfMissing(ctx context.Context, client *co
 		}
 	}
 
-	if err := p.validatePlatform(resolvedPlatform); err != nil {
+	if err := validatePlatform(p.platform, resolvedPlatform); err != nil {
 		return "", nil, fmt.Errorf("platform validation failed: %w", err)
 	}
 
 	return resolvedImage, resolvedPlatform, nil
 }
 
-func (p *daemonImageProvider) validatePlatform(platform *platforms.Platform) error {
-	if p.platform == nil {
+func validatePlatform(expected *image.Platform, given *platforms.Platform) error {
+	if expected == nil {
 		return nil
 	}
 
-	if platform == nil {
-		return fmt.Errorf("image has no platform information (might be a manifest list)")
+	if given == nil {
+		return newErrPlatformMismatch(expected, fmt.Errorf("image has no platform information (might be a manifest list)"))
 	}
 
-	if platform.OS != p.platform.OS {
-		return fmt.Errorf("image has unexpected OS %q, which differs from the user specified PS %q", platform.OS, p.platform.OS)
+	if given.OS != expected.OS {
+		return newErrPlatformMismatch(expected, fmt.Errorf("image has unexpected OS %q, which differs from the user specified PS %q", given.OS, expected.OS))
 	}
 
-	if platform.Architecture != p.platform.Architecture {
-		return fmt.Errorf("image has unexpected architecture %q, which differs from the user specified architecture %q", platform.Architecture, p.platform.Architecture)
+	if given.Architecture != expected.Architecture {
+		return newErrPlatformMismatch(expected, fmt.Errorf("image has unexpected architecture %q, which differs from the user specified architecture %q", given.Architecture, expected.Architecture))
 	}
 
-	if platform.Variant != p.platform.Variant {
-		return fmt.Errorf("image has unexpected architecture %q, which differs from the user specified architecture %q", platform.Variant, p.platform.Variant)
+	if given.Variant != expected.Variant {
+		return newErrPlatformMismatch(expected, fmt.Errorf("image has unexpected architecture %q, which differs from the user specified architecture %q", given.Variant, expected.Variant))
 	}
 
 	return nil
+}
+
+func newErrPlatformMismatch(expected *image.Platform, err error) *image.ErrPlatformMismatch {
+	return &image.ErrPlatformMismatch{
+		ExpectedPlatform: expected.String(),
+		Err:              err,
+	}
 }
 
 // save the image from the containerd daemon to a tar file
@@ -504,13 +511,21 @@ func withMetadata(platform *platforms.Platform, ref string) (metadata []image.Ad
 	return metadata
 }
 
-// if image doesn't have host set, add docker hub by default
-func checkRegistryHostMissing(imageName string) string {
+// if imageName doesn't have an identifiable hostname prefix set,
+// add docker hub by default
+func ensureRegistryHostPrefix(imageName string) string {
 	parts := strings.Split(imageName, "/")
 	if len(parts) == 1 {
 		return fmt.Sprintf("docker.io/library/%s", imageName)
-	} else if len(parts) > 1 && !strings.Contains(parts[0], ".") {
-		return fmt.Sprintf("docker.io/%s", imageName)
 	}
-	return imageName
+	if isRegistryHostname(parts[0]) {
+		return imageName
+	}
+	return fmt.Sprintf("docker.io/%s", imageName)
+}
+
+// isRegistryHostname returns true if the string passed in can be interpreted
+// as a container registry hostname
+func isRegistryHostname(s string) bool {
+	return s == "localhost" || strings.Contains(s, ".") || strings.Contains(s, ":")
 }

@@ -31,7 +31,6 @@ import (
 	"regexp"
 	"sort"
 	"strings"
-	"unicode"
 )
 
 var (
@@ -498,41 +497,16 @@ func (p *PackageURL) Normalize() error {
 	return validCustomRules(*p)
 }
 
-// escape the given string in a purl-compatible way by percent-encoding and decoding purl components:
-// - the type must NOT be encoded and must NOT contain separators
-// - the '#', '?', '@' and ':' characters must NOT be encoded when used as separators. They may need to be encoded elsewhere
-// - the ':' scheme and type separator does not need to and must NOT be encoded. It is unambiguous unencoded everywhere
-// - the '/' used as type/namespace/name and subpath segments separator does not need to and must NOT be percent-encoded. It is unambiguous unencoded everywhere
-// - the '@' version separator must be encoded as %40 elsewhere
-// - the '?' qualifiers separator must be encoded as %3F elsewhere
-// - the '=' qualifiers key/value separator must **NOT** be encoded
-// - the '#' subpath separator must be encoded as %23 elsewhere
-// All non-ASCII characters must be encoded as UTF-8 and then percent-encoded. It is OK to percent-encode purl components
-// otherwise except for the type. Parsers and builders must always percent-decode and percent-encode purl components and
-// component segments as explained in the "How to parse" and "How to build" sections.
-//
+// escape the given string in a purl-compatible way
 // Source: https://github.com/package-url/purl-spec/blob/master/PURL-SPECIFICATION.rst#character-encoding
 func escape(s string) string {
-	var t strings.Builder
-	for _, c := range s {
-		switch c {
-		case '@':
-			t.WriteString("%40")
-		case '+':
-			// url.PathEscape doesn't encode '+' since it's a valid query escape character for ' ' in application/x-www-form-urlencoded, but '+' is a
-			// valid character in semver so we don't want it to be unintentionally unescaped as ' ' by downstream parsers of the purl.
-			t.WriteString("%2B")
-		case '?', '#', ' ':
-			t.WriteString(url.PathEscape(string(c)))
-		default:
-			if c > unicode.MaxASCII {
-				t.WriteString(url.PathEscape(string(c)))
-				continue
-			}
-			t.WriteRune(c)
-		}
-	}
-	return t.String()
+	// for compatibility with other implementations and the purl-spec, we want to escape all
+	// characters, which is what "QueryEscape" does. The issue with QueryEscape is that it encodes
+	// " " (space) as "+", which is valid in a query, but invalid in a path (see
+	// https://stackoverflow.com/questions/2678551/when-should-space-be-encoded-to-plus-or-20) for
+	// context).
+	// To work around that, we replace the "+" signs with the path-compatible "%20".
+	return strings.ReplaceAll(url.QueryEscape(s), "+", "%20")
 }
 
 func separateNamespaceNameVersion(path string) (ns, name, version string, err error) {
