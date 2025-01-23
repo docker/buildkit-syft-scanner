@@ -177,6 +177,13 @@ func Parse(v string) (Version, error) {
 	}, nil
 }
 
+// UnmarshalText implements [encoding.TextUnmarshaler].
+func (v *Version) UnmarshalText(data []byte) error {
+	var err error
+	*v, err = Parse(string(data))
+	return err
+}
+
 // ref. https://github.com/pypa/packaging/blob/a6407e3a7e19bd979e93f58cfc7f6641a7378c46/packaging/version.py#L495
 func cmpkey(epoch part.Uint64, release []part.Uint64, pre, post, dev letterNumber, local string) key {
 	// Set default values
@@ -282,9 +289,11 @@ func (v Version) String() string {
 	}
 
 	// Release segment
-	fmt.Fprintf(&buf, "%d", v.release[0])
-	for _, r := range v.release[1:len(v.release)] {
-		fmt.Fprintf(&buf, ".%d", r)
+	if len(v.release) != 0 {
+		fmt.Fprintf(&buf, "%d", v.release[0])
+		for _, r := range v.release[1:] {
+			fmt.Fprintf(&buf, ".%d", r)
+		}
 	}
 
 	// Pre-release
@@ -310,6 +319,11 @@ func (v Version) String() string {
 	return buf.String()
 }
 
+// MarshalText implements [encoding.TextMarshaler].
+func (v Version) MarshalText() ([]byte, error) {
+	return []byte(v.String()), nil
+}
+
 // BaseVersion returns the base version
 func (v Version) BaseVersion() string {
 	var buf bytes.Buffer
@@ -320,9 +334,11 @@ func (v Version) BaseVersion() string {
 	}
 
 	// Release segment
-	fmt.Fprintf(&buf, "%d", v.release[0])
-	for _, r := range v.release[1:len(v.release)] {
-		fmt.Fprintf(&buf, ".%d", r)
+	if len(v.release) != 0 {
+		fmt.Fprintf(&buf, "%d", v.release[0])
+		for _, r := range v.release[1:] {
+			fmt.Fprintf(&buf, ".%d", r)
+		}
 	}
 
 	return buf.String()
