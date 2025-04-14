@@ -1,6 +1,6 @@
 module github.com/docker/buildkit-syft-scanner
 
-go 1.23.2
+go 1.24.0
 
 require (
 	github.com/anchore/go-logger v0.0.0-20230725134548-c21dafa1ec5a
