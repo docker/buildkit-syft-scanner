@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-ARG GO_VERSION="1.23"
+ARG GO_VERSION="1.24"
 ARG ALPINE_VERSION="3.21"
 ARG XX_VERSION="1.6.1"
 
@@ -45,7 +45,8 @@ ARG TARGETPLATFORM
 RUN --mount=type=bind,target=. \
     --mount=type=bind,from=version,source=/tmp/.ldflags,target=/tmp/.ldflags \
     --mount=type=cache,target=/root/.cache <<EOT
-  set -e
+  set -ex
+  xx-go version
   xx-go build -trimpath -ldflags "$(cat /tmp/.ldflags)" -o /usr/local/bin/syft-scanner ./cmd/syft-scanner
   xx-verify --static /usr/local/bin/syft-scanner
 EOT
