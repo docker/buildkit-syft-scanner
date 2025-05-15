@@ -42,7 +42,7 @@ func (f *FS) Glob(pattern string) (out []string, err error) {
 		}
 	}
 	split := strings.Split(pattern, "/")
-	for i := 0; i < len(f.d.Entries); i++ {
+	for i := range f.d.Entries {
 		if match, _ := path.Match(split[0], f.d.Entries[i].Name); match {
 			if len(split) == 1 {
 				out = append(out, f.d.Entries[i].Name)
@@ -80,7 +80,7 @@ func (f *FS) Glob(pattern string) (out []string, err error) {
 					Err:  err,
 				}
 			}
-			for i := 0; i < len(subGlob); i++ {
+			for i := range subGlob {
 				subGlob[i] = f.d.Name + "/" + subGlob[i]
 			}
 			out = append(out, subGlob...)

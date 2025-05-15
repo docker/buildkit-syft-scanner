@@ -10,7 +10,8 @@ import (
 
 	"github.com/docker/cli/cli/connhelper"
 	"github.com/docker/docker/client"
-	"github.com/mitchellh/go-homedir"
+
+	"github.com/anchore/go-homedir"
 )
 
 func GetClient() (*client.Client, error) {

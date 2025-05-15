@@ -1,0 +1,140 @@
+
+version: "3"
+vars:
+  OWNER: anchore
+  PROJECT: go-homedir
+
+  # static file dirs
+  TOOL_DIR: .tool
+
+  # Tools
+  BINNY: "{{ .TOOL_DIR }}/binny"
+  GOLANGCI: "{{ .TOOL_DIR }}/golangci-lint"
+
+env:
+  GNUMAKEFLAGS: '--no-print-directory'
+
+tasks:
+
+  ## High-level tasks #################################
+
+  default:
+    desc: Run all validation tasks
+    aliases:
+      - pr-validations
+      - validations
+    cmds:
+      - task: static-analysis
+      - task: test
+      - task: install-test
+
+  static-analysis:
+    desc: Run all static analysis tasks
+    cmds:
+      - task: check-go-mod-tidy
+      - task: lint
+
+  test:
+    desc: Run all levels of test
+    cmds:
+      - task: unit
+
+  ## Bootstrap tasks #################################
+
+  binny:
+    internal: true
+    # desc: Get the binny tool
+    generates:
+      - "{{ .BINNY }}"
+    status:
+      - "test -f {{ .BINNY }}"
+    cmd: "curl -sSfL https://raw.githubusercontent.com/anchore/binny/main/install.sh | sh -s -- -b .tool"
+    silent: true
+
+  tools:
+    desc: Install all tools needed for CI and local development
+    deps: [binny]
+    aliases:
+      - bootstrap
+    generates:
+      - ".binny.yaml"
+      - "{{ .TOOL_DIR }}/*"
+    status:
+      - "{{ .BINNY }} check -v"
+    cmd: "{{ .BINNY }} install -v"
+    silent: true
+
+  update-tools:
+    desc: Update pinned versions of all tools to their latest available versions
+    deps: [binny]
+    generates:
+      - ".binny.yaml"
+      - "{{ .TOOL_DIR }}/*"
+    cmd: "{{ .BINNY }} update -v"
+    silent: true
+
+  list-tools:
+    desc: List all tools needed for CI and local development
+    deps: [binny]
+    cmd: "{{ .BINNY }} list"
+    silent: true
+
+  list-tool-updates:
+    desc: List all tools that are not up to date relative to the binny config
+    deps: [binny]
+    cmd: "{{ .BINNY }} list --updates"
+    silent: true
+
+
+  ## Static analysis tasks #################################
+
+  format:
+    desc: Auto-format all source code
+    deps: [tools]
+    cmds:
+      - gofmt -w -s .
+      - go mod tidy
+
+  lint-fix:
+    desc: Auto-format all source code + run golangci lint fixers
+    deps: [tools]
+    cmds:
+      - task: format
+      - "{{ .GOLANGCI }} run --fix"
+
+  lint:
+    desc: Run gofmt + golangci lint checks
+    vars:
+      BAD_FMT_FILES:
+        sh: gofmt -l -s .
+      BAD_FILE_NAMES:
+        sh: "find . | grep -e ':' || true"
+    deps: [tools]
+    cmds:
+      # ensure there are no go fmt differences
+      - cmd: 'test -z "{{ .BAD_FMT_FILES }}" || (echo "files with gofmt issues: [{{ .BAD_FMT_FILES }}]"; exit 1)'
+        silent: true
+      # ensure there are no files with ":" in it (a known back case in the go ecosystem)
+      - cmd: 'test -z "{{ .BAD_FILE_NAMES }}" || (echo "files with bad names: [{{ .BAD_FILE_NAMES }}]"; exit 1)'
+        silent: true
+      # run linting
+      - "{{ .GOLANGCI }} run"
+
+  check-go-mod-tidy:
+    desc: Check if go.mod and go.sum are tidy
+    cmds:
+      - cmd: go mod tidy -diff
+        silent: false
+    sources:
+      - go.mod
+      - go.sum
+    status:
+      - test -z "$(go mod tidy -diff)"
+    silent: true
+
+  ## Test tasks #################################
+
+  unit:
+    desc: Run unit tests
+    cmds:
+      - "go test ./... -v"

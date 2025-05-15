@@ -5,8 +5,9 @@ import (
 	"path"
 
 	"github.com/adrg/xdg"
-	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/viper"
+
+	"github.com/anchore/go-homedir"
 )
 
 type Finder func(cfg Config) []string

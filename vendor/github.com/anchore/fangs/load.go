@@ -8,11 +8,12 @@ import (
 	"strings"
 
 	"dario.cat/mergo"
-	"github.com/mitchellh/go-homedir"
-	"github.com/mitchellh/mapstructure"
+	"github.com/go-viper/mapstructure/v2"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
+
+	"github.com/anchore/go-homedir"
 )
 
 func Load(cfg Config, cmd *cobra.Command, configurations ...any) error {
@@ -212,7 +213,7 @@ func mergeProfiles(cfg Config, v *viper.Viper) error {
 // may be a pointer to a pointer
 //
 //nolint:gocognit
-func configureViper(cfg Config, vpr *viper.Viper, configuring []reflect.Type, visited set[reflect.Value], v reflect.Value, flags flagRefs, path []string) {
+func configureViper(cfg Config, vpr *viper.Viper, configuring []reflect.Type, visited set[reflect.Value], v reflect.Value, flags flagRefs, path []string) { //nolint:funlen
 	if visited.contains(v) {
 		return
 	}

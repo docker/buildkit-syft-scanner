@@ -69,7 +69,7 @@ func Use(l *logrus.Logger, cfg Config) (iface.Logger, error) {
 	var output io.Writer
 	switch {
 	case cfg.EnableConsole && cfg.FileLocation != "":
-		logFile, err := os.OpenFile(cfg.FileLocation, os.O_WRONLY|os.O_CREATE, defaultLogFilePermissions)
+		logFile, err := os.OpenFile(cfg.FileLocation, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, defaultLogFilePermissions)
 		if err != nil {
 			return nil, fmt.Errorf("unable to setup log file: %w", err)
 		}
@@ -77,7 +77,7 @@ func Use(l *logrus.Logger, cfg Config) (iface.Logger, error) {
 	case cfg.EnableConsole:
 		output = os.Stderr
 	case cfg.FileLocation != "":
-		logFile, err := os.OpenFile(cfg.FileLocation, os.O_WRONLY|os.O_CREATE, defaultLogFilePermissions)
+		logFile, err := os.OpenFile(cfg.FileLocation, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, defaultLogFilePermissions)
 		if err != nil {
 			return nil, fmt.Errorf("unable to setup log file: %w", err)
 		}

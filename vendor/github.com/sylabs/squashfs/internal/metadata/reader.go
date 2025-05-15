@@ -50,10 +50,7 @@ func (r *Reader) Read(b []byte) (int, error) {
 				return curRead, err
 			}
 		}
-		toRead = len(b) - curRead
-		if toRead > len(r.dat)-int(r.curOffset) {
-			toRead = len(r.dat) - int(r.curOffset)
-		}
+		toRead = min(len(b)-curRead, len(r.dat)-int(r.curOffset))
 		copy(b[curRead:], r.dat[r.curOffset:int(r.curOffset)+toRead])
 		r.curOffset += uint16(toRead)
 		curRead += toRead
