@@ -67,7 +67,7 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           set: |
             *.cache-from=type=gha,scope=image
-            *.cache-to=type=gha,scope=image,mode=max
+            *.cache-to=type=gha,scope=image
             *.attest=type=sbom
 
   dockerhub-readme:
