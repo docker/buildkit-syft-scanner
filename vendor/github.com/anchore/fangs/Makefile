@@ -5,7 +5,7 @@ LINT_CMD := $(TEMP_DIR)/golangci-lint run --tests=false
 GOIMPORTS_CMD := $(TEMP_DIR)/gosimports -local github.com/anchore
 
 # Tool versions #################################
-GOLANGCILINT_VERSION := v1.55.1
+GOLANGCILINT_VERSION := v1.64.7
 GOSIMPORTS_VERSION := v0.3.8
 BOUNCER_VERSION := v0.4.0
 
@@ -67,7 +67,6 @@ bootstrap: $(TEMP_DIR) bootstrap-go bootstrap-tools ## Download and install all 
 
 .PHONY: bootstrap-tools
 bootstrap-tools: $(TEMP_DIR)
-	GO111MODULE=off GOBIN=$(realpath $(TEMP_DIR)) go get -u golang.org/x/perf/cmd/benchstat
 	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(TEMP_DIR)/ $(GOLANGCILINT_VERSION)
 	curl -sSfL https://raw.githubusercontent.com/wagoodman/go-bouncer/master/bouncer.sh | sh -s -- -b $(TEMP_DIR)/ $(BOUNCER_VERSION)
 	GOBIN="$(realpath $(TEMP_DIR))" go install github.com/rinchsan/gosimports/cmd/gosimports@$(GOSIMPORTS_VERSION)

@@ -1,10 +1,13 @@
 package helpers
 
 import (
+	"context"
+	"encoding/base64"
 	"strings"
 
 	"github.com/CycloneDX/cyclonedx-go"
 
+	"github.com/anchore/syft/internal/licenses"
 	"github.com/anchore/syft/internal/spdxlicense"
 	"github.com/anchore/syft/syft/pkg"
 )
@@ -56,11 +59,11 @@ func decodeLicenses(c *cyclonedx.Component) []pkg.License {
 		// these fields are mutually exclusive in the spec
 		switch {
 		case l.License != nil && l.License.ID != "":
-			licenses = append(licenses, pkg.NewLicenseFromURLs(l.License.ID, l.License.URL))
+			licenses = append(licenses, pkg.NewLicenseFromURLsWithContext(context.TODO(), l.License.ID, l.License.URL))
 		case l.License != nil && l.License.Name != "":
-			licenses = append(licenses, pkg.NewLicenseFromURLs(l.License.Name, l.License.URL))
+			licenses = append(licenses, pkg.NewLicenseFromURLsWithContext(context.TODO(), l.License.Name, l.License.URL))
 		case l.Expression != "":
-			licenses = append(licenses, pkg.NewLicense(l.Expression))
+			licenses = append(licenses, pkg.NewLicenseWithContext(context.TODO(), l.Expression))
 		default:
 		}
 	}
@@ -110,7 +113,7 @@ func separateLicenses(p pkg.Package) (spdx, other cyclonedx.Licenses, expression
 			continue
 		}
 
-		if l.SPDXExpression != "" {
+		if l.SPDXExpression != "" && !strings.HasPrefix(l.SPDXExpression, licenses.UnknownLicensePrefix) {
 			// COMPLEX EXPRESSION CASE
 			ex = append(ex, l.SPDXExpression)
 			continue
@@ -118,17 +121,43 @@ func separateLicenses(p pkg.Package) (spdx, other cyclonedx.Licenses, expression
 
 		// license string that are not valid spdx expressions or ids
 		// we only use license Name here since we cannot guarantee that the license is a valid SPDX expression
-		if len(l.URLs) > 0 {
+		if len(l.URLs) > 0 && !strings.HasPrefix(l.SPDXExpression, licenses.UnknownLicensePrefix) {
 			processLicenseURLs(l, "", &otherc)
 			continue
 		}
-		otherc = append(otherc, cyclonedx.LicenseChoice{
+
+		otherc = append(otherc, processCustomLicense(l)...)
+	}
+	return spdxc, otherc, ex
+}
+
+func processCustomLicense(l pkg.License) cyclonedx.Licenses {
+	result := cyclonedx.Licenses{}
+	if strings.HasPrefix(l.SPDXExpression, licenses.UnknownLicensePrefix) {
+		cyclonedxLicense := &cyclonedx.License{
+			Name: l.SPDXExpression,
+		}
+		if len(l.URLs) > 0 {
+			cyclonedxLicense.URL = l.URLs[0]
+		}
+		if len(l.Contents) > 0 {
+			cyclonedxLicense.Text = &cyclonedx.AttachedText{
+				Content: base64.StdEncoding.EncodeToString([]byte(l.Contents)),
+			}
+			cyclonedxLicense.Text.ContentType = "text/plain"
+			cyclonedxLicense.Text.Encoding = "base64"
+		}
+		result = append(result, cyclonedx.LicenseChoice{
+			License: cyclonedxLicense,
+		})
+	} else {
+		result = append(result, cyclonedx.LicenseChoice{
 			License: &cyclonedx.License{
 				Name: l.Value,
 			},
 		})
 	}
-	return spdxc, otherc, ex
+	return result
 }
 
 func processLicenseURLs(l pkg.License, spdxID string, populate *cyclonedx.Licenses) {
@@ -185,13 +214,15 @@ func reduceOuter(expression string) string {
 func isBalanced(expression string) bool {
 	count := 0
 	for _, c := range expression {
-		if c == '(' {
+		switch c {
+		case '(':
 			count++
-		} else if c == ')' {
+		case ')':
 			count--
 			if count < 0 {
 				return false
 			}
+		default:
 		}
 	}
 	return count == 0

@@ -179,9 +179,10 @@ func (f *File) initializeReaders() error {
 
 func (f *File) deviceDevices() (maj uint32, min uint32) {
 	var dev uint32
-	if f.b.Inode.Type == inode.Char || f.b.Inode.Type == inode.Block {
+	switch f.b.Inode.Type {
+	case inode.Char, inode.Block:
 		dev = f.b.Inode.Data.(inode.Device).Dev
-	} else if f.b.Inode.Type == inode.EChar || f.b.Inode.Type == inode.EBlock {
+	case inode.EChar, inode.EBlock:
 		dev = f.b.Inode.Data.(inode.EDevice).Dev
 	}
 	return dev >> 8, dev & 0x000FF
@@ -266,7 +267,7 @@ func (f *File) ExtractWithOptions(path string, op *ExtractionOptions) error {
 			}(b, path)
 		}
 		var errCache []error
-		for i := 0; i < len(d.Entries); i++ {
+		for range d.Entries {
 			err := <-errChan
 			if err != nil {
 				errCache = append(errCache, err)
@@ -363,11 +364,12 @@ func (f *File) ExtractWithOptions(path string, op *ExtractionOptions) error {
 		}
 		path = filepath.Join(path, f.b.Name)
 		var typ string
-		if f.b.Inode.Type == inode.Char || f.b.Inode.Type == inode.EChar {
+		switch f.b.Inode.Type {
+		case inode.Char, inode.EChar:
 			typ = "c"
-		} else if f.b.Inode.Type == inode.Block || f.b.Inode.Type == inode.EBlock {
+		case inode.Block, inode.EBlock:
 			typ = "b"
-		} else { //Fifo IPC
+		default: //Fifo IPC
 			if runtime.GOOS == "darwin" {
 				if op.Verbose {
 					log.Println(f.path(), "ignored. A Fifo file and can't be created on Darwin.")

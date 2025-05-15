@@ -41,6 +41,7 @@ func (r *Reader) advance() error {
 		r.dat, err = io.ReadAll(r.frag)
 		return err
 	} else if r.curIndex >= uint64(len(r.sizes)) {
+		r.dat = []byte{}
 		return io.EOF
 	}
 	realSize := r.sizes[r.curIndex] &^ (1 << 24)
@@ -73,10 +74,7 @@ func (r *Reader) Read(b []byte) (int, error) {
 				return curRead, err
 			}
 		}
-		toRead = len(b) - curRead
-		if toRead > len(r.dat)-r.curOffset {
-			toRead = len(r.dat) - r.curOffset
-		}
+		toRead = min(len(b)-curRead, len(r.dat)-r.curOffset)
 		toRead = copy(b[curRead:], r.dat[r.curOffset:r.curOffset+toRead])
 		r.curOffset += toRead
 		curRead += toRead

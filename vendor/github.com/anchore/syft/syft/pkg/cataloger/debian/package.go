@@ -1,6 +1,7 @@
 package debian
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"path"
@@ -22,11 +23,11 @@ const (
 	docsPath     = "/usr/share/doc"
 )
 
-func newDpkgPackage(d pkg.DpkgDBEntry, dbLocation file.Location, resolver file.Resolver, release *linux.Release, evidence ...file.Location) pkg.Package {
+func newDpkgPackage(ctx context.Context, d pkg.DpkgDBEntry, dbLocation file.Location, resolver file.Resolver, release *linux.Release, evidence ...file.Location) pkg.Package {
 	// TODO: separate pr to license refactor, but explore extracting dpkg-specific license parsing into a separate function
-	licenses := make([]pkg.License, 0)
+	var licenses []pkg.License
 
-	locations := file.NewLocationSet(dbLocation.WithAnnotation(pkg.EvidenceAnnotationKey, pkg.PrimaryEvidenceAnnotation))
+	locations := file.NewLocationSet(dbLocation)
 	locations.Add(evidence...)
 
 	p := pkg.Package{
@@ -46,11 +47,30 @@ func newDpkgPackage(d pkg.DpkgDBEntry, dbLocation file.Location, resolver file.R
 		mergeFileListing(resolver, dbLocation, &p)
 
 		// fetch additional data from the copyright file to derive the license information
-		addLicenses(resolver, dbLocation, &p)
+		addLicenses(ctx, resolver, dbLocation, &p)
 	}
 
 	p.SetID()
 
+	return p
+}
+
+func newDebArchivePackage(ctx context.Context, location file.Location, metadata pkg.DpkgArchiveEntry, licenseStrings []string) pkg.Package {
+	p := pkg.Package{
+		Name:     metadata.Package,
+		Version:  metadata.Version,
+		Licenses: pkg.NewLicenseSet(pkg.NewLicensesFromValuesWithContext(ctx, licenseStrings...)...),
+		Type:     pkg.DebPkg,
+		PURL: packageURL(
+			pkg.DpkgDBEntry(metadata),
+			// we don't know the distro information, but since this is a deb file then we can reasonably assume it is a debian-based distro
+			&linux.Release{IDLike: []string{"debian"}},
+		),
+		Metadata:  metadata,
+		Locations: file.NewLocationSet(location.WithAnnotation(pkg.EvidenceAnnotationKey, pkg.PrimaryEvidenceAnnotation)),
+	}
+
+	p.SetID()
 	return p
 }
 
@@ -89,7 +109,7 @@ func packageURL(m pkg.DpkgDBEntry, distro *linux.Release) string {
 	).ToString()
 }
 
-func addLicenses(resolver file.Resolver, dbLocation file.Location, p *pkg.Package) {
+func addLicenses(ctx context.Context, resolver file.Resolver, dbLocation file.Location, p *pkg.Package) {
 	metadata, ok := p.Metadata.(pkg.DpkgDBEntry)
 	if !ok {
 		log.WithFields("package", p).Trace("unable to extract DPKG metadata to add licenses")
@@ -98,16 +118,23 @@ func addLicenses(resolver file.Resolver, dbLocation file.Location, p *pkg.Packag
 
 	// get license information from the copyright file
 	copyrightReader, copyrightLocation := fetchCopyrightContents(resolver, dbLocation, metadata)
-
+	var licenseStrs []string
 	if copyrightReader != nil && copyrightLocation != nil {
 		defer internal.CloseAndLogError(copyrightReader, copyrightLocation.AccessPath)
 		// attach the licenses
-		licenseStrs := parseLicensesFromCopyright(copyrightReader)
+		licenseStrs = parseLicensesFromCopyright(copyrightReader)
 		for _, licenseStr := range licenseStrs {
-			p.Licenses.Add(pkg.NewLicenseFromLocations(licenseStr, copyrightLocation.WithoutAnnotations()))
+			p.Licenses.Add(pkg.NewLicenseFromLocationsWithContext(ctx, licenseStr, copyrightLocation.WithoutAnnotations()))
 		}
 		// keep a record of the file where this was discovered
 		p.Locations.Add(*copyrightLocation)
+	}
+	// try to use the license classifier if parsing the copyright file failed
+	if len(licenseStrs) == 0 {
+		sr, sl := fetchCopyrightContents(resolver, dbLocation, metadata)
+		if sr != nil && sl != nil {
+			p.Licenses.Add(pkg.NewLicensesFromReadCloserWithContext(ctx, file.NewLocationReadCloser(*sl, sr))...)
+		}
 	}
 }
 

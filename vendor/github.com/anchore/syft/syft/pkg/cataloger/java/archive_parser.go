@@ -96,7 +96,10 @@ func uniquePkgKey(groupID string, p *pkg.Package) string {
 // newJavaArchiveParser returns a new java archive parser object for the given archive. Can be configured to discover
 // and parse nested archives or ignore them.
 func newJavaArchiveParser(ctx context.Context, reader file.LocationReadCloser, detectNested bool, cfg ArchiveCatalogerConfig) (*archiveParser, func(), error) {
-	licenseScanner := licenses.ContextLicenseScanner(ctx)
+	licenseScanner, err := licenses.ContextLicenseScanner(ctx)
+	if err != nil {
+		return nil, nil, fmt.Errorf("could not build license scanner for java archive parser: %w", err)
+	}
 
 	// fetch the last element of the virtual path
 	virtualElements := strings.Split(reader.Path(), ":")
@@ -207,7 +210,7 @@ func finalizePackage(p *pkg.Package) {
 			p.Type = pkg.JenkinsPluginPkg
 		}
 	} else {
-		log.WithFields("package", p.String()).Warn("unable to extract java metadata to generate purl")
+		log.WithFields("package", p.String()).Debug("unable to extract java metadata to generate purl")
 	}
 
 	p.SetID()
@@ -234,7 +237,7 @@ func (j *archiveParser) discoverMainPackage(ctx context.Context) (*pkg.Package, 
 	manifestContents := contents[manifestMatches[0]]
 	manifest, err := parseJavaManifest(j.archivePath, strings.NewReader(manifestContents))
 	if err != nil {
-		log.Warnf("failed to parse java manifest (%s): %+v", j.location, err)
+		log.Debugf("failed to parse java manifest (%s): %+v", j.location, err)
 		return nil, nil
 	}
 
@@ -246,7 +249,7 @@ func (j *archiveParser) discoverMainPackage(ctx context.Context) (*pkg.Package, 
 	}
 
 	// grab and assign digest for the entire archive
-	digests, err := getDigestsFromArchive(j.archivePath)
+	digests, err := getDigestsFromArchive(ctx, j.archivePath)
 	if err != nil {
 		return nil, err
 	}
@@ -277,7 +280,7 @@ func (j *archiveParser) discoverMainPackage(ctx context.Context) (*pkg.Package, 
 func (j *archiveParser) discoverNameVersionLicense(ctx context.Context, manifest *pkg.JavaManifest) (string, string, []pkg.License, error) {
 	// we use j.location because we want to associate the license declaration with where we discovered the contents in the manifest
 	// TODO: when we support locations of paths within archives we should start passing the specific manifest location object instead of the top jar
-	lics := pkg.NewLicensesFromLocation(j.location, selectLicenses(manifest)...)
+	lics := pkg.NewLicensesFromLocationWithContext(ctx, j.location, selectLicenses(manifest)...)
 	/*
 		We should name and version from, in this order:
 		1. pom.properties if we find exactly 1
@@ -348,10 +351,10 @@ func (j *archiveParser) findLicenseFromJavaMetadata(ctx context.Context, groupID
 		}
 	}
 
-	return toPkgLicenses(&j.location, pomLicenses)
+	return toPkgLicenses(ctx, &j.location, pomLicenses)
 }
 
-func toPkgLicenses(location *file.Location, licenses []maven.License) []pkg.License {
+func toPkgLicenses(ctx context.Context, location *file.Location, licenses []maven.License) []pkg.License {
 	var out []pkg.License
 	for _, license := range licenses {
 		name := ""
@@ -362,10 +365,14 @@ func toPkgLicenses(location *file.Location, licenses []maven.License) []pkg.Lice
 		if license.URL != nil {
 			url = *license.URL
 		}
+		// note: it is possible to:
+		// - have a license without a URL
+		// - have license and a URL
+		// - have a URL without a license (this is weird, but can happen)
 		if name == "" && url == "" {
 			continue
 		}
-		out = append(out, pkg.NewLicenseFromFields(name, url, location))
+		out = append(out, pkg.NewLicenseFromFieldsWithContext(ctx, name, url, location))
 	}
 	return out
 }
@@ -472,7 +479,7 @@ func (j *archiveParser) discoverPkgsFromAllMavenFiles(ctx context.Context, paren
 	return pkgs, nil
 }
 
-func getDigestsFromArchive(archivePath string) ([]file.Digest, error) {
+func getDigestsFromArchive(ctx context.Context, archivePath string) ([]file.Digest, error) {
 	archiveCloser, err := os.Open(archivePath)
 	if err != nil {
 		return nil, fmt.Errorf("unable to open archive path (%s): %w", archivePath, err)
@@ -480,16 +487,16 @@ func getDigestsFromArchive(archivePath string) ([]file.Digest, error) {
 	defer internal.CloseAndLogError(archiveCloser, archivePath)
 
 	// grab and assign digest for the entire archive
-	digests, err := intFile.NewDigestsFromFile(archiveCloser, javaArchiveHashes)
+	digests, err := intFile.NewDigestsFromFile(ctx, archiveCloser, javaArchiveHashes)
 	if err != nil {
-		log.Warnf("failed to create digest for file=%q: %+v", archivePath, err)
+		log.Debugf("failed to create digest for file=%q: %+v", archivePath, err)
 	}
 
 	return digests, nil
 }
 
 func (j *archiveParser) getLicenseFromFileInArchive(ctx context.Context) ([]pkg.License, error) {
-	var fileLicenses []pkg.License
+	var out []pkg.License
 	for _, filename := range licenses.FileNames() {
 		licenseMatches := j.fileManifest.GlobMatch(true, "/META-INF/"+filename)
 		if len(licenseMatches) == 0 {
@@ -506,19 +513,15 @@ func (j *archiveParser) getLicenseFromFileInArchive(ctx context.Context) ([]pkg.
 			for _, licenseMatch := range licenseMatches {
 				licenseContents := contents[licenseMatch]
 				r := strings.NewReader(licenseContents)
-				parsed, err := licenses.Search(ctx, j.licenseScanner, file.NewLocationReadCloser(j.location, io.NopCloser(r)))
-				if err != nil {
-					return nil, err
-				}
-
-				if len(parsed) > 0 {
-					fileLicenses = append(fileLicenses, parsed...)
+				lics := pkg.NewLicensesFromReadCloserWithContext(ctx, file.NewLocationReadCloser(j.location, io.NopCloser(r)))
+				if len(lics) > 0 {
+					out = append(out, lics...)
 				}
 			}
 		}
 	}
 
-	return fileLicenses, nil
+	return out, nil
 }
 
 func (j *archiveParser) discoverPkgsFromNestedArchives(ctx context.Context, parentPkg *pkg.Package) ([]pkg.Package, []artifact.Relationship, error) {
@@ -546,7 +549,7 @@ func discoverPkgsFromOpeners(ctx context.Context, location file.Location, opener
 	for pathWithinArchive, archiveOpener := range openers {
 		nestedPkgs, nestedRelationships, err := discoverPkgsFromOpener(ctx, location, pathWithinArchive, archiveOpener, cfg, parentPkg)
 		if err != nil {
-			log.WithFields("location", location.Path()).Warnf("unable to discover java packages from opener: %+v", err)
+			log.WithFields("location", location.Path(), "error", err).Debug("unable to discover java packages from opener")
 			continue
 		}
 
@@ -575,7 +578,7 @@ func discoverPkgsFromOpener(ctx context.Context, location file.Location, pathWit
 	}
 	defer func() {
 		if closeErr := archiveReadCloser.Close(); closeErr != nil {
-			log.Warnf("unable to close archived file from tempdir: %+v", closeErr)
+			log.Debugf("unable to close archived file from tempdir: %+v", closeErr)
 		}
 	}()
 
@@ -604,7 +607,7 @@ func pomPropertiesByParentPath(archivePath string, location file.Location, extra
 	for filePath, fileContents := range contentsOfMavenPropertiesFiles {
 		pomProperties, err := parsePomProperties(filePath, strings.NewReader(fileContents))
 		if err != nil {
-			log.WithFields("contents-path", filePath, "location", location.Path()).Warnf("failed to parse pom.properties: %+v", err)
+			log.WithFields("contents-path", filePath, "location", location.Path(), "error", err).Debug("failed to parse pom.properties")
 			continue
 		}
 
@@ -634,7 +637,7 @@ func pomProjectByParentPath(archivePath string, location file.Location, extractP
 		// TODO: when we support locations of paths within archives we should start passing the specific pom.xml location object instead of the top jar
 		pom, err := maven.ParsePomXML(strings.NewReader(fileContents))
 		if err != nil {
-			log.WithFields("contents-path", filePath, "location", location.Path()).Warnf("failed to parse pom.xml: %+v", err)
+			log.WithFields("contents-path", filePath, "location", location.Path(), "error", err).Debug("failed to parse pom.xml")
 			continue
 		}
 		if pom == nil {
@@ -689,7 +692,7 @@ func newPackageFromMavenData(ctx context.Context, r *maven.Resolver, pomProperti
 		log.WithFields("error", err, "mavenID", maven.NewID(pomProperties.GroupID, pomProperties.ArtifactID, pomProperties.Version)).Trace("error attempting to resolve licenses")
 	}
 
-	licenseSet := pkg.NewLicenseSet(toPkgLicenses(&location, pomLicenses)...)
+	licenseSet := pkg.NewLicenseSet(toPkgLicenses(ctx, &location, pomLicenses)...)
 
 	p := pkg.Package{
 		Name:    pomProperties.ArtifactID,

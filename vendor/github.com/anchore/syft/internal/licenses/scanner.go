@@ -2,6 +2,7 @@ package licenses
 
 import (
 	"context"
+	"fmt"
 	"io"
 
 	"github.com/google/licensecheck"
@@ -9,10 +10,23 @@ import (
 	"github.com/anchore/syft/internal/log"
 )
 
-const coverageThreshold = 75 // determined by experimentation
+const (
+	UnknownLicensePrefix     = unknownLicenseType + "_"
+	DefaultCoverageThreshold = 75 // determined by experimentation
+
+	unknownLicenseType = "UNKNOWN"
+)
+
+type Evidence struct {
+	ID    string            // License identifier. (See licenses/README.md.)
+	Type  licensecheck.Type // The type of the license: BSD, MIT, etc.
+	Start int               // Start offset of match in text; match is at text[Start:End].
+	End   int               // End offset of match in text.
+	IsURL bool              // Whether match is a URL.
+}
 
 type Scanner interface {
-	IdentifyLicenseIDs(context.Context, io.Reader) ([]string, error)
+	FindEvidence(context.Context, io.Reader) ([]Evidence, []byte, error)
 }
 
 var _ Scanner = (*scanner)(nil)
@@ -22,47 +36,47 @@ type scanner struct {
 	scanner           func([]byte) licensecheck.Coverage
 }
 
+type ScannerConfig struct {
+	CoverageThreshold float64
+	Scanner           func([]byte) licensecheck.Coverage
+}
+
+type Option func(*scanner)
+
+func WithCoverage(coverage float64) Option {
+	return func(s *scanner) {
+		s.coverageThreshold = coverage
+	}
+}
+
 // NewDefaultScanner returns a scanner that uses a new instance of the default licensecheck package scanner.
-func NewDefaultScanner() Scanner {
+func NewDefaultScanner(o ...Option) (Scanner, error) {
 	s, err := licensecheck.NewScanner(licensecheck.BuiltinLicenses())
 	if err != nil {
 		log.WithFields("error", err).Trace("unable to create default license scanner")
-		s = nil
+		return nil, fmt.Errorf("unable to create default license scanner: %w", err)
 	}
-	return &scanner{
-		coverageThreshold: coverageThreshold,
+
+	newScanner := &scanner{
+		coverageThreshold: DefaultCoverageThreshold,
 		scanner:           s.Scan,
 	}
+
+	for _, opt := range o {
+		opt(newScanner)
+	}
+	return newScanner, nil
 }
 
-// TestingOnlyScanner returns a scanner that uses the built-in license scanner from the licensecheck package.
-// THIS IS ONLY MEANT FOR TEST CODE, NOT PRODUCTION CODE.
-func TestingOnlyScanner() Scanner {
+// NewScanner generates a license Scanner with the given ScannerConfig
+// if config is nil NewDefaultScanner is used
+func NewScanner(c *ScannerConfig) (Scanner, error) {
+	if c == nil {
+		return NewDefaultScanner()
+	}
+
 	return &scanner{
-		coverageThreshold: coverageThreshold,
-		scanner:           licensecheck.Scan,
-	}
-}
-
-func (s scanner) IdentifyLicenseIDs(_ context.Context, reader io.Reader) ([]string, error) {
-	if s.scanner == nil {
-		return nil, nil
-	}
-
-	content, err := io.ReadAll(reader)
-	if err != nil {
-		return nil, err
-	}
-
-	cov := s.scanner(content)
-	if cov.Percent < s.coverageThreshold {
-		// unknown or no licenses here?
-		return nil, nil
-	}
-
-	var ids []string
-	for _, m := range cov.Match {
-		ids = append(ids, m.ID)
-	}
-	return ids, nil
+		coverageThreshold: c.CoverageThreshold,
+		scanner:           c.Scanner,
+	}, nil
 }

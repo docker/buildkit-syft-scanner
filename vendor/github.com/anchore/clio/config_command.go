@@ -7,10 +7,10 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 
 	"github.com/anchore/fangs"
+	"github.com/anchore/go-homedir"
 	"github.com/anchore/go-logger/adapter/redact"
 )
 

@@ -558,7 +558,7 @@ func parseQualifiers(rawQuery string) (Qualifiers, error) {
 			continue
 		}
 		key, value, _ := strings.Cut(key, "=")
-		key, err := url.QueryUnescape(key)
+		key, err := url.PathUnescape(key)
 		if err != nil {
 			return nil, fmt.Errorf("error unescaping qualifier key %q", key)
 		}
@@ -567,7 +567,7 @@ func parseQualifiers(rawQuery string) (Qualifiers, error) {
 			return nil, fmt.Errorf("invalid qualifier key: '%s'", key)
 		}
 
-		value, err = url.QueryUnescape(value)
+		value, err = url.PathUnescape(value)
 		if err != nil {
 			return nil, fmt.Errorf("error unescaping qualifier value %q", value)
 		}

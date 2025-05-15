@@ -81,23 +81,17 @@ func Read(r io.Reader, blockSize uint32) (i Inode, err error) {
 
 func (i Inode) Mode() (out fs.FileMode) {
 	out = fs.FileMode(i.Perm)
-	switch i.Data.(type) {
-	case Directory:
+	switch i.Type {
+	case Dir, EDir:
 		out |= fs.ModeDir
-	case EDirectory:
-		out |= fs.ModeDir
-	case Symlink:
+	case Sym, ESym:
 		out |= fs.ModeSymlink
-	case ESymlink:
-		out |= fs.ModeSymlink
-	case Device:
+	case Char, EChar, Block, EBlock:
 		out |= fs.ModeDevice
-	case EDevice:
-		out |= fs.ModeDevice
-	case IPC:
+	case Fifo, EFifo:
 		out |= fs.ModeNamedPipe
-	case EIPC:
-		out |= fs.ModeNamedPipe
+	case Sock, ESock:
+		out |= fs.ModeSocket
 	}
 	return
 }

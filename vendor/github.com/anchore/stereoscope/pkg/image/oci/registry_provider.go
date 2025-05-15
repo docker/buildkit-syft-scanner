@@ -5,7 +5,9 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net/http"
+	"os"
 	"runtime"
+	"time"
 
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
@@ -46,6 +48,7 @@ func (p *registryImageProvider) Name() string {
 func (p *registryImageProvider) Provide(ctx context.Context) (*image.Image, error) {
 	log.Debugf("pulling image info directly from registry image=%q", p.imageStr)
 
+	startTime := time.Now()
 	imageTempDir, err := p.tmpDirGen.NewDirectory("oci-registry-image")
 	if err != nil {
 		return nil, err
@@ -80,6 +83,8 @@ func (p *registryImageProvider) Provide(ctx context.Context) (*image.Image, erro
 	if err := validatePlatform(platform, c.OS, c.Architecture); err != nil {
 		return nil, err
 	}
+
+	log.WithFields("image", p.imageStr, "time", time.Since(startTime)).Info("completed downloading image")
 
 	// craft a repo digest from the registry reference and the known digest
 	// note: the descriptor is fetched from the registry, and the descriptor digest is the same as the repo digest
@@ -174,6 +179,10 @@ func toContainerRegistryPlatform(p *image.Platform) *containerregistryV1.Platfor
 
 func prepareRemoteOptions(ctx context.Context, ref name.Reference, registryOptions image.RegistryOptions, p *image.Platform) (options []remote.Option) {
 	options = append(options, remote.WithContext(ctx))
+
+	// Set the user agent to indicate what binary is making the request
+	// (e.g. syft, grype)
+	options = append(options, remote.WithUserAgent(os.Args[0]))
 
 	if p != nil {
 		options = append(options, remote.WithPlatform(*toContainerRegistryPlatform(p)))

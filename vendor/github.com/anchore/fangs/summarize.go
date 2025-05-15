@@ -116,7 +116,7 @@ func summarize(cfg Config, descriptions DescriptionProvider, s *section, value r
 
 // printVal prints a value in YAML format
 // nolint:gocognit
-func printVal(cfg Config, filter ValueFilterFunc, value reflect.Value, indent string) string {
+func printVal(cfg Config, filter ValueFilterFunc, value reflect.Value, indent string) string { //nolint:funlen
 	buf := bytes.Buffer{}
 
 	v, t := base(value)

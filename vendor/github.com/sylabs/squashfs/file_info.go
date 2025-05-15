@@ -26,9 +26,10 @@ func (r Reader) newFileInfo(e directory.Entry) (fileInfo, error) {
 
 func newFileInfo(name string, i *inode.Inode) fileInfo {
 	var size int64
-	if i.Type == inode.Fil {
+	switch i.Type {
+	case inode.Fil:
 		size = int64(i.Data.(inode.File).Size)
-	} else if i.Type == inode.EFil {
+	case inode.EFil:
 		size = int64(i.Data.(inode.EFile).Size)
 	}
 	return fileInfo{
@@ -49,8 +50,17 @@ func (f fileInfo) Size() int64 {
 }
 
 func (f fileInfo) Mode() fs.FileMode {
-	if f.IsDir() {
+	switch f.fileType {
+	case inode.Dir, inode.EDir:
 		return fs.FileMode(f.perm | uint32(fs.ModeDir))
+	case inode.Sym, inode.ESym:
+		return fs.FileMode(f.perm | uint32(fs.ModeSymlink))
+	case inode.Char, inode.EChar, inode.Block, inode.EBlock:
+		return fs.FileMode(f.perm | uint32(fs.ModeDevice))
+	case inode.Fifo, inode.EFifo:
+		return fs.FileMode(f.perm | uint32(fs.ModeNamedPipe))
+	case inode.Sock, inode.ESock:
+		return fs.FileMode(f.perm | uint32(fs.ModeSocket))
 	}
 	return fs.FileMode(f.perm)
 }
@@ -61,6 +71,23 @@ func (f fileInfo) ModTime() time.Time {
 
 func (f fileInfo) IsDir() bool {
 	return f.fileType == inode.Dir || f.fileType == inode.EDir
+}
+
+func (f fileInfo) IsSymlink() bool {
+	return f.fileType == inode.Sym || f.fileType == inode.ESym
+}
+
+func (f fileInfo) IsDevice() bool {
+	return f.fileType == inode.Block || f.fileType == inode.EBlock ||
+		f.fileType == inode.Char || f.fileType == inode.EChar
+}
+
+func (f fileInfo) IsFifo() bool {
+	return f.fileType == inode.Fifo || f.fileType == inode.EFifo
+}
+
+func (f fileInfo) IsSocket() bool {
+	return f.fileType == inode.Sock || f.fileType == inode.ESock
 }
 
 func (f fileInfo) Sys() any {

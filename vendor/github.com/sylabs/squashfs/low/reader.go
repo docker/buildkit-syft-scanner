@@ -103,10 +103,7 @@ func (r *Reader) Id(i uint16) (uint32, error) {
 		if err != nil {
 			return 0, err
 		}
-		idsToRead = r.Superblock.IdCount - uint16(len(r.idTable))
-		if idsToRead > 2048 {
-			idsToRead = 2048
-		}
+		idsToRead = min(r.Superblock.IdCount-uint16(len(r.idTable)), 2048)
 		idsTmp = make([]uint32, idsToRead)
 		rdr = metadata.NewReader(toreader.NewReader(r.r, int64(offset)), r.d)
 		err = binary.Read(rdr, binary.LittleEndian, &idsTmp)
@@ -146,10 +143,7 @@ func (r *Reader) fragEntry(i uint32) (fragEntry, error) {
 		if err != nil {
 			return fragEntry{}, err
 		}
-		fragsToRead = r.Superblock.FragCount - uint32(len(r.fragTable))
-		if fragsToRead > 512 {
-			fragsToRead = 512
-		}
+		fragsToRead = min(r.Superblock.FragCount-uint32(len(r.fragTable)), 512)
 		fragsTmp = make([]fragEntry, fragsToRead)
 		rdr = metadata.NewReader(toreader.NewReader(r.r, int64(offset)), r.d)
 		err = binary.Read(rdr, binary.LittleEndian, &fragsTmp)
@@ -192,10 +186,7 @@ func (r *Reader) inodeRef(i uint32) (uint64, error) {
 		if err != nil {
 			return 0, err
 		}
-		refsToRead = r.Superblock.InodeCount - uint32(len(r.exportTable))
-		if refsToRead > 1024 {
-			refsToRead = 1024
-		}
+		refsToRead = min(r.Superblock.InodeCount-uint32(len(r.exportTable)), 1024)
 		refsTmp = make([]uint64, refsToRead)
 		rdr = metadata.NewReader(toreader.NewReader(r.r, int64(offset)), r.d)
 		err = binary.Read(rdr, binary.LittleEndian, &refsTmp)
