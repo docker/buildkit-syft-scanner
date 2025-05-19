@@ -64,8 +64,8 @@ github.com/Microsoft/hcsshim/internal/wclayer
 github.com/Microsoft/hcsshim/internal/winapi
 github.com/Microsoft/hcsshim/osversion
 github.com/Microsoft/hcsshim/pkg/ociwclayer
-# github.com/ProtonMail/go-crypto v1.1.6
-## explicit; go 1.17
+# github.com/ProtonMail/go-crypto v1.2.0
+## explicit; go 1.22.0
 github.com/ProtonMail/go-crypto/bitcurves
 github.com/ProtonMail/go-crypto/brainpool
 github.com/ProtonMail/go-crypto/eax
@@ -126,6 +126,13 @@ github.com/anchore/go-logger/adapter/redact
 # github.com/anchore/go-macholibre v0.0.0-20220308212642-53e6d0aaf6fb
 ## explicit; go 1.17
 github.com/anchore/go-macholibre
+# github.com/anchore/go-rpmdb v0.0.0-20250516171929-f77691e1faec
+## explicit; go 1.22.0
+github.com/anchore/go-rpmdb/pkg
+github.com/anchore/go-rpmdb/pkg/bdb
+github.com/anchore/go-rpmdb/pkg/db
+github.com/anchore/go-rpmdb/pkg/ndb
+github.com/anchore/go-rpmdb/pkg/sqlite3
 # github.com/anchore/go-struct-converter v0.0.0-20221118182256-c68fdcfa2092
 ## explicit; go 1.18
 github.com/anchore/go-struct-converter
@@ -158,7 +165,7 @@ github.com/anchore/stereoscope/pkg/image/podman
 github.com/anchore/stereoscope/pkg/image/sif
 github.com/anchore/stereoscope/pkg/tree
 github.com/anchore/stereoscope/pkg/tree/node
-# github.com/anchore/syft v1.24.0
+# github.com/anchore/syft v1.25.1
 ## explicit; go 1.24.1
 github.com/anchore/syft/internal
 github.com/anchore/syft/internal/bus
@@ -237,6 +244,7 @@ github.com/anchore/syft/syft/pkg/cataloger/golang
 github.com/anchore/syft/syft/pkg/cataloger/golang/internal/xcoff
 github.com/anchore/syft/syft/pkg/cataloger/haskell
 github.com/anchore/syft/syft/pkg/cataloger/homebrew
+github.com/anchore/syft/syft/pkg/cataloger/internal/binutils
 github.com/anchore/syft/syft/pkg/cataloger/internal/cpegenerate
 github.com/anchore/syft/syft/pkg/cataloger/internal/cpegenerate/dictionary
 github.com/anchore/syft/syft/pkg/cataloger/internal/dependency
@@ -265,7 +273,7 @@ github.com/anchore/syft/syft/source/filesource
 github.com/anchore/syft/syft/source/internal
 github.com/anchore/syft/syft/source/sourceproviders
 github.com/anchore/syft/syft/source/stereoscopesource
-# github.com/andybalholm/brotli v1.1.1
+# github.com/andybalholm/brotli v1.1.2-0.20250424173009-453214e765f3
 ## explicit; go 1.13
 github.com/andybalholm/brotli
 github.com/andybalholm/brotli/matchfinder
@@ -778,13 +786,6 @@ github.com/klauspost/compress/zstd/internal/xxhash
 # github.com/klauspost/pgzip v1.2.6
 ## explicit
 github.com/klauspost/pgzip
-# github.com/knqyf263/go-rpmdb v0.1.1
-## explicit; go 1.18
-github.com/knqyf263/go-rpmdb/pkg
-github.com/knqyf263/go-rpmdb/pkg/bdb
-github.com/knqyf263/go-rpmdb/pkg/db
-github.com/knqyf263/go-rpmdb/pkg/ndb
-github.com/knqyf263/go-rpmdb/pkg/sqlite3
 # github.com/lucasb-eyer/go-colorful v1.2.0
 ## explicit; go 1.12
 github.com/lucasb-eyer/go-colorful
@@ -800,7 +801,7 @@ github.com/mattn/go-runewidth
 # github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d
 ## explicit
 github.com/mgutz/ansi
-# github.com/mholt/archives v0.1.1
+# github.com/mholt/archives v0.1.2
 ## explicit; go 1.22.2
 github.com/mholt/archives
 # github.com/minio/minlz v1.0.0
