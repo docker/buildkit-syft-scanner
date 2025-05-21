@@ -165,7 +165,7 @@ github.com/anchore/stereoscope/pkg/image/podman
 github.com/anchore/stereoscope/pkg/image/sif
 github.com/anchore/stereoscope/pkg/tree
 github.com/anchore/stereoscope/pkg/tree/node
-# github.com/anchore/syft v1.25.1
+# github.com/anchore/syft v1.26.0
 ## explicit; go 1.24.1
 github.com/anchore/syft/internal
 github.com/anchore/syft/internal/bus
@@ -248,6 +248,7 @@ github.com/anchore/syft/syft/pkg/cataloger/internal/binutils
 github.com/anchore/syft/syft/pkg/cataloger/internal/cpegenerate
 github.com/anchore/syft/syft/pkg/cataloger/internal/cpegenerate/dictionary
 github.com/anchore/syft/syft/pkg/cataloger/internal/dependency
+github.com/anchore/syft/syft/pkg/cataloger/internal/pe
 github.com/anchore/syft/syft/pkg/cataloger/java
 github.com/anchore/syft/syft/pkg/cataloger/java/internal/maven
 github.com/anchore/syft/syft/pkg/cataloger/javascript

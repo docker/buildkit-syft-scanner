@@ -5,7 +5,7 @@ go 1.24.1
 require (
 	github.com/anchore/go-logger v0.0.0-20250318195838-07ae343dd722
 	github.com/anchore/stereoscope v0.1.4
-	github.com/anchore/syft v1.25.1
+	github.com/anchore/syft v1.26.0
 	github.com/in-toto/in-toto-golang v0.9.0
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.9.3
