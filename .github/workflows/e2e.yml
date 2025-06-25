@@ -15,7 +15,7 @@ on:
 
 env:
   BUILDX_VERSION: latest
-  BUILDKIT_IMAGE: moby/buildkit:latest
+  BUILDKIT_IMAGE: moby/buildkit:v0.22.0 # FIXME: Update to the latest version once https://github.com/moby/buildkit/issues/6049 is fixed
   IMAGE_LOCAL: localhost:5000/buildkit-syft-scanner:latest
 
 jobs:
