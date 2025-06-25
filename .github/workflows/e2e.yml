@@ -76,7 +76,7 @@ jobs:
       -
         name: Test
         run: |
-          ./hack/check-example.sh ${{ env.IMAGE_LOCAL }} ${{ matrix.example }}
+          ./hack/check-example.sh ${{ env.IMAGE_LOCAL }} ${{ matrix.example }} || tree ./examples/${{ matrix.example }}/build
       -
         name: Check output folder
         run: |
