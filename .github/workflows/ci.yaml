@@ -23,12 +23,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       -
-        name: Login to DockerHub
-        if: github.event_name != 'pull_request'
-        uses: docker/login-action@v3
-        with:
-          username: ${{ vars.DOCKERPUBLICBOT_USERNAME }}
-          password: ${{ secrets.DOCKERPUBLICBOT_WRITE_PAT }}
+        name: Checkout
+        uses: actions/checkout@v4
       -
         name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -57,12 +53,20 @@ jobs:
             org.opencontainers.image.description=SBOM generation for BuildKit images
             org.opencontainers.image.vendor=Docker Inc.
       -
+        name: Login to DockerHub
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ vars.DOCKERPUBLICBOT_USERNAME }}
+          password: ${{ secrets.DOCKERPUBLICBOT_WRITE_PAT }}
+      -
         name: Build
         uses: docker/bake-action@v6
         with:
+          source: .
           files: |
             ./docker-bake.hcl
-            cwd://${{ steps.meta.outputs.bake-file }}
+            ${{ steps.meta.outputs.bake-file }}
           targets: image-all
           push: ${{ github.event_name != 'pull_request' }}
           set: |
