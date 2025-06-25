@@ -1,0 +1,17 @@
+name: pr-assign-author
+
+permissions:
+  contents: read
+
+on:
+  pull_request_target:
+    types:
+      - opened
+      - reopened
+
+jobs:
+  run:
+    uses: crazy-max/.github/.github/workflows/pr-assign-author.yml@c27924b5b93ccfe6dcc0d7b22e779ef3c05f9a92
+    permissions:
+      contents: read
+      pull-requests: write
