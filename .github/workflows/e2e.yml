@@ -55,6 +55,8 @@ jobs:
       -
         name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       -
         uses: actions/setup-go@v5
         with:
@@ -71,6 +73,7 @@ jobs:
         name: Build and push Syft Scanner image
         uses: docker/bake-action@v6
         with:
+          source: .
           targets: image-local
           push: true
       -
