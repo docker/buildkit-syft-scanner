@@ -22,6 +22,7 @@ import (
 	"strings"
 
 	"github.com/anchore/syft/syft"
+	"github.com/anchore/syft/syft/cataloging/filecataloging"
 	"github.com/anchore/syft/syft/cataloging/pkgcataloging"
 	"github.com/anchore/syft/syft/sbom"
 	"github.com/anchore/syft/syft/source"
@@ -46,8 +47,13 @@ func (t Target) Scan(ctx context.Context) (sbom.SBOM, error) {
 	}
 
 	sr := pkgcataloging.NewSelectionRequest().
-		WithDefaults(pkgcataloging.ImageTag).
-		WithAdditions("sbom-cataloger")
+		WithDefaults(
+			pkgcataloging.ImageTag,
+			filecataloging.FileTag, // https://github.com/anchore/syft/pull/3505
+		).
+		WithAdditions(
+			"sbom-cataloger",
+		)
 
 	if v, ok := os.LookupEnv("BUILDKIT_SCAN_SELECT_CATALOGERS"); ok {
 		sr = pkgcataloging.NewSelectionRequest().WithExpression(strings.Split(v, ",")...)
