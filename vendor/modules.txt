@@ -190,7 +190,7 @@ github.com/anchore/go-version
 # github.com/anchore/packageurl-go v0.1.1-0.20250220190351-d62adb6e1115
 ## explicit; go 1.18
 github.com/anchore/packageurl-go
-# github.com/anchore/stereoscope v0.1.6
+# github.com/anchore/stereoscope v0.1.7-0.20250716200927-94c6f92877d4
 ## explicit; go 1.24.0
 github.com/anchore/stereoscope
 github.com/anchore/stereoscope/internal/bus
@@ -210,7 +210,7 @@ github.com/anchore/stereoscope/pkg/image/podman
 github.com/anchore/stereoscope/pkg/image/sif
 github.com/anchore/stereoscope/pkg/tree
 github.com/anchore/stereoscope/pkg/tree/node
-# github.com/anchore/syft v1.28.0
+# github.com/anchore/syft v1.29.0
 ## explicit; go 1.24.1
 github.com/anchore/syft/internal
 github.com/anchore/syft/internal/bus
@@ -220,6 +220,7 @@ github.com/anchore/syft/internal/file
 github.com/anchore/syft/internal/licenses
 github.com/anchore/syft/internal/log
 github.com/anchore/syft/internal/mimetype
+github.com/anchore/syft/internal/os
 github.com/anchore/syft/internal/redact
 github.com/anchore/syft/internal/relationship
 github.com/anchore/syft/internal/relationship/binary
@@ -324,9 +325,6 @@ github.com/anchore/syft/syft/source/stereoscopesource
 ## explicit; go 1.13
 github.com/andybalholm/brotli
 github.com/andybalholm/brotli/matchfinder
-# github.com/apparentlymart/go-textseg/v13 v13.0.0
-## explicit; go 1.16
-github.com/apparentlymart/go-textseg/v13/textseg
 # github.com/apparentlymart/go-textseg/v15 v15.0.0
 ## explicit; go 1.16
 github.com/apparentlymart/go-textseg/v15/textseg
@@ -403,7 +401,7 @@ github.com/bitnami/go-version/pkg/version
 # github.com/blakesmith/ar v0.0.0-20190502131153-809d4375e1fb
 ## explicit
 github.com/blakesmith/ar
-# github.com/bmatcuk/doublestar/v4 v4.8.1
+# github.com/bmatcuk/doublestar/v4 v4.9.0
 ## explicit; go 1.16
 github.com/bmatcuk/doublestar/v4
 # github.com/bodgit/plumbing v1.3.0
@@ -436,8 +434,8 @@ github.com/charmbracelet/colorprofile
 # github.com/charmbracelet/lipgloss v1.1.0
 ## explicit; go 1.18
 github.com/charmbracelet/lipgloss
-# github.com/charmbracelet/x/ansi v0.8.0
-## explicit; go 1.18
+# github.com/charmbracelet/x/ansi v0.9.3
+## explicit; go 1.23.0
 github.com/charmbracelet/x/ansi
 github.com/charmbracelet/x/ansi/kitty
 github.com/charmbracelet/x/ansi/parser
@@ -771,7 +769,7 @@ github.com/go-logr/stdr
 ## explicit; go 1.12
 github.com/go-restruct/restruct
 github.com/go-restruct/restruct/expr
-# github.com/go-viper/mapstructure/v2 v2.3.0
+# github.com/go-viper/mapstructure/v2 v2.4.0
 ## explicit; go 1.18
 github.com/go-viper/mapstructure/v2
 github.com/go-viper/mapstructure/v2/internal/errors
@@ -904,8 +902,8 @@ github.com/hashicorp/go-version
 github.com/hashicorp/golang-lru/v2
 github.com/hashicorp/golang-lru/v2/internal
 github.com/hashicorp/golang-lru/v2/simplelru
-# github.com/hashicorp/hcl/v2 v2.23.0
-## explicit; go 1.18
+# github.com/hashicorp/hcl/v2 v2.24.0
+## explicit; go 1.23.0
 github.com/hashicorp/hcl/v2
 github.com/hashicorp/hcl/v2/ext/customdecode
 github.com/hashicorp/hcl/v2/gohcl
@@ -1051,10 +1049,11 @@ github.com/olekukonko/errors
 github.com/olekukonko/ll
 github.com/olekukonko/ll/lh
 github.com/olekukonko/ll/lx
-# github.com/olekukonko/tablewriter v1.0.7
+# github.com/olekukonko/tablewriter v1.0.8
 ## explicit; go 1.21
 github.com/olekukonko/tablewriter
 github.com/olekukonko/tablewriter/pkg/twwarp
+github.com/olekukonko/tablewriter/pkg/twwidth
 github.com/olekukonko/tablewriter/renderer
 github.com/olekukonko/tablewriter/tw
 # github.com/opencontainers/go-digest v1.0.0
@@ -1258,7 +1257,7 @@ github.com/xi2/xz
 # github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e
 ## explicit; go 1.19
 github.com/xo/terminfo
-# github.com/zclconf/go-cty v1.13.0
+# github.com/zclconf/go-cty v1.16.3
 ## explicit; go 1.18
 github.com/zclconf/go-cty/cty
 github.com/zclconf/go-cty/cty/convert
@@ -1340,7 +1339,7 @@ go.uber.org/multierr
 ## explicit; go 1.13
 go4.org/readerutil
 go4.org/syncutil
-# golang.org/x/crypto v0.39.0
+# golang.org/x/crypto v0.40.0
 ## explicit; go 1.23.0
 golang.org/x/crypto/argon2
 golang.org/x/crypto/bcrypt
@@ -1367,13 +1366,13 @@ golang.org/x/crypto/ssh/knownhosts
 ## explicit; go 1.23.0
 golang.org/x/exp/constraints
 golang.org/x/exp/maps
-# golang.org/x/mod v0.25.0
+# golang.org/x/mod v0.26.0
 ## explicit; go 1.23.0
 golang.org/x/mod/internal/lazyregexp
 golang.org/x/mod/modfile
 golang.org/x/mod/module
 golang.org/x/mod/semver
-# golang.org/x/net v0.41.0
+# golang.org/x/net v0.42.0
 ## explicit; go 1.23.0
 golang.org/x/net/context
 golang.org/x/net/html
@@ -1400,11 +1399,11 @@ golang.org/x/oauth2/google/internal/stsexchange
 golang.org/x/oauth2/internal
 golang.org/x/oauth2/jws
 golang.org/x/oauth2/jwt
-# golang.org/x/sync v0.15.0
+# golang.org/x/sync v0.16.0
 ## explicit; go 1.23.0
 golang.org/x/sync/errgroup
 golang.org/x/sync/semaphore
-# golang.org/x/sys v0.33.0
+# golang.org/x/sys v0.34.0
 ## explicit; go 1.23.0
 golang.org/x/sys/cpu
 golang.org/x/sys/execabs
@@ -1412,10 +1411,10 @@ golang.org/x/sys/plan9
 golang.org/x/sys/unix
 golang.org/x/sys/windows
 golang.org/x/sys/windows/registry
-# golang.org/x/term v0.32.0
+# golang.org/x/term v0.33.0
 ## explicit; go 1.23.0
 golang.org/x/term
-# golang.org/x/text v0.26.0
+# golang.org/x/text v0.27.0
 ## explicit; go 1.23.0
 golang.org/x/text/encoding
 golang.org/x/text/encoding/charmap
