@@ -190,7 +190,7 @@ github.com/anchore/go-version
 # github.com/anchore/packageurl-go v0.1.1-0.20250220190351-d62adb6e1115
 ## explicit; go 1.18
 github.com/anchore/packageurl-go
-# github.com/anchore/stereoscope v0.1.7-0.20250716200927-94c6f92877d4
+# github.com/anchore/stereoscope v0.1.9-0.20250826202322-ef061ea78385
 ## explicit; go 1.24.0
 github.com/anchore/stereoscope
 github.com/anchore/stereoscope/internal/bus
@@ -210,7 +210,7 @@ github.com/anchore/stereoscope/pkg/image/podman
 github.com/anchore/stereoscope/pkg/image/sif
 github.com/anchore/stereoscope/pkg/tree
 github.com/anchore/stereoscope/pkg/tree/node
-# github.com/anchore/syft v1.29.0
+# github.com/anchore/syft v1.32.0
 ## explicit; go 1.24.1
 github.com/anchore/syft/internal
 github.com/anchore/syft/internal/bus
@@ -277,6 +277,7 @@ github.com/anchore/syft/syft/pkg/cataloger/arch
 github.com/anchore/syft/syft/pkg/cataloger/binary
 github.com/anchore/syft/syft/pkg/cataloger/bitnami
 github.com/anchore/syft/syft/pkg/cataloger/common/cpe
+github.com/anchore/syft/syft/pkg/cataloger/conda
 github.com/anchore/syft/syft/pkg/cataloger/cpp
 github.com/anchore/syft/syft/pkg/cataloger/dart
 github.com/anchore/syft/syft/pkg/cataloger/debian
@@ -401,7 +402,7 @@ github.com/bitnami/go-version/pkg/version
 # github.com/blakesmith/ar v0.0.0-20190502131153-809d4375e1fb
 ## explicit
 github.com/blakesmith/ar
-# github.com/bmatcuk/doublestar/v4 v4.9.0
+# github.com/bmatcuk/doublestar/v4 v4.9.1
 ## explicit; go 1.16
 github.com/bmatcuk/doublestar/v4
 # github.com/bodgit/plumbing v1.3.0
@@ -462,8 +463,8 @@ github.com/cloudflare/circl/sign/ed448
 # github.com/containerd/cgroups v1.1.0
 ## explicit; go 1.17
 github.com/containerd/cgroups/stats/v1
-# github.com/containerd/containerd v1.7.27
-## explicit; go 1.21
+# github.com/containerd/containerd v1.7.28
+## explicit; go 1.23.0
 github.com/containerd/containerd
 github.com/containerd/containerd/archive
 github.com/containerd/containerd/archive/compression
@@ -584,7 +585,7 @@ github.com/cyphar/filepath-securejoin
 github.com/deitch/magic/pkg/magic
 github.com/deitch/magic/pkg/magic/internal
 github.com/deitch/magic/pkg/magic/parser
-# github.com/diskfs/go-diskfs v1.6.1-0.20250601133945-2af1c7ece24c
+# github.com/diskfs/go-diskfs v1.7.0
 ## explicit; go 1.24.0
 github.com/diskfs/go-diskfs/backend
 github.com/diskfs/go-diskfs/backend/file
@@ -593,7 +594,7 @@ github.com/diskfs/go-diskfs/filesystem/squashfs
 # github.com/distribution/reference v0.6.0
 ## explicit; go 1.20
 github.com/distribution/reference
-# github.com/docker/cli v28.3.0+incompatible
+# github.com/docker/cli v28.3.2+incompatible
 ## explicit
 github.com/docker/cli/cli/config
 github.com/docker/cli/cli/config/configfile
@@ -602,11 +603,12 @@ github.com/docker/cli/cli/config/memorystore
 github.com/docker/cli/cli/config/types
 github.com/docker/cli/cli/connhelper
 github.com/docker/cli/cli/connhelper/commandconn
+github.com/docker/cli/cli/connhelper/internal/syntax
 github.com/docker/cli/cli/connhelper/ssh
 # github.com/docker/distribution v2.8.3+incompatible
 ## explicit
 github.com/docker/distribution/registry/client/auth/challenge
-# github.com/docker/docker v28.2.2+incompatible
+# github.com/docker/docker v28.3.3+incompatible
 ## explicit
 github.com/docker/docker/api
 github.com/docker/docker/api/types
@@ -637,7 +639,7 @@ github.com/docker/docker/pkg/homedir
 ## explicit; go 1.21
 github.com/docker/docker-credential-helpers/client
 github.com/docker/docker-credential-helpers/credentials
-# github.com/docker/go-connections v0.5.0
+# github.com/docker/go-connections v0.6.0
 ## explicit; go 1.18
 github.com/docker/go-connections/nat
 github.com/docker/go-connections/sockets
@@ -884,7 +886,7 @@ github.com/hashicorp/errwrap
 # github.com/hashicorp/go-cleanhttp v0.5.2
 ## explicit; go 1.13
 github.com/hashicorp/go-cleanhttp
-# github.com/hashicorp/go-getter v1.7.8
+# github.com/hashicorp/go-getter v1.7.9
 ## explicit; go 1.13
 github.com/hashicorp/go-getter
 github.com/hashicorp/go-getter/helper/url
@@ -993,9 +995,6 @@ github.com/mitchellh/copystructure
 # github.com/mitchellh/go-homedir v1.1.0
 ## explicit
 github.com/mitchellh/go-homedir
-# github.com/mitchellh/go-testing-interface v1.14.1
-## explicit; go 1.14
-github.com/mitchellh/go-testing-interface
 # github.com/mitchellh/go-wordwrap v1.0.1
 ## explicit; go 1.14
 github.com/mitchellh/go-wordwrap
@@ -1041,15 +1040,15 @@ github.com/nwaples/rardecode
 # github.com/nwaples/rardecode/v2 v2.1.0
 ## explicit; go 1.21
 github.com/nwaples/rardecode/v2
-# github.com/olekukonko/errors v0.0.0-20250405072817-4e6d85265da6
+# github.com/olekukonko/errors v1.1.0
 ## explicit; go 1.21
 github.com/olekukonko/errors
-# github.com/olekukonko/ll v0.0.8
+# github.com/olekukonko/ll v0.0.9
 ## explicit; go 1.21
 github.com/olekukonko/ll
 github.com/olekukonko/ll/lh
 github.com/olekukonko/ll/lx
-# github.com/olekukonko/tablewriter v1.0.8
+# github.com/olekukonko/tablewriter v1.0.9
 ## explicit; go 1.21
 github.com/olekukonko/tablewriter
 github.com/olekukonko/tablewriter/pkg/twwarp
@@ -1335,11 +1334,14 @@ go.uber.org/atomic
 # go.uber.org/multierr v1.9.0
 ## explicit; go 1.19
 go.uber.org/multierr
+# go.yaml.in/yaml/v3 v3.0.4
+## explicit; go 1.16
+go.yaml.in/yaml/v3
 # go4.org v0.0.0-20230225012048-214862532bf5
 ## explicit; go 1.13
 go4.org/readerutil
 go4.org/syncutil
-# golang.org/x/crypto v0.40.0
+# golang.org/x/crypto v0.41.0
 ## explicit; go 1.23.0
 golang.org/x/crypto/argon2
 golang.org/x/crypto/bcrypt
@@ -1362,17 +1364,17 @@ golang.org/x/crypto/ssh
 golang.org/x/crypto/ssh/agent
 golang.org/x/crypto/ssh/internal/bcrypt_pbkdf
 golang.org/x/crypto/ssh/knownhosts
-# golang.org/x/exp v0.0.0-20250408133849-7e4ce0ab07d0
+# golang.org/x/exp v0.0.0-20250620022241-b7579e27df2b
 ## explicit; go 1.23.0
 golang.org/x/exp/constraints
 golang.org/x/exp/maps
-# golang.org/x/mod v0.26.0
+# golang.org/x/mod v0.27.0
 ## explicit; go 1.23.0
 golang.org/x/mod/internal/lazyregexp
 golang.org/x/mod/modfile
 golang.org/x/mod/module
 golang.org/x/mod/semver
-# golang.org/x/net v0.42.0
+# golang.org/x/net v0.43.0
 ## explicit; go 1.23.0
 golang.org/x/net/context
 golang.org/x/net/html
@@ -1403,7 +1405,7 @@ golang.org/x/oauth2/jwt
 ## explicit; go 1.23.0
 golang.org/x/sync/errgroup
 golang.org/x/sync/semaphore
-# golang.org/x/sys v0.34.0
+# golang.org/x/sys v0.35.0
 ## explicit; go 1.23.0
 golang.org/x/sys/cpu
 golang.org/x/sys/execabs
@@ -1411,10 +1413,10 @@ golang.org/x/sys/plan9
 golang.org/x/sys/unix
 golang.org/x/sys/windows
 golang.org/x/sys/windows/registry
-# golang.org/x/term v0.33.0
+# golang.org/x/term v0.34.0
 ## explicit; go 1.23.0
 golang.org/x/term
-# golang.org/x/text v0.27.0
+# golang.org/x/text v0.28.0
 ## explicit; go 1.23.0
 golang.org/x/text/encoding
 golang.org/x/text/encoding/charmap
@@ -1436,10 +1438,10 @@ golang.org/x/text/secure/bidirule
 golang.org/x/text/transform
 golang.org/x/text/unicode/bidi
 golang.org/x/text/unicode/norm
-# golang.org/x/time v0.7.0
-## explicit; go 1.18
+# golang.org/x/time v0.12.0
+## explicit; go 1.23.0
 golang.org/x/time/rate
-# golang.org/x/tools v0.34.0
+# golang.org/x/tools v0.35.0
 ## explicit; go 1.23.0
 golang.org/x/tools/cmd/stringer
 golang.org/x/tools/go/gcexportdata
@@ -1615,7 +1617,7 @@ gopkg.in/warnings.v0
 gopkg.in/yaml.v3
 # gotest.tools/v3 v3.1.0
 ## explicit; go 1.11
-# modernc.org/libc v1.65.10
+# modernc.org/libc v1.66.3
 ## explicit; go 1.23.0
 modernc.org/libc
 modernc.org/libc/errno
@@ -1649,7 +1651,7 @@ modernc.org/mathutil
 # modernc.org/memory v1.11.0
 ## explicit; go 1.23.0
 modernc.org/memory
-# modernc.org/sqlite v1.38.0
+# modernc.org/sqlite v1.38.2
 ## explicit; go 1.23.0
 modernc.org/sqlite
 modernc.org/sqlite/lib
