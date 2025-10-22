@@ -50,7 +50,7 @@ github.com/AdamKorcz/go-118-fuzz-build/testing
 ## explicit; go 1.18
 github.com/BurntSushi/toml
 github.com/BurntSushi/toml/internal
-# github.com/CycloneDX/cyclonedx-go v0.9.2
+# github.com/CycloneDX/cyclonedx-go v0.9.3
 ## explicit; go 1.20
 github.com/CycloneDX/cyclonedx-go
 # github.com/DataDog/zstd v1.5.5
@@ -130,8 +130,8 @@ github.com/ProtonMail/go-crypto/openpgp/packet
 github.com/ProtonMail/go-crypto/openpgp/s2k
 github.com/ProtonMail/go-crypto/openpgp/x25519
 github.com/ProtonMail/go-crypto/openpgp/x448
-# github.com/STARRY-S/zip v0.2.1
-## explicit; go 1.22.2
+# github.com/STARRY-S/zip v0.2.3
+## explicit; go 1.23
 github.com/STARRY-S/zip
 # github.com/acobaugh/osrelease v0.1.0
 ## explicit; go 1.17
@@ -190,7 +190,7 @@ github.com/anchore/go-version
 # github.com/anchore/packageurl-go v0.1.1-0.20250220190351-d62adb6e1115
 ## explicit; go 1.18
 github.com/anchore/packageurl-go
-# github.com/anchore/stereoscope v0.1.10
+# github.com/anchore/stereoscope v0.1.11
 ## explicit; go 1.24.0
 github.com/anchore/stereoscope
 github.com/anchore/stereoscope/internal/bus
@@ -210,7 +210,7 @@ github.com/anchore/stereoscope/pkg/image/podman
 github.com/anchore/stereoscope/pkg/image/sif
 github.com/anchore/stereoscope/pkg/tree
 github.com/anchore/stereoscope/pkg/tree/node
-# github.com/anchore/syft v1.33.0
+# github.com/anchore/syft v1.34.2
 ## explicit; go 1.24.1
 github.com/anchore/syft/internal
 github.com/anchore/syft/internal/bus
@@ -221,10 +221,12 @@ github.com/anchore/syft/internal/licenses
 github.com/anchore/syft/internal/log
 github.com/anchore/syft/internal/mimetype
 github.com/anchore/syft/internal/os
+github.com/anchore/syft/internal/packagemetadata
 github.com/anchore/syft/internal/redact
 github.com/anchore/syft/internal/relationship
 github.com/anchore/syft/internal/relationship/binary
 github.com/anchore/syft/internal/sbomsync
+github.com/anchore/syft/internal/sourcemetadata
 github.com/anchore/syft/internal/spdxlicense
 github.com/anchore/syft/internal/task
 github.com/anchore/syft/internal/unknown
@@ -264,9 +266,7 @@ github.com/anchore/syft/syft/format/table
 github.com/anchore/syft/syft/format/template
 github.com/anchore/syft/syft/format/text
 github.com/anchore/syft/syft/internal/fileresolver
-github.com/anchore/syft/syft/internal/packagemetadata
 github.com/anchore/syft/syft/internal/parsing
-github.com/anchore/syft/syft/internal/sourcemetadata
 github.com/anchore/syft/syft/internal/unionreader
 github.com/anchore/syft/syft/internal/windows
 github.com/anchore/syft/syft/license
@@ -310,6 +310,7 @@ github.com/anchore/syft/syft/pkg/cataloger/redhat
 github.com/anchore/syft/syft/pkg/cataloger/ruby
 github.com/anchore/syft/syft/pkg/cataloger/rust
 github.com/anchore/syft/syft/pkg/cataloger/sbom
+github.com/anchore/syft/syft/pkg/cataloger/snap
 github.com/anchore/syft/syft/pkg/cataloger/swift
 github.com/anchore/syft/syft/pkg/cataloger/swipl
 github.com/anchore/syft/syft/pkg/cataloger/terraform
@@ -322,8 +323,8 @@ github.com/anchore/syft/syft/source/internal
 github.com/anchore/syft/syft/source/snapsource
 github.com/anchore/syft/syft/source/sourceproviders
 github.com/anchore/syft/syft/source/stereoscopesource
-# github.com/andybalholm/brotli v1.1.2-0.20250424173009-453214e765f3
-## explicit; go 1.13
+# github.com/andybalholm/brotli v1.2.0
+## explicit; go 1.22
 github.com/andybalholm/brotli
 github.com/andybalholm/brotli/matchfinder
 # github.com/apparentlymart/go-textseg/v15 v15.0.0
@@ -483,8 +484,8 @@ github.com/bmatcuk/doublestar/v4
 # github.com/bodgit/plumbing v1.3.0
 ## explicit; go 1.13
 github.com/bodgit/plumbing
-# github.com/bodgit/sevenzip v1.6.0
-## explicit; go 1.19
+# github.com/bodgit/sevenzip v1.6.1
+## explicit; go 1.21
 github.com/bodgit/sevenzip
 github.com/bodgit/sevenzip/internal/aes7z
 github.com/bodgit/sevenzip/internal/bcj2
@@ -668,7 +669,7 @@ github.com/diskfs/go-diskfs/filesystem/squashfs
 # github.com/distribution/reference v0.6.0
 ## explicit; go 1.20
 github.com/distribution/reference
-# github.com/docker/cli v28.4.0+incompatible
+# github.com/docker/cli v28.5.1+incompatible
 ## explicit
 github.com/docker/cli/cli/config
 github.com/docker/cli/cli/config/configfile
@@ -682,7 +683,7 @@ github.com/docker/cli/cli/connhelper/ssh
 # github.com/docker/distribution v2.8.3+incompatible
 ## explicit
 github.com/docker/distribution/registry/client/auth/challenge
-# github.com/docker/docker v28.4.0+incompatible
+# github.com/docker/docker v28.5.1+incompatible
 ## explicit
 github.com/docker/docker/api
 github.com/docker/docker/api/types
@@ -784,7 +785,7 @@ github.com/go-git/go-billy/v5/helper/polyfill
 github.com/go-git/go-billy/v5/memfs
 github.com/go-git/go-billy/v5/osfs
 github.com/go-git/go-billy/v5/util
-# github.com/go-git/go-git/v5 v5.16.2
+# github.com/go-git/go-git/v5 v5.16.3
 ## explicit; go 1.23.0
 github.com/go-git/go-git/v5
 github.com/go-git/go-git/v5/config
@@ -863,8 +864,8 @@ github.com/goccy/go-yaml/token
 github.com/gogo/protobuf/gogoproto
 github.com/gogo/protobuf/proto
 github.com/gogo/protobuf/protoc-gen-gogo/descriptor
-# github.com/gohugoio/hashstructure v0.5.0
-## explicit; go 1.18
+# github.com/gohugoio/hashstructure v0.6.0
+## explicit; go 1.20
 github.com/gohugoio/hashstructure
 # github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8
 ## explicit; go 1.20
@@ -961,16 +962,13 @@ github.com/hashicorp/errwrap
 # github.com/hashicorp/go-cleanhttp v0.5.2
 ## explicit; go 1.13
 github.com/hashicorp/go-cleanhttp
-# github.com/hashicorp/go-getter v1.8.0
+# github.com/hashicorp/go-getter v1.8.2
 ## explicit; go 1.24
 github.com/hashicorp/go-getter
 github.com/hashicorp/go-getter/helper/url
 # github.com/hashicorp/go-multierror v1.1.1
 ## explicit; go 1.13
 github.com/hashicorp/go-multierror
-# github.com/hashicorp/go-safetemp v1.0.0
-## explicit
-github.com/hashicorp/go-safetemp
 # github.com/hashicorp/go-version v1.6.0
 ## explicit
 github.com/hashicorp/go-version
@@ -1051,13 +1049,13 @@ github.com/mattn/go-runewidth
 # github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d
 ## explicit
 github.com/mgutz/ansi
-# github.com/mholt/archives v0.1.3
-## explicit; go 1.22.2
+# github.com/mholt/archives v0.1.5
+## explicit; go 1.24.0
 github.com/mholt/archives
 # github.com/mikelolasagasti/xz v1.0.1
 ## explicit; go 1.15
 github.com/mikelolasagasti/xz
-# github.com/minio/minlz v1.0.0
+# github.com/minio/minlz v1.0.1
 ## explicit; go 1.21
 github.com/minio/minlz
 github.com/minio/minlz/internal/race
@@ -1109,7 +1107,7 @@ github.com/nix-community/go-nix/pkg/storepath
 # github.com/nwaples/rardecode v1.1.3
 ## explicit
 github.com/nwaples/rardecode
-# github.com/nwaples/rardecode/v2 v2.1.0
+# github.com/nwaples/rardecode/v2 v2.2.0
 ## explicit; go 1.21
 github.com/nwaples/rardecode/v2
 # github.com/olekukonko/errors v1.1.0
@@ -1223,7 +1221,7 @@ github.com/sirupsen/logrus
 # github.com/skeema/knownhosts v1.3.1
 ## explicit; go 1.22
 github.com/skeema/knownhosts
-# github.com/sorairolake/lzip-go v0.3.5
+# github.com/sorairolake/lzip-go v0.3.8
 ## explicit; go 1.22
 github.com/sorairolake/lzip-go
 # github.com/sourcegraph/conc v0.3.0
@@ -1412,8 +1410,7 @@ go.yaml.in/yaml/v3
 # go4.org v0.0.0-20230225012048-214862532bf5
 ## explicit; go 1.13
 go4.org/readerutil
-go4.org/syncutil
-# golang.org/x/crypto v0.42.0
+# golang.org/x/crypto v0.43.0
 ## explicit; go 1.24.0
 golang.org/x/crypto/argon2
 golang.org/x/crypto/bcrypt
@@ -1440,13 +1437,13 @@ golang.org/x/crypto/ssh/knownhosts
 ## explicit; go 1.23.0
 golang.org/x/exp/constraints
 golang.org/x/exp/maps
-# golang.org/x/mod v0.28.0
+# golang.org/x/mod v0.29.0
 ## explicit; go 1.24.0
 golang.org/x/mod/internal/lazyregexp
 golang.org/x/mod/modfile
 golang.org/x/mod/module
 golang.org/x/mod/semver
-# golang.org/x/net v0.44.0
+# golang.org/x/net v0.46.0
 ## explicit; go 1.24.0
 golang.org/x/net/context
 golang.org/x/net/html
@@ -1477,7 +1474,7 @@ golang.org/x/oauth2/jwt
 ## explicit; go 1.24.0
 golang.org/x/sync/errgroup
 golang.org/x/sync/semaphore
-# golang.org/x/sys v0.36.0
+# golang.org/x/sys v0.37.0
 ## explicit; go 1.24.0
 golang.org/x/sys/cpu
 golang.org/x/sys/execabs
@@ -1485,10 +1482,10 @@ golang.org/x/sys/plan9
 golang.org/x/sys/unix
 golang.org/x/sys/windows
 golang.org/x/sys/windows/registry
-# golang.org/x/term v0.35.0
+# golang.org/x/term v0.36.0
 ## explicit; go 1.24.0
 golang.org/x/term
-# golang.org/x/text v0.29.0
+# golang.org/x/text v0.30.0
 ## explicit; go 1.24.0
 golang.org/x/text/encoding
 golang.org/x/text/encoding/charmap
@@ -1513,9 +1510,11 @@ golang.org/x/text/unicode/norm
 # golang.org/x/time v0.12.0
 ## explicit; go 1.23.0
 golang.org/x/time/rate
-# golang.org/x/tools v0.37.0
+# golang.org/x/tools v0.38.0
 ## explicit; go 1.24.0
 golang.org/x/tools/cmd/stringer
+golang.org/x/tools/go/ast/edge
+golang.org/x/tools/go/ast/inspector
 golang.org/x/tools/go/gcexportdata
 golang.org/x/tools/go/packages
 golang.org/x/tools/go/types/objectpath
@@ -1689,7 +1688,7 @@ gopkg.in/warnings.v0
 gopkg.in/yaml.v3
 # gotest.tools/v3 v3.1.0
 ## explicit; go 1.11
-# modernc.org/libc v1.66.3
+# modernc.org/libc v1.66.10
 ## explicit; go 1.23.0
 modernc.org/libc
 modernc.org/libc/errno
@@ -1723,7 +1722,7 @@ modernc.org/mathutil
 # modernc.org/memory v1.11.0
 ## explicit; go 1.23.0
 modernc.org/memory
-# modernc.org/sqlite v1.39.0
-## explicit; go 1.23.0
+# modernc.org/sqlite v1.39.1
+## explicit; go 1.24.0
 modernc.org/sqlite
 modernc.org/sqlite/lib
