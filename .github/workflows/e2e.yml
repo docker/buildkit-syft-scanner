@@ -91,7 +91,7 @@ jobs:
           jq . ./examples/${{ matrix.example }}/build/sbom-base.spdx.json
       -
         name: Upload output folder
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: e2e-${{ matrix.example }}
           path: ./examples/${{ matrix.example }}/build/*
