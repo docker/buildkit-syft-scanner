@@ -19,62 +19,48 @@ env:
   BUILDKIT_IMAGE: moby/buildkit:latest
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
+  build-prepare:
+    runs-on: ubuntu-24.04
+    outputs:
+      repo-slug: ${{ env.DOCKERHUB_SLUG }}
     steps:
-      -
-        name: Checkout
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-      -
-        name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-      -
-        name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-        with:
-          version: ${{ env.BUILDX_VERSION }}
-          driver-opts: image=${{ env.BUILDKIT_IMAGE }}
-          buildkitd-flags: --debug
-      -
-        name: Docker meta
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: |
-            ${{ env.DOCKERHUB_SLUG }}
-          tags: |
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
-            type=ref,event=pr
-            type=edge
-          labels: |
-            org.opencontainers.image.title=BuildKit Syft scanner
-            org.opencontainers.image.description=SBOM generation for BuildKit images
-            org.opencontainers.image.vendor=Docker Inc.
-      -
-        name: Login to DockerHub
-        if: github.event_name != 'pull_request'
-        uses: docker/login-action@v3
-        with:
+      # FIXME: can't use env object in reusable workflow inputs: https://github.com/orgs/community/discussions/26671
+      - run: echo "Exposing env vars for reusable workflow"
+
+  build:
+    uses: docker/github-builder-experimental/.github/workflows/bake.yml@5876e8deef3c899c298ec80b07c43dd9e89d37f6
+    needs:
+      - build-prepare
+    permissions:
+      contents: read # same as global permission
+      id-token: write # for signing attestation(s) with GitHub OIDC Token
+    with:
+      setup-qemu: true
+      target: image-all
+      cache: true
+      cache-scope: image
+      output: image
+      push: ${{ github.event_name != 'pull_request' }}
+      sbom: true
+      set-meta-labels: true
+      meta-images: |
+        ${{ needs.build-prepare.outputs.repo-slug }}
+      meta-tags: |
+        type=semver,pattern={{version}}
+        type=semver,pattern={{major}}.{{minor}}
+        type=semver,pattern={{major}}
+        type=ref,event=pr
+        type=edge
+      meta-annotations: |
+        org.opencontainers.image.title=BuildKit Syft scanner
+        org.opencontainers.image.description=SBOM generation for BuildKit images
+        org.opencontainers.image.vendor=Docker Inc.
+      meta-bake-target: meta-helper
+    secrets:
+      registry-auths: |
+        - registry: docker.io
           username: ${{ vars.DOCKERPUBLICBOT_USERNAME }}
           password: ${{ secrets.DOCKERPUBLICBOT_WRITE_PAT }}
-      -
-        name: Build
-        uses: docker/bake-action@v6
-        with:
-          source: .
-          files: |
-            ./docker-bake.hcl
-            ${{ steps.meta.outputs.bake-file }}
-          targets: image-all
-          push: ${{ github.event_name != 'pull_request' }}
-          set: |
-            *.cache-from=type=gha,scope=image
-            *.cache-to=type=gha,scope=image
-            *.attest=type=sbom
 
   dockerhub-readme:
     runs-on: ubuntu-latest
