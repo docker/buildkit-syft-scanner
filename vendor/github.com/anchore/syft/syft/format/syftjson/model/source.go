@@ -7,16 +7,29 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/anchore/syft/syft/internal/sourcemetadata"
+	"github.com/anchore/syft/internal/sourcemetadata"
 	"github.com/anchore/syft/syft/source"
 )
 
-// Source object represents the thing that was cataloged
+// Source represents the artifact that was analyzed to generate this SBOM, such as a container image, directory, or file archive.
+// The Supplier field can be provided by users to fulfill NTIA minimum elements requirements.
 type Source struct {
-	ID       string      `json:"id"`
-	Name     string      `json:"name"`
-	Version  string      `json:"version"`
-	Type     string      `json:"type"`
+	// ID is a unique identifier for the analyzed source artifact.
+	ID string `json:"id"`
+
+	// Name is the name of the analyzed artifact (e.g., image name, directory path).
+	Name string `json:"name"`
+
+	// Version is the version of the analyzed artifact (e.g., image tag).
+	Version string `json:"version"`
+
+	// Supplier is supplier information, which can be user-provided for NTIA minimum elements compliance.
+	Supplier string `json:"supplier,omitempty"`
+
+	// Type is the source type (e.g., "image", "directory", "file").
+	Type string `json:"type"`
+
+	// Metadata contains additional source-specific metadata.
 	Metadata interface{} `json:"metadata"`
 }
 
@@ -25,6 +38,7 @@ type sourceUnpacker struct {
 	ID       string          `json:"id,omitempty"`
 	Name     string          `json:"name"`
 	Version  string          `json:"version"`
+	Supplier string          `json:"supplier,omitempty"`
 	Type     string          `json:"type"`
 	Metadata json.RawMessage `json:"metadata"`
 	Target   json.RawMessage `json:"target"` // pre-v9 schema support
@@ -40,6 +54,7 @@ func (s *Source) UnmarshalJSON(b []byte) error {
 
 	s.Name = unpacker.Name
 	s.Version = unpacker.Version
+	s.Supplier = unpacker.Supplier
 	s.Type = unpacker.Type
 	s.ID = unpacker.ID
 
