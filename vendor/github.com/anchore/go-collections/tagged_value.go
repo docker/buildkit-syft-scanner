@@ -140,5 +140,5 @@ func isEqual[T any](a, b T) bool {
 	if va.Type().Kind() == reflect.Func {
 		return fmt.Sprintf("%v", a) == fmt.Sprintf("%v", b)
 	}
-	return false
+	return reflect.DeepEqual(a, b)
 }

@@ -28,11 +28,11 @@ func DefaultClassifiers() []binutils.Classifier {
 		// ruby 2.7.7p221 (2022-11-24 revision 168ec2b1e5) [x86_64-linux]
 		`(?m)ruby (?P<version>[0-9]+\.[0-9]+\.[0-9]+((p|preview|rc|dev)[0-9]*)?) `)
 
-	return []binutils.Classifier{
+	classifiers := []binutils.Classifier{
 		{
 			Class:    "python-binary",
 			FileGlob: "**/python*",
-			EvidenceMatcher: binutils.EvidenceMatchers(
+			EvidenceMatcher: binutils.MatchAny(
 				// try to find version information from libpython shared libraries
 				binutils.SharedLibraryLookup(
 					`^libpython[0-9]+(?:\.[0-9]+)+[a-z]?\.so.*$`,
@@ -98,7 +98,7 @@ func DefaultClassifiers() []binutils.Classifier {
 		{
 			Class:    "redis-binary",
 			FileGlob: "**/redis-server",
-			EvidenceMatcher: binutils.EvidenceMatchers(
+			EvidenceMatcher: binutils.MatchAny(
 				// matches most recent versions of redis (~v7), e.g. "7.0.14buildkitsandbox-1702957741000000000"
 				m.FileContentsVersionMatcher(`[^\d](?P<version>\d+.\d+\.\d+)buildkitsandbox-\d+`),
 				// matches against older versions of redis (~v3 - v6), e.g. "4.0.11841ce7054bd9-1542359302000000000"
@@ -114,72 +114,23 @@ func DefaultClassifiers() []binutils.Classifier {
 			},
 		},
 		{
-			Class:    "java-binary-openjdk",
-			FileGlob: "**/java",
-			EvidenceMatcher: binutils.MatchExcluding(
-				binutils.EvidenceMatchers(
-					m.FileContentsVersionMatcher(
-						// [NUL]openjdk[NUL]java[NUL]0.0[NUL]11.0.17+8-LTS[NUL]
-						// [NUL]openjdk[NUL]java[NUL]1.8[NUL]1.8.0_352-b08[NUL]
-						`(?m)\x00openjdk\x00java\x00(?P<release>[0-9]+[.0-9]*)\x00(?P<version>[0-9]+[^\x00]+)\x00`),
-					m.FileContentsVersionMatcher(
-						// arm64 versions: [NUL]0.0[NUL][NUL][NUL][NUL][NUL]11.0.22+7[NUL][NUL][NUL][NUL][NUL][NUL][NUL]openjdk[NUL]java[NUL]
-						`(?m)\x00(?P<release>[0-9]+[.0-9]*)\x00+(?P<version>[0-9]+[^\x00]+)\x00+openjdk\x00java`),
-				),
-				// don't match graalvm
-				"-jvmci-",
-			),
-			Package: "java/jre",
-			PURL:    mustPURL("pkg:generic/java/jre@version"),
-			// TODO the updates might need to be part of the CPE Attributes, like: 1.8.0:update152
-			CPEs: singleCPE("cpe:2.3:a:oracle:openjdk:*:*:*:*:*:*:*:*", cpe.NVDDictionaryLookupSource),
-		},
-		{
-			Class:    "java-binary-ibm",
-			FileGlob: "**/java",
+			Class:    "valkey-binary",
+			FileGlob: "**/valkey-server",
 			EvidenceMatcher: m.FileContentsVersionMatcher(
-				// [NUL]java[NUL]1.8[NUL][NUL][NUL][NUL]1.8.0-foreman_2022_09_22_15_30-b00[NUL]
-				`(?m)\x00java\x00(?P<release>[0-9]+[.0-9]+)\x00{4}(?P<version>[0-9]+[-._a-zA-Z0-9]+)\x00`),
-			Package: "java/jre",
-			PURL:    mustPURL("pkg:generic/java/jre@version"),
-			CPEs:    singleCPE("cpe:2.3:a:ibm:java:*:*:*:*:*:*:*:*", cpe.NVDDictionaryLookupSource),
-		},
-		{
-			Class:    "java-binary-oracle",
-			FileGlob: "**/java",
-			EvidenceMatcher: binutils.MatchExcluding(
-				m.FileContentsVersionMatcher(
-					// [NUL]19.0.1+10-21[NUL]
-					`(?m)\x00(?P<version>[0-9]+[.0-9]+[+][-0-9]+)\x00`),
-				// don't match openjdk
-				`\x00openjdk\x00`,
-			),
-			Package: "java/jre",
-			PURL:    mustPURL("pkg:generic/java/jre@version"),
-			CPEs:    singleCPE("cpe:2.3:a:oracle:jre:*:*:*:*:*:*:*:*", cpe.NVDDictionaryLookupSource),
-		},
-		{
-			Class:    "java-binary-graalvm",
-			FileGlob: "**/java",
-			EvidenceMatcher: m.FileContentsVersionMatcher(
-				`(?m)\x00(?P<version>[0-9]+[.0-9]+[.0-9]+\+[0-9]+-jvmci-[0-9]+[.0-9]+-b[0-9]+)\x00`),
-			Package: "java/graalvm",
-			PURL:    mustPURL("pkg:generic/java/graalvm@version"),
-			CPEs:    singleCPE("cpe:2.3:a:oracle:graalvm:*:*:*:*:*:*:*:*", cpe.NVDDictionaryLookupSource),
-		},
-		{
-			Class:    "java-binary-jdk",
-			FileGlob: "**/jdb",
-			EvidenceMatcher: m.FileContentsVersionMatcher(
-				`(?m)\x00(?P<version>[0-9]+\.[0-9]+\.[0-9]+(\+[0-9]+)?([-._a-zA-Z0-9]+)?)\x00`),
-			Package: "java/jdk",
-			PURL:    mustPURL("pkg:generic/java/jdk@version"),
-			CPEs:    singleCPE("cpe:2.3:a:oracle:jdk:*:*:*:*:*:*:*:*", cpe.NVDDictionaryLookupSource),
+				// valkey9.0.0buildkitsandbox-1764887574000000000
+				`[^\d](?P<version>\d+.\d+\.\d+)buildkitsandbox-\d+`),
+			Package: "valkey",
+			PURL:    mustPURL("pkg:generic/valkey@version"),
+			CPEs: []cpe.CPE{
+				cpe.Must("cpe:2.3:a:lfprojects:valkey:*:*:*:*:*:*:*:*", cpe.NVDDictionaryLookupSource),
+				cpe.Must("cpe:2.3:a:linuxfoundation:valkey:*:*:*:*:*:*:*:*", cpe.NVDDictionaryLookupSource),
+				cpe.Must("cpe:2.3:a:valkey-io:valkey:*:*:*:*:*:*:*:*", cpe.NVDDictionaryLookupSource),
+			},
 		},
 		{
 			Class:    "nodejs-binary",
 			FileGlob: "**/node",
-			EvidenceMatcher: binutils.EvidenceMatchers(
+			EvidenceMatcher: binutils.MatchAny(
 				// [NUL]node v0.10.48[NUL]
 				// [NUL]v0.12.18[NUL]
 				// [NUL]v4.9.1[NUL]
@@ -221,7 +172,7 @@ func DefaultClassifiers() []binutils.Classifier {
 		{
 			Class:    "haproxy-binary",
 			FileGlob: "**/haproxy",
-			EvidenceMatcher: binutils.EvidenceMatchers(
+			EvidenceMatcher: binutils.MatchAny(
 				m.FileContentsVersionMatcher(`(?m)version (?P<version>[0-9]+\.[0-9]+(\.|-dev|-rc)[0-9]+)(-[a-z0-9]{7})?, released 20`),
 				m.FileContentsVersionMatcher(`(?m)HA-Proxy version (?P<version>[0-9]+\.[0-9]+(\.|-dev)[0-9]+)`),
 				m.FileContentsVersionMatcher(`(?m)(?P<version>[0-9]+\.[0-9]+(\.|-dev)[0-9]+)-[0-9a-zA-Z]{7}.+HAProxy version`),
@@ -273,7 +224,7 @@ func DefaultClassifiers() []binutils.Classifier {
 				// [NUL]v1.7.34[NUL]
 				// [NUL]2.9.6[NUL]
 				// 3.0.4[NUL]
-				`(?m)(\x00|\x{FFFD})?v?(?P<version>[0-9]+\.[0-9]+\.[0-9]+(-alpha[0-9]|-beta[0-9]|-rc[0-9])?)\x00`),
+				`(?m)(\x00v?|\x{FFFD}.?)(?P<version>[0-9]+\.[0-9]+\.[0-9]+(-alpha[0-9]|-beta[0-9]|-rc[0-9])?)\x00`),
 			Package: "traefik",
 			PURL:    mustPURL("pkg:generic/traefik@version"),
 			CPEs:    singleCPE("cpe:2.3:a:traefik:traefik:*:*:*:*:*:*:*:*", cpe.NVDDictionaryLookupSource),
@@ -303,7 +254,7 @@ func DefaultClassifiers() []binutils.Classifier {
 		{
 			Class:    "mysql-binary",
 			FileGlob: "**/mysql",
-			EvidenceMatcher: binutils.EvidenceMatchers(
+			EvidenceMatcher: binutils.MatchAny(
 				// shutdown[NUL]8.0.37[NUL][NUL][NUL][NUL][NUL]mysql_real_esc
 				m.FileContentsVersionMatcher(`\x00(?P<version>[0-9]+(\.[0-9]+)?(\.[0-9]+)?(alpha[0-9]|beta[0-9]|rc[0-9])?)\x00+mysql`),
 				// /export/home/pb2/build/sb_0-26781090-1516292385.58/release/mysql-8.0.4-rc/mysys_ssl/my_default.cc
@@ -380,7 +331,7 @@ func DefaultClassifiers() []binutils.Classifier {
 		{
 			Class:    "ruby-binary",
 			FileGlob: "**/ruby",
-			EvidenceMatcher: binutils.EvidenceMatchers(
+			EvidenceMatcher: binutils.MatchAny(
 				rubyMatcher,
 				binutils.SharedLibraryLookup(
 					// try to find version information from libruby shared libraries
@@ -394,7 +345,7 @@ func DefaultClassifiers() []binutils.Classifier {
 		{
 			Class:    "erlang-binary",
 			FileGlob: "**/erlexec",
-			EvidenceMatcher: binutils.EvidenceMatchers(
+			EvidenceMatcher: binutils.MatchAny(
 				m.FileContentsVersionMatcher(
 					// <artificial>[NUL]/usr/src/otp_src_25.3.2.6/erts/
 					`(?m)/src/otp_src_(?P<version>[0-9]+\.[0-9]+(\.[0-9]+){0,2}(-rc[0-9])?)/erts/`,
@@ -411,7 +362,7 @@ func DefaultClassifiers() []binutils.Classifier {
 		{
 			Class:    "erlang-alpine-binary",
 			FileGlob: "**/beam.smp",
-			EvidenceMatcher: binutils.EvidenceMatchers(
+			EvidenceMatcher: binutils.MatchAny(
 				m.FileContentsVersionMatcher(
 					// <artificial>[NUL]/usr/src/otp_src_25.3.2.6/erts/
 					`(?m)/src/otp_src_(?P<version>[0-9]+\.[0-9]+(\.[0-9]+){0,2}(-rc[0-9])?)/erts/`,
@@ -432,7 +383,7 @@ func DefaultClassifiers() []binutils.Classifier {
 		{
 			Class:    "erlang-library",
 			FileGlob: "**/liberts_internal.a",
-			EvidenceMatcher: binutils.EvidenceMatchers(
+			EvidenceMatcher: binutils.MatchAny(
 				m.FileContentsVersionMatcher(
 					// <artificial>[NUL]/usr/src/otp_src_25.3.2.6/erts/
 					`(?m)/src/otp_src_(?P<version>[0-9]+\.[0-9]+(\.[0-9]+){0,2}(-rc[0-9])?)/erts/`,
@@ -512,6 +463,16 @@ func DefaultClassifiers() []binutils.Classifier {
 			CPEs:    singleCPE("cpe:2.3:a:hashicorp:consul:*:*:*:*:*:*:*:*", cpe.NVDDictionaryLookupSource),
 		},
 		{
+			Class:    "hashicorp-vault-binary",
+			FileGlob: "**/vault",
+			EvidenceMatcher: m.FileContentsVersionMatcher(
+				// revoke1.18.0
+				`(?m)revoke(?P<version>[0-9]+\.[0-9]+\.[0-9]+)`),
+			Package: "github.com/hashicorp/vault",
+			PURL:    mustPURL("pkg:golang/github.com/hashicorp/vault@version"),
+			CPEs:    singleCPE("cpe:2.3:a:hashicorp:vault:*:*:*:*:*:*:*:*", cpe.NVDDictionaryLookupSource),
+		},
+		{
 			Class:    "nginx-binary",
 			FileGlob: "**/nginx",
 			EvidenceMatcher: m.FileContentsVersionMatcher(
@@ -546,7 +507,7 @@ func DefaultClassifiers() []binutils.Classifier {
 			EvidenceMatcher: m.FileContentsVersionMatcher(
 				// [NUL]OpenSSL 3.1.4'
 				// [NUL]OpenSSL 1.1.1w'
-				`\x00OpenSSL (?P<version>[0-9]+\.[0-9]+\.[0-9]+([a-z]|-alpha[0-9]|-beta[0-9]|-rc[0-9])?)`,
+				`\x00OpenSSL (?P<version>[0-9]+\.[0-9]+\.[0-9]+([a-z]+|-alpha[0-9]|-beta[0-9]|-rc[0-9])?)`,
 			),
 			Package: "openssl",
 			PURL:    mustPURL("pkg:generic/openssl@version"),
@@ -680,7 +641,152 @@ func DefaultClassifiers() []binutils.Classifier {
 			PURL:    mustPURL("pkg:generic/chrome@version"),
 			CPEs:    singleCPE("cpe:2.3:a:google:chrome:*:*:*:*:*:*:*:*"),
 		},
+		{
+			Class:    "ffmpeg-binary",
+			FileGlob: "**/ffmpeg",
+			EvidenceMatcher: m.FileContentsVersionMatcher(
+				// Pattern found in the binary: "%s version 7.1.1" or "%s version 6.0"
+				// When executed outputs: "ffmpeg version 7.1.1" or "ffmpeg version 6.0"
+				`(?m)%s version (?P<version>[0-9]+\.[0-9]+(\.[0-9]+)?)`,
+			),
+			Package: "ffmpeg",
+			PURL:    mustPURL("pkg:generic/ffmpeg@version"),
+			CPEs:    singleCPE("cpe:2.3:a:ffmpeg:ffmpeg:*:*:*:*:*:*:*:*", cpe.NVDDictionaryLookupSource),
+		},
+		{
+			Class:    "ffmpeg-library",
+			FileGlob: "**/libav*",
+			EvidenceMatcher: binutils.MatchAny(
+				// Primary pattern: FFmpeg version found in most libraries
+				m.FileContentsVersionMatcher(`(?m)FFmpeg version (?P<version>[0-9]+\.[0-9]+(\.[0-9]+)?)`),
+				// Fallback: library-specific version patterns for libavcodec and libavformat
+				m.FileContentsVersionMatcher(`(?m)Lavc(?P<version>[0-9]+\.[0-9]+\.[0-9]+)`),
+				m.FileContentsVersionMatcher(`(?m)Lavf(?P<version>[0-9]+\.[0-9]+\.[0-9]+)`),
+			),
+			Package: "ffmpeg",
+			PURL:    mustPURL("pkg:generic/ffmpeg@version"),
+			CPEs:    singleCPE("cpe:2.3:a:ffmpeg:ffmpeg:*:*:*:*:*:*:*:*", cpe.NVDDictionaryLookupSource),
+		},
+		{
+			Class:    "ffmpeg-library",
+			FileGlob: "**/libswresample*",
+			EvidenceMatcher: m.FileContentsVersionMatcher(
+				// FFmpeg version pattern for libswresample
+				`(?m)FFmpeg version (?P<version>[0-9]+\.[0-9]+(\.[0-9]+)?)`),
+			Package: "ffmpeg",
+			PURL:    mustPURL("pkg:generic/ffmpeg@version"),
+			CPEs:    singleCPE("cpe:2.3:a:ffmpeg:ffmpeg:*:*:*:*:*:*:*:*", cpe.NVDDictionaryLookupSource),
+		},
+		{
+			Class:    "elixir-binary",
+			FileGlob: "**/elixir",
+			EvidenceMatcher: m.FileContentsVersionMatcher(
+				`(?m)ELIXIR_VERSION=(?P<version>[0-9]+\.[0-9]+\.[0-9]+)`),
+			Package: "elixir",
+			PURL:    mustPURL("pkg:generic/elixir@version"),
+			CPEs: []cpe.CPE{
+				cpe.Must("cpe:2.3:a:elixir-lang:elixir:*:*:*:*:*:*:*:*", cpe.NVDDictionaryLookupSource),
+			},
+		},
+		{
+			Class:    "elixir-library",
+			FileGlob: "**/elixir/ebin/elixir.app",
+			EvidenceMatcher: m.FileContentsVersionMatcher(
+				`(?m)\{vsn,"(?P<version>[0-9]+\.[0-9]+\.[0-9]+(-[a-z0-9]+)?)"\}`),
+			Package: "elixir",
+			PURL:    mustPURL("pkg:generic/elixir@version"),
+			CPEs:    singleCPE("cpe:2.3:a:elixir-lang:elixir:*:*:*:*:*:*:*:*", cpe.NVDDictionaryLookupSource),
+		},
+		{
+			Class:    "istio-binary",
+			FileGlob: "**/pilot-discovery",
+			EvidenceMatcher: binutils.MatchAny(
+				// [NUL]1.26.8[NUL][NUL]1.26.8[NUL]
+				// [NUL]1.3.7[NUL][NUL][NUL]1.3.8[NUL]
+				m.FileContentsVersionMatcher(`[0-9]+\.[0-9]+\.[0-9]+\x00+(?P<version>[0-9]+\.[0-9]+\.[0-9]+)\x00+`),
+				// Clean[NUL][NUL][NUL]1.8.0[NUL]
+				m.FileContentsVersionMatcher(`Clean\x00+(?P<version>[0-9]+\.[0-9]+\.[0-9]+)\x00+`),
+				// 1.1.17[NUL]...S=v<y5
+				m.FileContentsVersionMatcher(`(?s)(?P<version>[0-9]+\.[0-9]+\.[0-9]+)\x00+.{1,100}S?=v<y5`),
+			),
+			Package: "pilot-discovery",
+			PURL:    mustPURL("pkg:generic/istio@version"),
+			CPEs:    singleCPE("cpe:2.3:a:istio:istio:*:*:*:*:*:*:*:*", cpe.NVDDictionaryLookupSource),
+		},
+		{
+			Class:    "istio-binary",
+			FileGlob: "**/pilot-agent",
+			EvidenceMatcher: binutils.MatchAny(
+				// [NUL]1.26.8[NUL][NUL]1.26.8[NUL]
+				m.FileContentsVersionMatcher(`[0-9]+\.[0-9]+\.[0-9]+\x00+(?P<version>[0-9]+\.[0-9]+\.[0-9]+)\x00+`),
+				// Clean[NUL][NUL][NUL]1.8.0[NUL]
+				m.FileContentsVersionMatcher(`Clean\x00+(?P<version>[0-9]+\.[0-9]+\.[0-9]+)\x00+`),
+				// 1.1.17[NUL]...S=v<y5
+				m.FileContentsVersionMatcher(`(?s)(?P<version>[0-9]+\.[0-9]+\.[0-9]+)\x00+.{1,100}S?=v<y5`),
+			),
+			Package: "pilot-agent",
+			PURL:    mustPURL("pkg:generic/istio@version"),
+			CPEs:    singleCPE("cpe:2.3:a:istio:istio:*:*:*:*:*:*:*:*", cpe.NVDDictionaryLookupSource),
+		},
+		{
+			Class:    "grafana-binary",
+			FileGlob: "**/grafana",
+			EvidenceMatcher: binutils.MatchAny(
+				// [NUL][NUL][NUL][NUL]release-12.3.1[NUL][NUL][NUL][NUL]
+				m.FileContentsVersionMatcher(`\x00+release-(?P<version>[0-9]{2}\.[0-9]+\.[0-9]+)\x00+`),
+				// HEAD[NUL][NUL][NUL][NUL]12.0.0[NUL][NUL]$a
+				// 11.0.0[NUL][NUL]$a
+				m.FileContentsVersionMatcher(`(?P<version>[0-9]{2}\.[0-9]+\.[0-9]+)\x00+\$a`),
+				// [NUL]0xDC0xBF10.4.19[NUL]
+				m.FileContentsVersionMatcher(`\x00.(?P<version>10\.[0-9]+\.[0-9]+)\x00`),
+				// 9.5.21[NUL][NUL]v9.5.x[NUL][NUL][NUL][NUL][NUL][NUL]$a
+				m.FileContentsVersionMatcher(`(?P<version>9\.[0-9]+\.[0-9]+)\x00\x00v`),
+			),
+			Package: "grafana",
+			PURL:    mustPURL("pkg:generic/grafana@version"),
+			CPEs:    singleCPE("cpe:2.3:a:grafana:grafana:*:*:*:*:*:*:*:*", cpe.NVDDictionaryLookupSource),
+		},
+		{
+			Class:    "grafana-binary",
+			FileGlob: "**/grafana-server",
+			EvidenceMatcher: m.FileContentsVersionMatcher(
+				// HEAD[NUL][NUL][NUL][NUL]9.0.0[NUL]:[NUL]
+				// HEAD[NUL][NUL][NUL][NUL]:[NUL][NUL][NUL][NUL][NUL][NUL][NUL]7.5.17[NUL][NUL][NUL][NUL]
+				// HEAD[NUL][NUL][NUL][NUL]m[NUL]...[NUL][NUL]6.7.6[NUL][NUL][NUL].[NUL][NUL][NUL][NUL][NUL][NUL][NUL]:
+				`HEAD\x00+.*\x00+(?P<version>[0-9]\.[0-9]+\.[0-9]+)\x00+`),
+			Package: "grafana",
+			PURL:    mustPURL("pkg:generic/grafana@version"),
+			CPEs:    singleCPE("cpe:2.3:a:grafana:grafana:*:*:*:*:*:*:*:*", cpe.NVDDictionaryLookupSource),
+		},
+		{
+			Class:    "envoy-binary",
+			FileGlob: "**/envoy",
+			EvidenceMatcher: binutils.MatchAny(
+				// 1.3x [NUL]1.36.4[NUL]...envoy_reloadable_features
+				// 1.34.5 [NUL]1.34.5[NUL]...envoy.reloadable_features
+				m.FileContentsVersionMatcher(`(?s)\x00(?P<version>1\.3[0-9]\.[0-9]+(-dev)?)\x00.{0,1000}envoy_reloadable_features`),
+				m.FileContentsVersionMatcher(`(?s)\x00(?P<version>1\.34\.5)\x00.{0,200}envoy\.reloadable_features`),
+				// 1.2x envoy_quic_...[NUL]1.28.7[NUL]
+				m.FileContentsVersionMatcher(`(?s)envoy_quic_.{0,1000}\x00(?P<version>1\.2[0-9]\.[0-9]+(-dev)?)\x00`),
+				// 1.2x [NUL]1.20.7[NUL]Unable to
+				// 1.1x [NUL]1.18.6-dev[NUL]Unable to
+				m.FileContentsVersionMatcher(`(?s)\x00(?P<version>1\.[12][0-9]\.[0-9]+(-dev)?)\x00.{0,1000}Unable to`),
+				// 1.2x [NUL]1.22.11[NUL]...ValidationError
+				// 1.1x [NUL]1.14.3[NUL]...ValidationError
+				m.FileContentsVersionMatcher(`(?s)\x00(?P<version>1\.2[0-9]\.[0-9]+(-dev)?)\x00.{0,580}ValidationError`),
+				m.FileContentsVersionMatcher(`(?s)\x00(?P<version>1\.1[0-9]\.[0-9]+(-dev)?)\x00.{0,1000}ValidationError`),
+				// 1.1x [source...[NUL]1.11.0[NUL]/
+				m.FileContentsVersionMatcher(`(?s)\[source/.{0,200}\x00(?P<version>1\.1[0-9]\.[0-9]+(-dev)?)\x00`),
+				// 1.x [NUL]1.6.0[NUL]RELEASE
+				m.FileContentsVersionMatcher(`(?s)\x00(?P<version>1\.[0-9]\.[0-9]+(-dev)?)\x00.{0,20}RELEASE`),
+			),
+			Package: "envoy",
+			PURL:    mustPURL("pkg:generic/envoy@version"),
+			CPEs:    singleCPE("cpe:2.3:a:envoyproxy:envoy:*:*:*:*:*:*:*:*", cpe.NVDDictionaryLookupSource),
+		},
 	}
+
+	return append(classifiers, defaultJavaClassifiers()...)
 }
 
 // singleCPE returns a []cpe.CPE with Source: Generated based on the cpe string or panics if the

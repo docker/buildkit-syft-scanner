@@ -1,6 +1,7 @@
 package helpers
 
 import (
+	"net/url"
 	"strings"
 
 	urilib "github.com/spdx/gordf/uri"
@@ -10,6 +11,7 @@ import (
 
 const NONE = "NONE"
 const NOASSERTION = "NOASSERTION"
+const SUPPLIERORG = "Organization"
 
 func DownloadLocation(p pkg.Package) string {
 	// 3.7: Package Download Location
@@ -48,9 +50,21 @@ func isURIValid(uri string) bool {
 func URIValue(uri string) string {
 	if strings.ToLower(uri) != "none" {
 		if isURIValid(uri) {
-			return uri
+			return updateForGithub(url.Parse(uri))
 		}
 		return NOASSERTION
 	}
 	return NONE
+}
+
+// Github repository is a valid NPM location but not a valid SPDX DownloadURL
+func updateForGithub(uri *url.URL, err error) string {
+	if err != nil {
+		return NOASSERTION
+	}
+	updatedLocation := uri.String()
+	if uri.Scheme == "github" {
+		updatedLocation = "https://github.com/" + uri.Opaque
+	}
+	return updatedLocation
 }

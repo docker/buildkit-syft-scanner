@@ -48,6 +48,8 @@ func SourceInfo(p pkg.Package) string {
 		answer = "acquired package info from installed cocoapods manifest file"
 	case pkg.ConanPkg:
 		answer = "acquired package info from conan manifest"
+	case pkg.CondaPkg:
+		answer = "acquired package info from conda metadata"
 	case pkg.PortagePkg:
 		answer = "acquired package info from portage DB"
 	case pkg.HackagePkg:
@@ -80,6 +82,8 @@ func SourceInfo(p pkg.Package) string {
 		answer = "acquired package info from Homebrew formula"
 	case pkg.TerraformPkg:
 		answer = "acquired package info from Terraform dependency lock file"
+	case pkg.ModelPkg:
+		answer = "acquired package info from AI artifact (e.g. GGUF File"
 	default:
 		answer = "acquired package info from the following paths"
 	}

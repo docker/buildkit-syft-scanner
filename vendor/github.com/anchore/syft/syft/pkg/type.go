@@ -7,6 +7,10 @@ import (
 // Type represents a Package Type for or within a language ecosystem (there may be multiple package types within a language ecosystem)
 type Type string
 
+func (t Type) String() string {
+	return string(t)
+}
+
 const (
 	// the full set of supported packages
 	UnknownPkg              Type = "UnknownPackage"
@@ -16,6 +20,7 @@ const (
 	BitnamiPkg              Type = "bitnami"
 	CocoapodsPkg            Type = "pod"
 	ConanPkg                Type = "conan"
+	CondaPkg                Type = "conda"
 	DartPubPkg              Type = "dart-pub"
 	DebPkg                  Type = "deb"
 	DotnetPkg               Type = "dotnet"
@@ -49,6 +54,7 @@ const (
 	TerraformPkg            Type = "terraform"
 	WordpressPluginPkg      Type = "wordpress-plugin"
 	HomebrewPkg             Type = "homebrew"
+	ModelPkg                Type = "model"
 )
 
 // AllPkgs represents all supported package types
@@ -59,6 +65,7 @@ var AllPkgs = []Type{
 	BitnamiPkg,
 	CocoapodsPkg,
 	ConanPkg,
+	CondaPkg,
 	DartPubPkg,
 	DebPkg,
 	DotnetPkg,
@@ -92,6 +99,7 @@ var AllPkgs = []Type{
 	TerraformPkg,
 	WordpressPluginPkg,
 	HomebrewPkg,
+	ModelPkg,
 }
 
 // PackageURLType returns the PURL package type for the current package.
@@ -109,6 +117,8 @@ func (t Type) PackageURLType() string {
 		return packageurl.TypeCocoapods
 	case ConanPkg:
 		return packageurl.TypeConan
+	case CondaPkg:
+		return packageurl.TypeGeneric
 	case DartPubPkg:
 		return packageurl.TypePub
 	case DebPkg:
@@ -206,6 +216,8 @@ func TypeByName(name string) Type {
 		return GemPkg
 	case "cargo", "crate":
 		return RustPkg
+	case "conda":
+		return CondaPkg
 	case packageurl.TypePub:
 		return DartPubPkg
 	case "dotnet": // here to support legacy use cases

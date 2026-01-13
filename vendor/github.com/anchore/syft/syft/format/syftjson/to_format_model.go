@@ -8,12 +8,12 @@ import (
 	stereoscopeFile "github.com/anchore/stereoscope/pkg/file"
 	"github.com/anchore/syft/internal"
 	"github.com/anchore/syft/internal/log"
+	"github.com/anchore/syft/internal/packagemetadata"
+	"github.com/anchore/syft/internal/sourcemetadata"
 	"github.com/anchore/syft/syft/artifact"
 	"github.com/anchore/syft/syft/file"
 	formatInternal "github.com/anchore/syft/syft/format/internal"
 	"github.com/anchore/syft/syft/format/syftjson/model"
-	"github.com/anchore/syft/syft/internal/packagemetadata"
-	"github.com/anchore/syft/syft/internal/sourcemetadata"
 	"github.com/anchore/syft/syft/linux"
 	"github.com/anchore/syft/syft/pkg"
 	"github.com/anchore/syft/syft/sbom"
@@ -320,6 +320,7 @@ func toSourceModel(src source.Description) model.Source {
 		ID:       src.ID,
 		Name:     src.Name,
 		Version:  src.Version,
+		Supplier: src.Supplier,
 		Type:     sourcemetadata.JSONName(src.Metadata),
 		Metadata: src.Metadata,
 	}

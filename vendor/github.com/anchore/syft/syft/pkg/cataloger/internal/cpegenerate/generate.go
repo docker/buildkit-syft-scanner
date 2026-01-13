@@ -6,9 +6,11 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"sort"
 	"strings"
 	"sync"
+	"unicode"
 
 	"github.com/scylladb/go-set/strset"
 
@@ -60,16 +62,13 @@ func GetIndexedDictionary() (_ *dictionary.Indexed, err error) {
 
 func FromDictionaryFind(p pkg.Package) ([]cpe.CPE, bool) {
 	dict, err := GetIndexedDictionary()
-	parsedCPEs := []cpe.CPE{}
 	if err != nil {
 		log.Debugf("CPE dictionary lookup not available: %+v", err)
-		return parsedCPEs, false
+		return []cpe.CPE{}, false
 	}
 
-	var (
-		cpes *dictionary.Set
-		ok   bool
-	)
+	var cpes *dictionary.Set
+	var ok bool
 
 	switch p.Type {
 	case pkg.NpmPkg:
@@ -99,20 +98,25 @@ func FromDictionaryFind(p pkg.Package) ([]cpe.CPE, bool) {
 	case pkg.WordpressPluginPkg:
 		metadata, valid := p.Metadata.(pkg.WordpressPluginEntry)
 		if !valid {
-			return parsedCPEs, false
+			return nil, false
 		}
 		cpes, ok = dict.EcosystemPackages[dictionary.EcosystemWordpressPlugins][metadata.PluginInstallDirectory]
 
+	case pkg.ModelPkg:
+		// ML models should not have CPEs as they are not traditional software packages
+		// and don't fit the vulnerability model used for software packages.
+		return nil, false
 	default:
 		// The dictionary doesn't support this package type yet.
-		return parsedCPEs, false
+		return nil, false
 	}
 
 	if !ok {
 		// The dictionary doesn't have a CPE for this package.
-		return parsedCPEs, false
+		return []cpe.CPE{}, false
 	}
 
+	parsedCPEs := []cpe.CPE{}
 	for _, c := range cpes.List() {
 		parsedCPE, err := cpe.New(c, cpe.NVDDictionaryLookupSource)
 		if err != nil {
@@ -124,7 +128,7 @@ func FromDictionaryFind(p pkg.Package) ([]cpe.CPE, bool) {
 	}
 
 	if len(parsedCPEs) == 0 {
-		return []cpe.CPE{}, false
+		return nil, false
 	}
 
 	sort.Sort(cpe.BySourceThenSpecificity(parsedCPEs))
@@ -135,6 +139,12 @@ func FromDictionaryFind(p pkg.Package) ([]cpe.CPE, bool) {
 // generate the minimal set of representative CPEs, which implies that optional fields should not be included
 // (such as target SW).
 func FromPackageAttributes(p pkg.Package) []cpe.CPE {
+	// ML models should not have CPEs as they are not traditional software packages
+	// and don't fit the vulnerability model used for software packages.
+	if p.Type == pkg.ModelPkg {
+		return nil
+	}
+
 	vendors := candidateVendors(p)
 	products := candidateProducts(p)
 	targetSWs := candidateTargetSw(p)
@@ -223,9 +233,17 @@ func candidateVendors(p pkg.Package) []string {
 		vendors.union(candidateVendorsForAPK(p))
 	case pkg.NpmPackage:
 		vendors.union(candidateVendorsForJavascript(p))
+	case pkg.PEBinary:
+		// Add PE-specific vendor hints (e.g. ghostscript -> artifex)
+		vendors.union(candidateVendorsForPE(p))
 	case pkg.WordpressPluginEntry:
 		vendors.clear()
 		vendors.union(candidateVendorsForWordpressPlugin(p))
+	}
+
+	if p.Type == pkg.BinaryPkg && endsWithNumber(p.Name) {
+		// add binary package digit-suffix variations (e.g. Qt5 -> Qt)
+		addBinaryPackageDigitVariations(vendors)
 	}
 
 	// We should no longer be generating vendor candidates with these values ["" and "*"]
@@ -286,11 +304,17 @@ func candidateProductSet(p pkg.Package) fieldCandidateSet {
 		if prod != "" {
 			products.addValue(prod)
 		}
+	case p.Type == pkg.BinaryPkg && endsWithNumber(p.Name):
+		// add binary package digit-suffix variations (e.g. Qt5 -> Qt)
+		addBinaryPackageDigitVariations(products)
 	}
 
 	switch p.Metadata.(type) {
 	case pkg.ApkDBEntry:
 		products.union(candidateProductsForAPK(p))
+	case pkg.PEBinary:
+		// Add PE-specific product hints (e.g. ghostscript)
+		products.union(candidateProductsForPE(p))
 	case pkg.WordpressPluginEntry:
 		products.clear()
 		products.union(candidateProductsForWordpressPlugin(p))
@@ -403,4 +427,34 @@ func addDelimiterVariations(fields fieldCandidateSet) {
 			fields.add(hyphenCandidate)
 		}
 	}
+}
+
+// removeTrailingDigits removes all trailing digits from a string
+func removeTrailingDigits(s string) string {
+	re := regexp.MustCompile(`\d+$`)
+	return re.ReplaceAllString(s, "")
+}
+
+// addBinaryPackageDigitVariations adds variations with trailing digits removed for binary packages.For binary package types only, when the name ends with a digit, add a new variation with all suffix-digits removed (e.g. Qt5 -> Qt). This helps generate additional CPE permutations for better vulnerability matching.
+func addBinaryPackageDigitVariations(fields fieldCandidateSet) {
+	candidatesForVariations := fields.copy()
+	for _, candidate := range candidatesForVariations.values() {
+		// Check if the candidate ends with a digit
+		if len(candidate) > 0 && candidate[len(candidate)-1] >= '0' && candidate[len(candidate)-1] <= '9' {
+			// Create variation with all suffix digits removed
+			withoutDigits := removeTrailingDigits(candidate)
+			if withoutDigits != "" && withoutDigits != candidate {
+				fields.addValue(withoutDigits)
+			}
+		}
+	}
+}
+
+func endsWithNumber(s string) bool {
+	if len(s) == 0 {
+		return false
+	}
+	r := []rune(s)
+	last := r[len(r)-1]
+	return unicode.IsDigit(last)
 }
