@@ -28,7 +28,7 @@ jobs:
       - run: echo "Exposing env vars for reusable workflow"
 
   build:
-    uses: docker/github-builder-experimental/.github/workflows/bake.yml@5876e8deef3c899c298ec80b07c43dd9e89d37f6
+    uses: docker/github-builder-experimental/.github/workflows/bake.yml@7643588149117bf0ca3a906caa3968c70484027a
     needs:
       - build-prepare
     permissions:
