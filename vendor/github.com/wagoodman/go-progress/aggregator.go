@@ -3,8 +3,6 @@ package progress
 import (
 	"errors"
 	"io"
-
-	"github.com/hashicorp/go-multierror"
 )
 
 const (
@@ -36,6 +34,7 @@ func (a *Aggregator) Add(p ...Progressable) {
 func (a *Aggregator) Progress() Progress {
 	result := Progress{}
 	var completedProgs int
+	var errs []error
 
 	for _, p := range a.progs {
 
@@ -58,7 +57,7 @@ func (a *Aggregator) Progress() Progress {
 		// capture notable errors
 		err := p.Error()
 		if err != nil && !errors.Is(err, io.EOF) && !errors.Is(err, ErrCompleted) {
-			result.err = multierror.Append(result.err, err)
+			errs = append(errs, err)
 		}
 		if IsCompleted(p) {
 			completedProgs++
@@ -66,8 +65,10 @@ func (a *Aggregator) Progress() Progress {
 	}
 
 	if completedProgs == len(a.progs) {
-		result.err = multierror.Append(result.err, ErrCompleted)
+		errs = append(errs, ErrCompleted)
 	}
+
+	result.err = errors.Join(errs...)
 	return result
 }
 

@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/containerd/containerd"
+	"github.com/containerd/containerd/v2/client"
 	"github.com/wagoodman/go-progress"
 )
 
@@ -32,7 +32,7 @@ type PullStatus struct {
 	lock     *sync.RWMutex
 }
 
-func newPullStatus(client *containerd.Client, ongoing *jobs) *PullStatus {
+func newPullStatus(client *client.Client, ongoing *jobs) *PullStatus {
 	return &PullStatus{
 		state:    newAPIState(client, ongoing),
 		progress: make(map[LayerID]*progress.Manual),
@@ -76,10 +76,7 @@ func (s *apiState) current() ([]statusInfo, bool) {
 
 func (ps *PullStatus) start(ctx context.Context) *PullStatus {
 	go func() {
-		for {
-			if ps.state.done {
-				break
-			}
+		for !ps.state.done {
 			select {
 			case <-ctx.Done():
 				return

@@ -270,6 +270,46 @@ type _GGUFFileReadSeeker struct {
 	Size int64
 }
 
+func _validateCountWithRemaining(f _GGUFFileReadSeeker, count uint64, version GGUFVersion, what string) error {
+	if count == 0 {
+		return nil
+	}
+	var minItemSize int64
+
+	switch strings.ToLower(what) {
+	case "metadatakvcount":
+		if version <= GGUFVersionV1 {
+			minItemSize = 12 // key length (uint32) + value type (uint32) + min value (string length uint32)
+		} else {
+			minItemSize = 20 // key length (uint64) + value type (uint32) + min value (string length uint64)
+		}
+	case "tensor":
+		if version <= GGUFVersionV1 {
+			minItemSize = 20 // name length (uint32) + n_dims (uint32) + type (uint32) + offset (uint64)
+		} else {
+			minItemSize = 24 // name length (uint64) + n_dims (uint32) + type (uint32) + offset (uint64)
+		}
+	}
+
+	if minItemSize <= 0 {
+		return fmt.Errorf("invalid min item size for %s: %d", what, minItemSize)
+	}
+	pos, err := f.Seek(0, io.SeekCurrent)
+	if err != nil {
+		return fmt.Errorf("seek %s count position: %w", what, err)
+	}
+	remaining := f.Size - pos
+	if remaining < 0 {
+		return fmt.Errorf("invalid file size: %d", f.Size)
+	}
+	maxCount := uint64(remaining / minItemSize)
+	if maxCount < count {
+		return fmt.Errorf("%s count too large for remaining bytes: %d", what, count)
+	}
+
+	return nil
+}
+
 func parseGGUFFile(fs []_GGUFFileReadSeeker, o _GGUFReadOptions) (_ *GGUFFile, err error) {
 	var gf GGUFFile
 
@@ -297,6 +337,10 @@ func parseGGUFFile(fs []_GGUFFileReadSeeker, o _GGUFReadOptions) (_ *GGUFFile, e
 		if err = binary.Read(f, bo, &version); err != nil {
 			return nil, fmt.Errorf("read version: %w", err)
 		}
+		if version > GGUFVersionV3 {
+			return nil, fmt.Errorf("unsupported GGUF version: %d (supported: %d-%d)",
+				version, GGUFVersionV1, GGUFVersionV3)
+		}
 		gf.Header.Version = version
 
 		rd := _GGUFReader{v: version, o: o, f: f, bo: bo}
@@ -311,6 +355,9 @@ func parseGGUFFile(fs []_GGUFFileReadSeeker, o _GGUFReadOptions) (_ *GGUFFile, e
 		if err != nil {
 			return nil, fmt.Errorf("read tensor count: %w", err)
 		}
+		if err := _validateCountWithRemaining(f, tensorCount, version, "tensor"); err != nil {
+			return nil, err
+		}
 		gf.Header.TensorCount += tensorCount
 
 		// metadata kv count
@@ -322,6 +369,9 @@ func parseGGUFFile(fs []_GGUFFileReadSeeker, o _GGUFReadOptions) (_ *GGUFFile, e
 		}
 		if err != nil {
 			return nil, fmt.Errorf("read metadata kv count: %w", err)
+		}
+		if err := _validateCountWithRemaining(f, metadataKVCount, version, "metadatakvcount"); err != nil {
+			return nil, err
 		}
 		gf.Header.MetadataKVCount += metadataKVCount
 
@@ -350,17 +400,19 @@ func parseGGUFFile(fs []_GGUFFileReadSeeker, o _GGUFReadOptions) (_ *GGUFFile, e
 			if ok {
 				gf.TensorInfos = make(GGUFTensorInfos, 0, anyx.Number[int](tc.Value))
 			} else {
-				gf.TensorInfos = make(GGUFTensorInfos, 0, tensorCount)
+				// avoid preallocating with tensorCount (could be huge); start empty and append
+				gf.TensorInfos = make(GGUFTensorInfos, 0)
 			}
 		}
 		{
 			rd := _GGUFTensorInfoReader{_GGUFReader: rd}
-			tis := make(GGUFTensorInfos, tensorCount)
+			tis := make(GGUFTensorInfos, 0)
 			for i := uint64(0); i < tensorCount; i++ {
-				tis[i], err = rd.Read()
+				ti, err := rd.Read()
 				if err != nil {
 					return nil, fmt.Errorf("read tensor info %d: %w", i, err)
 				}
+				tis = append(tis, ti)
 			}
 			gf.TensorInfos = append(gf.TensorInfos, tis...)
 		}
