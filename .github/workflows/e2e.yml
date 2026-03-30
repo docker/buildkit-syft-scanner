@@ -1,5 +1,8 @@
 name: e2e
 
+permissions:
+  contents: read
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -26,7 +29,7 @@ jobs:
     steps:
       -
         name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       -
         name: Create matrix
         id: examples
@@ -48,22 +51,22 @@ jobs:
         example: ${{ fromJson(needs.prepare.outputs.matrix) }}
     services:
       registry:
-        image: registry:2
+        image: registry:2.8.3@sha256:a3d8aaa63ed8681a604f1dea0aa03f100d5895b6a58ace528858a7b332415373
         ports:
           - 5000:5000
     steps:
       -
         name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
       -
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
         with:
           go-version: "1.25"
       -
         name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v4
+        uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4.0.0
         with:
           version: ${{ env.BUILDX_VERSION }}
           driver-opts: |
@@ -71,27 +74,33 @@ jobs:
             image=${{ env.BUILDKIT_IMAGE }}
       -
         name: Build and push Syft Scanner image
-        uses: docker/bake-action@v7
+        uses: docker/bake-action@82490499d2e5613fcead7e128237ef0b0ea210f7 # v7.0.0
         with:
           source: .
           targets: image-local
           push: true
       -
         name: Test
+        env:
+          EXAMPLE: ${{ matrix.example }}
         run: |
-          ./hack/check-example.sh ${{ env.IMAGE_LOCAL }} ${{ matrix.example }}
+          ./hack/check-example.sh ${{ env.IMAGE_LOCAL }} ${EXAMPLE}
       -
         name: Check output folder
+        env:
+          EXAMPLE: ${{ matrix.example }}
         run: |
-          tree ./examples/${{ matrix.example }}/build
+          tree ./examples/${EXAMPLE}/build
       -
         name: Print SBOM
         if: matrix.example != 'scratch'
+        env:
+          EXAMPLE: ${{ matrix.example }}
         run: |
-          jq . ./examples/${{ matrix.example }}/build/sbom-base.spdx.json
+          jq . ./examples/${EXAMPLE}/build/sbom-base.spdx.json
       -
         name: Upload output folder
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: e2e-${{ matrix.example }}
           path: ./examples/${{ matrix.example }}/build/*

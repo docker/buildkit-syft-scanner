@@ -1,5 +1,8 @@
 name: ci
 
+permissions:
+  contents: read
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -28,7 +31,7 @@ jobs:
       - run: echo "Exposing env vars for reusable workflow"
 
   build:
-    uses: docker/github-builder/.github/workflows/bake.yml@v1
+    uses: docker/github-builder/.github/workflows/bake.yml@70313223e2665c3211b454b3fea6534624e78d64 # v1.4.0
     needs:
       - build-prepare
     permissions:
@@ -70,10 +73,10 @@ jobs:
     steps:
       -
         name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       -
         name: Update repo description
-        uses: peter-evans/dockerhub-description@v5
+        uses: peter-evans/dockerhub-description@1b9a80c056b620d92cedb9d9b5a223409c68ddfa # v5.0.0
         with:
           username: ${{ vars.DOCKERPUBLICBOT_USERNAME }}
           password: ${{ secrets.DOCKERPUBLICBOT_DELETE_PAT }}
