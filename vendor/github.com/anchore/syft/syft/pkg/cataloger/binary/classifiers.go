@@ -70,9 +70,17 @@ func DefaultClassifiers() []binutils.Classifier {
 		},
 		{
 			Class:    "go-binary",
-			FileGlob: "**/go",
-			EvidenceMatcher: m.FileContentsVersionMatcher(
-				`(?m)go(?P<version>[0-9]+\.[0-9]+(\.[0-9]+|beta[0-9]+|alpha[0-9]+|rc[0-9]+)?)\x00`),
+			FileGlob: "**/{go,go.exe}",
+			EvidenceMatcher: binutils.MatchAny(
+				m.FileContentsVersionMatcher(
+					`(?m)go(?P<version>[0-9]+\.[0-9]+(\.[0-9]+|beta[0-9]+|alpha[0-9]+|rc[0-9]+)?)\x00`),
+				binutils.SupportingEvidenceMatcher("VERSION*",
+					m.FileContentsVersionMatcher(
+						`(?m)go(?P<version>[0-9]+\.[0-9]+(\.[0-9]+|beta[0-9]+|alpha[0-9]+|rc[0-9]+|-[_0-9a-z]+)?)\s`)),
+				binutils.SupportingEvidenceMatcher("../VERSION*",
+					m.FileContentsVersionMatcher(
+						`(?m)go(?P<version>[0-9]+\.[0-9]+(\.[0-9]+|beta[0-9]+|alpha[0-9]+|rc[0-9]+|-[_0-9a-z]+)?)\s`)),
+			),
 			Package: "go",
 			PURL:    mustPURL("pkg:generic/go@version"),
 			CPEs:    singleCPE("cpe:2.3:a:golang:go:*:*:*:*:*:*:*:*", cpe.NVDDictionaryLookupSource),
@@ -141,15 +149,6 @@ func DefaultClassifiers() []binutils.Classifier {
 			Package: "node",
 			PURL:    mustPURL("pkg:generic/node@version"),
 			CPEs:    singleCPE("cpe:2.3:a:nodejs:node.js:*:*:*:*:*:*:*:*", cpe.NVDDictionaryLookupSource),
-		},
-		{
-			Class:    "go-binary-hint",
-			FileGlob: "**/VERSION*",
-			EvidenceMatcher: m.FileContentsVersionMatcher(
-				`(?m)go(?P<version>[0-9]+\.[0-9]+(\.[0-9]+|beta[0-9]+|alpha[0-9]+|rc[0-9]+)?(-[0-9a-f]{7})?)`),
-			Package: "go",
-			PURL:    mustPURL("pkg:generic/go@version"),
-			CPEs:    singleCPE("cpe:2.3:a:golang:go:*:*:*:*:*:*:*:*", cpe.NVDDictionaryLookupSource),
 		},
 		{
 			Class:    "busybox-binary",
@@ -514,6 +513,22 @@ func DefaultClassifiers() []binutils.Classifier {
 			CPEs:    singleCPE("cpe:2.3:a:openssl:openssl:*:*:*:*:*:*:*:*", cpe.NVDDictionaryLookupSource),
 		},
 		{
+			Class:    "qt-qtbase-lib",
+			FileGlob: "**/libQt*Core.so*",
+			EvidenceMatcher: binutils.MatchAny(
+				// Qt 5.x and Qt 6.x pattern [NUL][NUL]Qt 6.5.0 (x86_64-little_endian-...
+				m.FileContentsVersionMatcher(`\x00\x00Qt (?P<version>[0-9]+\.[0-9]+\.[0-9]+) \(`),
+				// Qt 4.x pattern QtCore lib ver 4.8.7
+				m.FileContentsVersionMatcher(`QtCore library version (?P<version>[0-9]+\.[0-9]+\.[0-9]+)`),
+			),
+			Package: "qtbase",
+			PURL:    mustPURL("pkg:generic/qtbase@version"),
+			CPEs: []cpe.CPE{
+				cpe.Must("cpe:2.3:a:qt:qt:*:*:*:*:*:*:*:*", cpe.NVDDictionaryLookupSource),
+				cpe.Must("cpe:2.3:a:qt:qtbase:*:*:*:*:*:*:*:*", cpe.NVDDictionaryLookupSource),
+			},
+		},
+		{
 			Class:    "gcc-binary",
 			FileGlob: "**/gcc",
 			EvidenceMatcher: m.FileContentsVersionMatcher(
@@ -732,15 +747,27 @@ func DefaultClassifiers() []binutils.Classifier {
 			Class:    "grafana-binary",
 			FileGlob: "**/grafana",
 			EvidenceMatcher: binutils.MatchAny(
+				// [NUL][NUL][NUL][NUL]12.2.0-258092[NUL][NUL][NUL][NUL]
+				m.FileContentsVersionMatcher(`\x00+(?P<version>[0-9]{2}\.[0-9]+\.[0-9]+\-[0-9]{6,})\x00+`),
+				// [NUL][NUL][NUL][NUL]release-12.3.2+security-01[NUL][NUL][NUL][NUL]
 				// [NUL][NUL][NUL][NUL]release-12.3.1[NUL][NUL][NUL][NUL]
-				m.FileContentsVersionMatcher(`\x00+release-(?P<version>[0-9]{2}\.[0-9]+\.[0-9]+)\x00+`),
+				m.FileContentsVersionMatcher(`\x00+release-(?P<version>[0-9]{2}\.[0-9]+\.[0-9]+(-beta[0-9]|-test|-preview)?)(\+security-[0-9]+)?\x00+`),
+				// [NUL][NUL][NUL][NUL]go1.21.8[NUL][NUL][NUL][NUL][NUL][NUL][NUL][NUL]11.0.0-preview[NUL][NUL]...+DT
+				m.FileContentsVersionMatcher(`(?s)\x00+go1\.[0-9]+\.[0-9]+\x00+(?P<version>[0-9]{2}\.[0-9]+\.[0-9]+(-beta[0-9]|-test|-preview)?)(\+security-[0-9]+)?\x00+.{1,500}\+DT`),
 				// HEAD[NUL][NUL][NUL][NUL]12.0.0[NUL][NUL]$a
 				// 11.0.0[NUL][NUL]$a
-				m.FileContentsVersionMatcher(`(?P<version>[0-9]{2}\.[0-9]+\.[0-9]+)\x00+\$a`),
+				m.FileContentsVersionMatcher(`(?P<version>[0-9]{2}\.[0-9]+\.[0-9]+(-beta[0-9]|-test|-preview)?)(\+security-[0-9]+)?\x00+\$a`),
 				// [NUL]0xDC0xBF10.4.19[NUL]
-				m.FileContentsVersionMatcher(`\x00.(?P<version>10\.[0-9]+\.[0-9]+)\x00`),
+				m.FileContentsVersionMatcher(`\x00.(?P<version>10\.[0-9]+\.[0-9]+(-beta[0-9]|-test|-preview)?)(\+security-[0-9]+)?\x00`),
+				// 10.3.12[NUL]...[NUL]go1.22.7[NUL][NUL][NUL][NUL]...+DT
+				m.FileContentsVersionMatcher(`(?s)(?P<version>[0-9]{2}\.[0-9]+\.[0-9]+(-beta[0-9]|-test|-preview)?)(\+security-[0-9]+)?\x00+.{1,100}\x00go1\.[0-9]+\.[0-9]+\x00.{1,100}\+DT`),
 				// 9.5.21[NUL][NUL]v9.5.x[NUL][NUL][NUL][NUL][NUL][NUL]$a
-				m.FileContentsVersionMatcher(`(?P<version>9\.[0-9]+\.[0-9]+)\x00\x00v`),
+				m.FileContentsVersionMatcher(`(?P<version>[0-9]+\.[0-9]+\.[0-9]+(-beta[0-9]|-test|-preview)?)(\+security-[0-9]+)?\x00+v[0-9]+\.[0-9]+\.x\x00+`),
+				// HEAD[NUL][NUL][NUL][NUL]9.2.20[NUL][NUL][NUL][NUL]
+				// HEAD[NUL][NUL]:[NUL][NUL][NUL][NUL][NUL][NUL][NUL][NUL][NUL]9.2.13[NUL][NUL][NUL][NUL]
+				m.FileContentsVersionMatcher(`HEAD\x00+.*\x00+(?P<version>[0-9]\.[0-9]+\.[0-9]+(-beta[0-9]|-test|-preview)?)(\+security-[0-9]+)?\x00+`),
+				// 1b0f5f0a81[NUL][NUL][NUL][NUL][NUL][NUL]9.4.0-beta1[NUL][NUL][NUL][NUL][NUL]/usr/local/go
+				m.FileContentsVersionMatcher(`[a-z0-9]+\x00+(?P<version>[0-9]\.[0-9]+\.[0-9]+(-beta[0-9]|-test|-preview)?)(\+security-[0-9]+)?\x00+\/usr\/local\/go`),
 			),
 			Package: "grafana",
 			PURL:    mustPURL("pkg:generic/grafana@version"),
@@ -749,11 +776,17 @@ func DefaultClassifiers() []binutils.Classifier {
 		{
 			Class:    "grafana-binary",
 			FileGlob: "**/grafana-server",
-			EvidenceMatcher: m.FileContentsVersionMatcher(
+			EvidenceMatcher: binutils.MatchAny(
+				// 78f0340031[NUL][NUL][NUL][NUL][NUL][NUL]9.3.0-beta1[NUL][NUL][NUL][NUL][NUL]/usr/local/go
+				m.FileContentsVersionMatcher(`[a-z0-9]+\x00+(?P<version>[0-9]\.[0-9]+\.[0-9]+(-beta[0-9]|-test)?)\x00+\/usr\/local\/go`),
 				// HEAD[NUL][NUL][NUL][NUL]9.0.0[NUL]:[NUL]
 				// HEAD[NUL][NUL][NUL][NUL]:[NUL][NUL][NUL][NUL][NUL][NUL][NUL]7.5.17[NUL][NUL][NUL][NUL]
 				// HEAD[NUL][NUL][NUL][NUL]m[NUL]...[NUL][NUL]6.7.6[NUL][NUL][NUL].[NUL][NUL][NUL][NUL][NUL][NUL][NUL]:
-				`HEAD\x00+.*\x00+(?P<version>[0-9]\.[0-9]+\.[0-9]+)\x00+`),
+				m.FileContentsVersionMatcher(`HEAD\x00+.*\x00+(?P<version>[0-9]\.[0-9]+\.[0-9]+(-beta[0-9]|-test)?)\x00+`),
+				// [NUL][NUL][NUL][NUL][NUL]6.7.0-test[NUL][NUL][NUL]...[NUL][NUL][NUL][NUL]/usr/local/go
+				// [NUL][NUL][NUL][NUL][NUL]6.0.0-beta1[NUL][NUL][NUL]...[NUL][NUL][NUL][NUL]/usr/local/go
+				m.FileContentsVersionMatcher(`(?s)\x00+(?P<version>[0-9]\.[0-9]+\.[0-9]+(-beta[0-9]|-test)?)\x00+.*\x00+.{1,1000}\x00+\/u`),
+			),
 			Package: "grafana",
 			PURL:    mustPURL("pkg:generic/grafana@version"),
 			CPEs:    singleCPE("cpe:2.3:a:grafana:grafana:*:*:*:*:*:*:*:*", cpe.NVDDictionaryLookupSource),
@@ -783,6 +816,24 @@ func DefaultClassifiers() []binutils.Classifier {
 			Package: "envoy",
 			PURL:    mustPURL("pkg:generic/envoy@version"),
 			CPEs:    singleCPE("cpe:2.3:a:envoyproxy:envoy:*:*:*:*:*:*:*:*", cpe.NVDDictionaryLookupSource),
+		},
+		{
+			Class:    "mongodb-binary",
+			FileGlob: "**/mongod",
+			EvidenceMatcher: binutils.MatchAny(
+				// mongodb 4.x, 5.x, 6.x: ber followed by tcmalloc
+				// e.g 6.0.27[NUL]tcmalloc
+				m.FileContentsVersionMatcher(`(?P<version>[0-9]+\.[0-9]+\.[0-9]+)\x00tcmalloc`),
+				// mongodb 7.x: ver followed by "heap_size"
+				// e.g 7.0.28[NUL]heap_size
+				m.FileContentsVersionMatcher(`(?P<version>[0-9]+\.[0-9]+\.[0-9]+)\x00+heap_size`),
+				// mongodb 8.x: ber followed by "cppdefines"
+				// e.g 8.0.17[NUL]cppdefines
+				m.FileContentsVersionMatcher(`(?P<version>[0-9]+\.[0-9]+\.[0-9]+)\x00+cppdefines`),
+			),
+			Package: "mongodb",
+			PURL:    mustPURL("pkg:generic/mongodb@version"),
+			CPEs:    singleCPE("cpe:2.3:a:mongodb:mongodb:*:*:*:*:*:*:*:*", cpe.NVDDictionaryLookupSource),
 		},
 	}
 

@@ -1,9 +1,8 @@
 package progress
 
 import (
+	"errors"
 	"io"
-
-	"github.com/hashicorp/go-multierror"
 )
 
 // Reader should wrap another reader (acts as a bytes pass through)
@@ -38,14 +37,14 @@ func (r *Reader) SetReader(reader io.Reader) {
 }
 
 func (r *Reader) SetCompleted() {
-	r.monitor.SetError(multierror.Append(r.monitor.Error(), ErrCompleted))
+	r.monitor.SetError(errors.Join(r.monitor.Error(), ErrCompleted))
 }
 
 func (r *Reader) Read(p []byte) (n int, err error) {
 	bytes, err := r.reader.Read(p)
 	r.monitor.Add(int64(bytes))
 	if err != nil {
-		r.monitor.SetError(multierror.Append(r.monitor.Error(), err))
+		r.monitor.SetError(errors.Join(r.monitor.Error(), err))
 	}
 	return bytes, err
 }
