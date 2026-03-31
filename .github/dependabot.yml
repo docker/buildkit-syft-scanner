@@ -5,6 +5,8 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
+    cooldown:
+      default-days: 2
     allow:
       - dependency-name: "github.com/anchore/syft"
     labels:
@@ -15,6 +17,12 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
+    cooldown:
+      default-days: 2
+    groups:
+      crazy-max-dot-github:
+        patterns:
+          - "crazy-max/.github/*"
     labels:
       - "dependencies"
       - "bot"
