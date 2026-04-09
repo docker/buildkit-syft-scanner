@@ -3,6 +3,7 @@ package oci
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -84,7 +85,7 @@ func (p *registryImageProvider) Provide(ctx context.Context) (*image.Image, erro
 		return nil, err
 	}
 
-	log.WithFields("image", p.imageStr, "time", time.Since(startTime)).Info("completed downloading image")
+	log.WithFields("image", p.imageStr, "time", time.Since(startTime)).Info("completed downloading manifest")
 
 	// craft a repo digest from the registry reference and the known digest
 	// note: the descriptor is fetched from the registry, and the descriptor digest is the same as the repo digest
@@ -109,7 +110,8 @@ func (p *registryImageProvider) Provide(ctx context.Context) (*image.Image, erro
 	out := image.New(img, p.tmpDirGen, imageTempDir, metadata...)
 	err = out.Read()
 	if err != nil {
-		return nil, err
+		cleanErr := out.Cleanup()
+		return nil, errors.Join(err, cleanErr)
 	}
 	return out, err
 }

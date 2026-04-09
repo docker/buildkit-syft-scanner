@@ -7,10 +7,12 @@ import (
 	"io/fs"
 	"os"
 	"path"
+	"strings"
 	"time"
 
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/types"
+	"github.com/scylladb/go-set/strset"
 	"github.com/sylabs/squashfs"
 	"github.com/wagoodman/go-partybus"
 	"github.com/wagoodman/go-progress"
@@ -23,10 +25,52 @@ import (
 )
 
 const (
-	SingularitySquashFSLayer       = "application/vnd.sylabs.sif.layer.v1.squashfs"
-	BuildKitZstdCompressedLayer    = "application/vnd.docker.image.rootfs.diff.tar.zstd"
-	BuildKitZstdCompressedLayerAlt = "application/vnd.docker.image.rootfs.diff.tar+zstd" // we're future proofing against a possible media type variation
+	SingularitySquashFSLayer       types.MediaType = "application/vnd.sylabs.sif.layer.v1.squashfs"
+	BuildKitZstdCompressedLayer    types.MediaType = "application/vnd.docker.image.rootfs.diff.tar.zstd"
+	BuildKitZstdCompressedLayerAlt types.MediaType = "application/vnd.docker.image.rootfs.diff.tar+zstd" // we're future proofing against a possible media type variation
 )
+
+// standardLayerMediaTypes are tar-based layer media types that can be processed with standard tar indexing.
+var standardLayerMediaTypes = strset.New(
+	string(types.OCILayer),
+	string(types.OCIUncompressedLayer),
+	string(types.OCIRestrictedLayer),
+	string(types.OCIUncompressedRestrictedLayer),
+	string(types.OCILayerZStd),
+	string(types.DockerLayer),
+	string(types.DockerForeignLayer),
+	string(types.DockerUncompressedLayer),
+	string(BuildKitZstdCompressedLayer),
+	string(BuildKitZstdCompressedLayerAlt),
+)
+
+// singularityLayerMediaTypes are SquashFS-based layer media types.
+var singularityLayerMediaTypes = strset.New(
+	string(SingularitySquashFSLayer),
+)
+
+// isSupportedLayerMediaType returns true if the given media type is supported for layer processing.
+func isSupportedLayerMediaType(mt types.MediaType) bool {
+	return standardLayerMediaTypes.Has(string(mt)) || singularityLayerMediaTypes.Has(string(mt))
+}
+
+// validateLayerMediaTypes checks all layers have supported media types before processing.
+func validateLayerMediaTypes(layers []v1.Layer) error {
+	var unsupported []string
+	for idx, layer := range layers {
+		mt, err := layer.MediaType()
+		if err != nil {
+			return fmt.Errorf("unable to get media type for layer %d: %w", idx, err)
+		}
+		if !isSupportedLayerMediaType(mt) {
+			unsupported = append(unsupported, fmt.Sprintf("layer %d: %s", idx, mt))
+		}
+	}
+	if len(unsupported) > 0 {
+		return fmt.Errorf("unsupported layer media type(s): %s", strings.Join(unsupported, ", "))
+	}
+	return nil
+}
 
 // Layer represents a single layer within a container image.
 type Layer struct {
@@ -97,29 +141,17 @@ func (l *Layer) Read(catalog *FileCatalog, idx int, uncompressedLayersCacheDir s
 	l.Tree = tree
 	l.fileCatalog = catalog
 
-	switch mediaType {
-	case types.OCILayer,
-		types.OCIUncompressedLayer,
-		types.OCIRestrictedLayer,
-		types.OCIUncompressedRestrictedLayer,
-		types.OCILayerZStd,
-		types.DockerLayer,
-		types.DockerForeignLayer,
-		types.DockerUncompressedLayer,
-		BuildKitZstdCompressedLayer,
-		BuildKitZstdCompressedLayerAlt:
-
-		err := l.readStandardImageLayer(idx, uncompressedLayersCacheDir, tree)
-		if err != nil {
-			return err
-		}
-	case SingularitySquashFSLayer:
-		err := l.readSingularityImageLayer(idx, uncompressedLayersCacheDir, tree)
-		if err != nil {
-			return err
-		}
+	var readErr error
+	switch {
+	case standardLayerMediaTypes.Has(string(mediaType)):
+		readErr = l.readStandardImageLayer(idx, uncompressedLayersCacheDir, tree)
+	case singularityLayerMediaTypes.Has(string(mediaType)):
+		readErr = l.readSingularityImageLayer(idx, uncompressedLayersCacheDir, tree)
 	default:
 		return fmt.Errorf("unknown layer media type: %+v", mediaType)
+	}
+	if readErr != nil {
+		return readErr
 	}
 
 	startTime := time.Now()
@@ -198,6 +230,7 @@ func (l *Layer) OpenPathFromSquash(path file.Path) (io.ReadCloser, error) {
 
 // FileContents reads the file contents for the given path from the underlying layer blob, relative to the layers "diff tree".
 // An error is returned if there is no file at the given path and layer or the read operation cannot continue.
+//
 // Deprecated: use OpenPath() instead.
 func (l *Layer) FileContents(path file.Path) (io.ReadCloser, error) {
 	return fetchReaderByPath(l.Tree, l.fileCatalog, path)
@@ -205,12 +238,14 @@ func (l *Layer) FileContents(path file.Path) (io.ReadCloser, error) {
 
 // FileContentsFromSquash reads the file contents for the given path from the underlying layer blob, relative to the layers squashed file tree.
 // An error is returned if there is no file at the given path and layer or the read operation cannot continue.
+//
 // Deprecated: use OpenPathFromSquash() instead.
 func (l *Layer) FileContentsFromSquash(path file.Path) (io.ReadCloser, error) {
 	return fetchReaderByPath(l.SquashedTree, l.fileCatalog, path)
 }
 
 // FilesByMIMEType returns file references for files that match at least one of the given MIME types relative to each layer tree.
+//
 // Deprecated: use SearchContext().SearchByMIMEType() instead.
 func (l *Layer) FilesByMIMEType(mimeTypes ...string) ([]file.Reference, error) {
 	var refs []file.Reference
@@ -227,6 +262,7 @@ func (l *Layer) FilesByMIMEType(mimeTypes ...string) ([]file.Reference, error) {
 }
 
 // FilesByMIMETypeFromSquash returns file references for files that match at least one of the given MIME types relative to the squashed file tree representation.
+//
 // Deprecated: use SquashedSearchContext().SearchByMIMEType() instead.
 func (l *Layer) FilesByMIMETypeFromSquash(mimeTypes ...string) ([]file.Reference, error) {
 	var refs []file.Reference

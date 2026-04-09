@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"io/ioutil"
 	"os"
 
 	"github.com/sirupsen/logrus"
@@ -83,7 +82,7 @@ func Use(l *logrus.Logger, cfg Config) (iface.Logger, error) {
 		}
 		output = logFile
 	default:
-		output = ioutil.Discard
+		output = io.Discard
 	}
 
 	var level logrus.Level
