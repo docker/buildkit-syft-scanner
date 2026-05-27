@@ -18,6 +18,7 @@ FROM node:20-alpine3.20 AS base
 ARG BUILDKIT_SBOM_SCAN_STAGE=true
 WORKDIR /work
 COPY package*.json .
+COPY .npmrc .
 RUN npm install
 COPY <<EOF /empty
 EOF
