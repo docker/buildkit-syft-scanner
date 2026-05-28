@@ -57,18 +57,24 @@ func (s Scanner) Scan(ctx context.Context) error {
 		}
 
 		outputPath := filepath.Join(s.Destination, target.Name()+".spdx.json")
-		f, err := os.Create(outputPath)
-		if err != nil {
-			return err
-		}
-		if err := json.NewEncoder(f).Encode(stmt); err != nil {
-			return err
-		}
-		if err := f.Close(); err != nil {
+		if err := writeStatement(outputPath, stmt); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+func writeStatement(outputPath string, stmt interface{}) (retErr error) {
+	f, err := os.Create(outputPath)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err := f.Close(); retErr == nil {
+			retErr = err
+		}
+	}()
+	return json.NewEncoder(f).Encode(stmt)
 }
 
 const (
