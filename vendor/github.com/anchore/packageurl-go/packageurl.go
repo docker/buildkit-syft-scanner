@@ -377,7 +377,6 @@ type PackageURL struct {
 // NewPackageURL creates a new PackageURL struct instance based on input
 func NewPackageURL(purlType, namespace, name, version string,
 	qualifiers Qualifiers, subpath string) *PackageURL {
-
 	return &PackageURL{
 		Type:       purlType,
 		Namespace:  namespace,
@@ -625,8 +624,7 @@ func typeAdjustName(purlType, name string, qualifiers Qualifiers) string {
 // Make any purl type-specific adjustments to the parsed version.
 // See https://github.com/package-url/purl-spec#known-purl-types
 func typeAdjustVersion(purlType, version string) string {
-	switch purlType {
-	case TypeHuggingface:
+	if purlType == TypeHuggingface {
 		return strings.ToLower(version)
 	}
 	return version
@@ -634,19 +632,21 @@ func typeAdjustVersion(purlType, version string) string {
 
 // https://github.com/package-url/purl-spec/blob/master/PURL-TYPES.rst#mlflow
 func adjustMlflowName(name string, qualifiers map[string]string) string {
-	if repo, ok := qualifiers["repository_url"]; ok {
-		if strings.Contains(repo, "azureml") {
-			// Azure ML is case-sensitive and must be kept as-is
-			return name
-		} else if strings.Contains(repo, "databricks") {
-			// Databricks is case-insensitive and must be lowercased
-			return strings.ToLower(name)
-		} else {
-			// Unknown repository type, keep as-is
-			return name
-		}
-	} else {
+	repo, ok := qualifiers["repository_url"]
+	if !ok {
 		// No repository qualifier given, keep as-is
+		return name
+	}
+
+	switch {
+	case strings.Contains(repo, "azureml"):
+		// Azure ML is case-sensitive and must be kept as-is
+		return name
+	case strings.Contains(repo, "databricks"):
+		// Databricks is case-insensitive and must be lowercased
+		return strings.ToLower(name)
+	default:
+		// Unknown repository type, keep as-is
 		return name
 	}
 }

@@ -4,12 +4,14 @@ import (
 	"context"
 	"errors"
 	"iter"
+	"runtime/debug"
 	"sync"
 )
 
 // Collect iterates over the provided iterator, executing the processor in parallel to map each incoming value to a result.
 // The accumulator is used to apply the results, with an exclusive lock; accumulator will never execute in parallel.
-// All errors returned from processor functions will be joined with errors.Join as the returned error.
+// All errors returned from processor functions will be joined with errors.Join as the returned error. Panics are also
+// captured as errors from processor and accumulator functions
 func Collect[From, To any](ctx *context.Context, executorName string, iterator iter.Seq[From], processor func(From) (To, error), accumulator func(From, To)) error {
 	if processor == nil {
 		panic("no processor provided to Collect")
@@ -28,7 +30,14 @@ func Collect[From, To any](ctx *context.Context, executorName string, iterator i
 		}
 		wg.Add(1)
 		executor.Go(func() {
-			defer wg.Done()
+			defer func() {
+				wg.Done()
+				if err := recover(); err != nil {
+					lock.Lock()
+					defer lock.Unlock()
+					errs = append(errs, PanicError{Value: err, Stack: string(debug.Stack())})
+				}
+			}()
 			// we may have queued many functions when canceled
 			if (*ctx).Err() != nil {
 				return
@@ -73,21 +82,11 @@ func CollectMap[From comparable, To any](ctx *context.Context, executorName stri
 	})
 }
 
-// ToSeq converts a slice to an iter.Seq
-func ToSeq[T any](values []T) iter.Seq[T] {
-	return func(yield func(T) bool) {
-		for _, value := range values {
-			if !yield(value) {
-				return
-			}
-		}
-	}
-}
-
-// ToSlice takes an iter.Seq and returns a slice of the values returned
-func ToSlice[T any](values iter.Seq[T]) (everything []T) {
-	for v := range values {
-		everything = append(everything, v)
-	}
-	return everything
+// Collect2 is a specialized Collect call which accepts an iter.Seq2 and maps to processor and accumulator taking 2 input parameters
+func Collect2[From1, From2, To any](ctx *context.Context, executorName string, iterator iter.Seq2[From1, From2], processor func(From1, From2) (To, error), accumulator func(From1, From2, To)) error {
+	return Collect[keyValue[From1, From2], To](ctx, executorName, toKeyValueIterator(iterator), func(k keyValue[From1, From2]) (To, error) {
+		return processor(k.Key, k.Value)
+	}, func(k keyValue[From1, From2], to To) {
+		accumulator(k.Key, k.Value, to)
+	})
 }

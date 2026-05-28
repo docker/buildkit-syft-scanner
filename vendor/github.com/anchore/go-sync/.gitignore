@@ -1,15 +1,41 @@
-/test/results/
-.vscode/
-*.tar
+# local development
+go.work
+go.work.sum
+mise.toml
+/specs/
+
+# IDEs
 .idea/
+.vscode/
+.history/
+
+# tools and aux data
+.tool
+.tmp
+.task
+
+# release info
+/CHANGELOG.md
+/VERSION
+
+# archives and fixtures
+/test/results
+/dist
+/snapshot
+.server/
+*.fingerprint
+*.tar
+*.jar
+*.war
+*.ear
+*.jpi
+*.hpi
+*.zip
 *.log
 .images
 .tmp/
-*.DS_Store
 coverage.txt
-**/test-fixtures/cache/
-**/*.fingerprint
-snapshot/
+bin/
 
 # Binaries for programs and plugins
 *.exe
@@ -23,3 +49,8 @@ snapshot/
 
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
+
+# macOS Finder metadata
+.DS_STORE
+
+*.profile

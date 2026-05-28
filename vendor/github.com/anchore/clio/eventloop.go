@@ -15,7 +15,7 @@ import (
 // signal interrupts. Is responsible for handling each event relative to a given UI to coordinate eventing until
 // an eventual graceful exit.
 //
-//nolint:gocognit,funlen
+//nolint:gocognit
 func eventloop(ctx context.Context, log logger.Logger, subscription *partybus.Subscription, workerErrs <-chan error, ux UI) error {
 	var events <-chan partybus.Event
 	if subscription != nil {
@@ -36,10 +36,7 @@ func eventloop(ctx context.Context, log logger.Logger, subscription *partybus.Su
 	var retErr []error
 	var forceTeardown bool
 
-	for {
-		if workerErrs == nil && events == nil {
-			break
-		}
+	for workerErrs != nil || events != nil {
 		select {
 		case err, isOpen := <-workerErrs:
 			if !isOpen {

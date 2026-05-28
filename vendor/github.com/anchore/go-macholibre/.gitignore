@@ -1,10 +1,28 @@
-CHANGELOG.md
+# local development
+go.work
+go.work.sum
+mise.toml
+/specs/
+
+# IDEs
+.idea/
+.vscode/
+.history/
+
+# tools and aux data
+.tool
+.tmp
+.task
+
+# release info
+/CHANGELOG.md
+/VERSION
+
+# archives and fixtures
 /test/results
 /dist
 /snapshot
 .server/
-.vscode/
-.history/
 *.fingerprint
 *.tar
 *.jar
@@ -13,7 +31,6 @@ CHANGELOG.md
 *.jpi
 *.hpi
 *.zip
-.idea/
 *.log
 .images
 .tmp/
@@ -37,7 +54,3 @@ bin/
 .DS_STORE
 
 *.profile
-
-# attestation
-cosign.key
-cosign.pub

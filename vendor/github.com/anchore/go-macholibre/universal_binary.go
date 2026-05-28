@@ -100,7 +100,7 @@ func (u *UniversalFile) Add(binaries ...string) error {
 		offset += int64(len(data))
 		offset = (offset + align - 1) / align * align
 
-		u.UniversalFileHeader.Count++
+		u.Count++
 	}
 	return nil
 }

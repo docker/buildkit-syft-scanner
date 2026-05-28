@@ -4,13 +4,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/anchore/fangs"
-)
+	"github.com/pkg/profile"
 
-const (
-	ProfileCPU        Profile = "cpu"
-	ProfileMem        Profile = "mem"
-	ProfilingDisabled Profile = "none"
+	"github.com/anchore/fangs"
 )
 
 type Profile string
@@ -20,27 +16,45 @@ type DevelopmentConfig struct {
 }
 
 func (d *DevelopmentConfig) DescribeFields(set fangs.FieldDescriptionSet) {
-	set.Add(&d.Profile, fmt.Sprintf("capture resource profiling data (available: [%s])", strings.Join([]string{string(ProfileCPU), string(ProfileMem)}, ", ")))
+	set.Add(&d.Profile, "capture resource profiling data (available: [cpu, mem, ...])")
 }
 
 func (d *DevelopmentConfig) PostLoad() error {
-	p := parseProfile(string(d.Profile))
-	if p == "" {
-		return fmt.Errorf("invalid profile: %q", d.Profile)
+	if d.Profile != "" {
+		p := parseProfile(d.Profile)
+		if p == nil {
+			return fmt.Errorf("invalid profile: %q", d.Profile)
+		}
 	}
-	d.Profile = p
 	return nil
 }
 
-func parseProfile(profile string) Profile {
-	switch strings.ToLower(profile) {
-	case "cpu":
-		return ProfileCPU
-	case "mem", "memory":
-		return ProfileMem
-	case "none", "", "disabled":
-		return ProfilingDisabled
-	default:
-		return ""
+func parseProfile(p Profile) func() func() {
+	profiler := profileFunc(p)
+	if profiler == nil {
+		return nil
+	}
+	return func() func() {
+		return profile.Start(profiler).Stop
+	}
+}
+
+func profileFunc(p Profile) func(*profile.Profile) {
+	return profilers()[strings.ToLower(strings.TrimSpace(string(p)))]
+}
+
+func profilers() map[string]func(*profile.Profile) {
+	return map[string]func(*profile.Profile){
+		"cpu":       profile.CPUProfile,
+		"mem":       profile.MemProfile,
+		"memory":    profile.MemProfile,
+		"allocs":    profile.MemProfileAllocs,
+		"heap":      profile.MemProfileHeap,
+		"threads":   profile.ThreadcreationProfile,
+		"mutex":     profile.MutexProfile,
+		"block":     profile.BlockProfile,
+		"clock":     profile.ClockProfile,
+		"goroutine": profile.GoroutineProfile,
+		"trace":     profile.TraceProfile,
 	}
 }

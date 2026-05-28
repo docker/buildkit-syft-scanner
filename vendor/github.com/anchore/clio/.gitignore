@@ -1,5 +1,13 @@
+# local development
 go.work
 go.work.sum
+mise.toml
+/specs/
+
+# IDEs
+.idea/
+.vscode/
+.history/
 
 # tools and aux data
 .tool
@@ -15,8 +23,6 @@ go.work.sum
 /dist
 /snapshot
 .server/
-.vscode/
-.history/
 *.fingerprint
 *.tar
 *.jar
@@ -25,7 +31,6 @@ go.work.sum
 *.jpi
 *.hpi
 *.zip
-.idea/
 *.log
 .images
 .tmp/

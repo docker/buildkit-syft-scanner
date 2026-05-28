@@ -76,10 +76,10 @@ func DefaultClassifiers() []binutils.Classifier {
 					`(?m)go(?P<version>[0-9]+\.[0-9]+(\.[0-9]+|beta[0-9]+|alpha[0-9]+|rc[0-9]+)?)\x00`),
 				binutils.SupportingEvidenceMatcher("VERSION*",
 					m.FileContentsVersionMatcher(
-						`(?m)go(?P<version>[0-9]+\.[0-9]+(\.[0-9]+|beta[0-9]+|alpha[0-9]+|rc[0-9]+|-[_0-9a-z]+)?)\s`)),
+						`(?m)go(?P<version>[0-9]+\.[0-9]+(\.[0-9]+|beta[0-9]+|alpha[0-9]+|rc[0-9]+|-[_0-9a-z]+)?)`)),
 				binutils.SupportingEvidenceMatcher("../VERSION*",
 					m.FileContentsVersionMatcher(
-						`(?m)go(?P<version>[0-9]+\.[0-9]+(\.[0-9]+|beta[0-9]+|alpha[0-9]+|rc[0-9]+|-[_0-9a-z]+)?)\s`)),
+						`(?m)go(?P<version>[0-9]+\.[0-9]+(\.[0-9]+|beta[0-9]+|alpha[0-9]+|rc[0-9]+|-[_0-9a-z]+)?)`)),
 			),
 			Package: "go",
 			PURL:    mustPURL("pkg:generic/go@version"),
@@ -232,7 +232,7 @@ func DefaultClassifiers() []binutils.Classifier {
 			Class:    "arangodb-binary",
 			FileGlob: "**/arangosh",
 			EvidenceMatcher: m.FileContentsVersionMatcher(
-				`(?m)\x00*(?P<version>[0-9]+\.[0-9]+\.[0-9]+(-[0-9]+)?)\s\[linux\]`),
+				`(?m)\x00*(?P<version>[0-9]+\.[0-9]+\.[0-9]+(-[0-9]+)?)\s(enterprise\s)?\[linux\]`),
 			Package: "arangodb",
 			PURL:    mustPURL("pkg:generic/arangodb@version"),
 			CPEs:    singleCPE("cpe:2.3:a:arangodb:arangodb:*:*:*:*:*:*:*:*", cpe.NVDDictionaryLookupSource),
@@ -374,6 +374,10 @@ func DefaultClassifiers() []binutils.Classifier {
 					// [NUL][NUL]26.1.2[NUL][NUL][NUL][NUL][NUL][NUL][NUL]NUL[NUL][NUL]Erlang/OTP
 					`\x00+(?P<version>[0-9]+\.[0-9]+(\.[0-9]+){0,2}(-rc[0-9])?)\x00+Erlang/OTP`,
 				),
+				m.FileContentsVersionMatcher(
+					// Erlang/OTP 17%s [erts-6.4.1.6] [source] [64-bit] [smp:%beu:%beu] [async-threads:%d] [hipe] [kernel-poll:%s][NUL]17.5.6.9[NUL][NUL][NUL]
+					`(?s)Erlang/OTP.{1,150}\x00+(?P<version>[0-9]+\.[0-9]+(\.[0-9]+){0,2}(-rc[0-9])?)\x00+`,
+				),
 			),
 			Package: "erlang",
 			PURL:    mustPURL("pkg:generic/erlang@version"),
@@ -421,10 +425,28 @@ func DefaultClassifiers() []binutils.Classifier {
 			CPEs:    singleCPE("cpe:2.3:a:dart:dart_software_development_kit:*:*:*:*:*:*:*:*", cpe.NVDDictionaryLookupSource),
 		},
 		{
+			Class:    "deno-binary",
+			FileGlob: "**/deno",
+			EvidenceMatcher: m.FileContentsVersionMatcher(
+				// Deno/2.6.3
+				// Deno/1.41.0
+				`Deno/(?P<version>[0-9]+\.[0-9]+\.[0-9]+)`),
+			Package: "deno",
+			PURL:    mustPURL("pkg:generic/deno@version"),
+			CPEs:    singleCPE("cpe:2.3:a:deno:deno:*:*:*:*:*:*:*:*", cpe.NVDDictionaryLookupSource),
+		},
+		{
 			Class:    "haskell-ghc-binary",
 			FileGlob: "**/ghc*",
-			EvidenceMatcher: m.FileContentsVersionMatcher(
-				`(?m)\x00GHC (?P<version>[0-9]+\.[0-9]+\.[0-9]+)\x00`,
+			EvidenceMatcher: binutils.MatchAny(
+				m.FileContentsVersionMatcher(
+					`(?m)\x00GHC (?P<version>[0-9]+\.[0-9]+\.[0-9]+)\x00`,
+				),
+				m.FileContentsVersionMatcher(
+					// [NUL]libHSghc-7.10.3-0AG9TOjDEtx4Ji3wSwHOBe-ghc7.10.3.so[NUL]
+					// [NUL]libHSghc-8.10.4-ghc8.10.4.so[NUL]
+					`\x00libHSghc\-(?P<version>[0-9]+\.[0-9]+\.[0-9]+)\-([a-zA-Z0-9]+\-)?ghc[0-9]+\.[0-9]+\.[0-9]+\.so\x00`,
+				),
 			),
 			Package: "haskell/ghc",
 			PURL:    mustPURL("pkg:generic/haskell/ghc@version"),
@@ -433,8 +455,14 @@ func DefaultClassifiers() []binutils.Classifier {
 		{
 			Class:    "haskell-cabal-binary",
 			FileGlob: "**/cabal",
-			EvidenceMatcher: m.FileContentsVersionMatcher(
-				`(?m)\x00Cabal-(?P<version>[0-9]+\.[0-9]+\.[0-9]+(\.[0-9]+)?)-`,
+			EvidenceMatcher: binutils.MatchAny(
+				m.FileContentsVersionMatcher(
+					`(?m)\x00Cabal-(?P<version>[0-9]+\.[0-9]+\.[0-9]+(\.[0-9]+)?)-`,
+				),
+				m.FileContentsVersionMatcher(
+					// [NUL][NUL][NUL]/opt/cabal/1.22/lib/x86_64-linux-ghc-7.10.2/cabal-install-1.22.6.0-AfxbHivcmw40BMGrAXG3jJ[NUL][NUL][NUL]
+					`\x00.{0,50}cabal\-install\-(?P<version>[0-9]+\.[0-9]+\.[0-9]+(\.[0-9]+)?)\-[a-zA-Z0-9]+\x00+`,
+				),
 			),
 			Package: "haskell/cabal",
 			PURL:    mustPURL("pkg:generic/haskell/cabal@version"),
@@ -453,9 +481,19 @@ func DefaultClassifiers() []binutils.Classifier {
 		{
 			Class:    "consul-binary",
 			FileGlob: "**/consul",
-			EvidenceMatcher: m.FileContentsVersionMatcher(
-				// NOTE: This is brittle and may not work for past or future versions
-				`CONSUL_VERSION: (?P<version>\d+\.\d+\.\d+)`,
+			EvidenceMatcher: binutils.MatchAny(
+				m.FileContentsVersionMatcher(
+					// NOTE: This is brittle and may not work for past or future versions
+					`CONSUL_VERSION: (?P<version>\d+\.\d+\.\d+)`,
+				),
+				m.FileContentsVersionMatcher(
+					// GitDescribe=1.12.9"
+					`GitDescribe=(?P<version>\d+\.\d+\.\d+)\"`,
+				),
+				m.FileContentsVersionMatcher(
+					// [NUL][NUL][NUL]v1.7.14[NUL][NUL][NUL]
+					`\x00+v(?P<version>\d+\.\d+\.\d+)\x00+`,
+				),
 			),
 			Package: "consul",
 			PURL:    mustPURL("pkg:golang/github.com/hashicorp/consul@version"),
@@ -464,9 +502,26 @@ func DefaultClassifiers() []binutils.Classifier {
 		{
 			Class:    "hashicorp-vault-binary",
 			FileGlob: "**/vault",
-			EvidenceMatcher: m.FileContentsVersionMatcher(
-				// revoke1.18.0
-				`(?m)revoke(?P<version>[0-9]+\.[0-9]+\.[0-9]+)`),
+			EvidenceMatcher: binutils.MatchAny(
+				m.FileContentsVersionMatcher(
+					// revoke1.18.0
+					`(?m)revoke(?P<version>[0-9]+\.[0-9]+\.[0-9]+)`,
+				),
+				m.FileContentsVersionMatcher(
+					// secondsindex_state1.20.0-rc1
+					`state(?P<version>[0-9]+\.[0-9]+\.[0-9]+\-rc[0-9])`,
+				),
+				m.FileContentsVersionMatcher(
+					// %s0.0.0.00x%016x1.14.101.49.22123-abc19531252.5.4.32.5.4.52.5.4.62.5.4.72.5.4.82.5.4.92
+					// %s0.0.0.00x%016x1.14.3
+					// txn0.0.0.00x%016x1.13.13123-abc19531252.5.4.32.5.4.52.5.4.62.5.4.72.5.4.82.5.4.92006-019765625: type ::1/128::ffff::method:
+					`016x(?P<version>1.1[1,3,4].[0-9]{1,2})`,
+				),
+				m.FileContentsVersionMatcher(
+					// [NUL][NUL][NUL]1.11.6[NUL][NUL][NUL]
+					`\x00+(?P<version>1\.[0-9][0,1]?\.[0-9]+)\x00+`,
+				),
+			),
 			Package: "github.com/hashicorp/vault",
 			PURL:    mustPURL("pkg:golang/github.com/hashicorp/vault@version"),
 			CPEs:    singleCPE("cpe:2.3:a:hashicorp:vault:*:*:*:*:*:*:*:*", cpe.NVDDictionaryLookupSource),
@@ -511,6 +566,17 @@ func DefaultClassifiers() []binutils.Classifier {
 			Package: "openssl",
 			PURL:    mustPURL("pkg:generic/openssl@version"),
 			CPEs:    singleCPE("cpe:2.3:a:openssl:openssl:*:*:*:*:*:*:*:*", cpe.NVDDictionaryLookupSource),
+		},
+		{
+			Class:    "openldap-search-binary",
+			FileGlob: "**/ldapsearch",
+			EvidenceMatcher: m.FileContentsVersionMatcher(
+				// $OpenLDAP: ldapsearch 2.4.45'
+				`\$OpenLDAP:\sldapsearch\s(?P<version>[0-9]+\.[0-9]+\.[0-9]+)`,
+			),
+			Package: "openldap",
+			PURL:    mustPURL("pkg:generic/openldap@version"),
+			CPEs:    singleCPE("cpe:2.3:a:openldap:openldap:*:*:*:*:*:*:*:*", cpe.NVDDictionaryLookupSource),
 		},
 		{
 			Class:    "qt-qtbase-lib",
@@ -718,11 +784,13 @@ func DefaultClassifiers() []binutils.Classifier {
 			EvidenceMatcher: binutils.MatchAny(
 				// [NUL]1.26.8[NUL][NUL]1.26.8[NUL]
 				// [NUL]1.3.7[NUL][NUL][NUL]1.3.8[NUL]
-				m.FileContentsVersionMatcher(`[0-9]+\.[0-9]+\.[0-9]+\x00+(?P<version>[0-9]+\.[0-9]+\.[0-9]+)\x00+`),
+				m.FileContentsVersionMatcher(`[0-9]+\.[0-9]+\.[0-9]+\x00+(?P<version>[0-9]+\.[0-9]+\.[0-9]+(-alpha\.[0-9]+|-beta\.[0-9]+|-rc\.[0-9]+|-dev)?)\x00+`),
 				// Clean[NUL][NUL][NUL]1.8.0[NUL]
-				m.FileContentsVersionMatcher(`Clean\x00+(?P<version>[0-9]+\.[0-9]+\.[0-9]+)\x00+`),
+				m.FileContentsVersionMatcher(`Clean\x00+(?P<version>[0-9]+\.[0-9]+\.[0-9]+(-alpha\.[0-9]+|-beta\.[0-9]+|-rc\.[0-9]+|-dev)?)\x00+`),
+				// Modified[NUL][NUL][NUL][NUL][NUL][NUL][NUL][NUL]1.10-dev[NUL][NUL][NUL]
+				m.FileContentsVersionMatcher(`Modified\x00+(?P<version>[0-9]+\.[0-9]+-dev)\x00+`),
 				// 1.1.17[NUL]...S=v<y5
-				m.FileContentsVersionMatcher(`(?s)(?P<version>[0-9]+\.[0-9]+\.[0-9]+)\x00+.{1,100}S?=v<y5`),
+				m.FileContentsVersionMatcher(`(?s)(?P<version>[0-9]+\.[0-9]+\.[0-9]+(-alpha\.[0-9]+|-beta\.[0-9]+|-rc\.[0-9]+|-dev)?)\x00+.{1,100}S?=v<y5`),
 			),
 			Package: "pilot-discovery",
 			PURL:    mustPURL("pkg:generic/istio@version"),
@@ -733,11 +801,13 @@ func DefaultClassifiers() []binutils.Classifier {
 			FileGlob: "**/pilot-agent",
 			EvidenceMatcher: binutils.MatchAny(
 				// [NUL]1.26.8[NUL][NUL]1.26.8[NUL]
-				m.FileContentsVersionMatcher(`[0-9]+\.[0-9]+\.[0-9]+\x00+(?P<version>[0-9]+\.[0-9]+\.[0-9]+)\x00+`),
+				m.FileContentsVersionMatcher(`[0-9]+\.[0-9]+\.[0-9]+\x00+(?P<version>[0-9]+\.[0-9]+\.[0-9]+(-alpha\.[0-9]+|-beta\.[0-9]+|-rc\.[0-9]+|-dev)?)\x00+`),
 				// Clean[NUL][NUL][NUL]1.8.0[NUL]
-				m.FileContentsVersionMatcher(`Clean\x00+(?P<version>[0-9]+\.[0-9]+\.[0-9]+)\x00+`),
+				m.FileContentsVersionMatcher(`Clean\x00+(?P<version>[0-9]+\.[0-9]+\.[0-9]+(-alpha\.[0-9]+|-beta\.[0-9]+|-rc\.[0-9]+|-dev)?)\x00+`),
+				// Modified[NUL][NUL][NUL][NUL][NUL][NUL][NUL][NUL]1.10-dev[NUL][NUL][NUL]
+				m.FileContentsVersionMatcher(`Modified\x00+(?P<version>[0-9]+\.[0-9]+-dev)\x00+`),
 				// 1.1.17[NUL]...S=v<y5
-				m.FileContentsVersionMatcher(`(?s)(?P<version>[0-9]+\.[0-9]+\.[0-9]+)\x00+.{1,100}S?=v<y5`),
+				m.FileContentsVersionMatcher(`(?s)(?P<version>[0-9]+\.[0-9]+\.[0-9]+(-alpha\.[0-9]+|-beta\.[0-9]+|-rc\.[0-9]+|-dev)?)\x00+.{1,100}S?=v<y5`),
 			),
 			Package: "pilot-agent",
 			PURL:    mustPURL("pkg:generic/istio@version"),

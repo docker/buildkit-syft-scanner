@@ -1,24 +1,7 @@
-tools:
-  # we want to use a pinned version of binny to manage the toolchain (so binny manages itself!)
-  - name: binny
-    version:
-      want: v0.9.0
-    method: github-release
-    with:
-      repo: anchore/binny
+# only pull in version updates that were released more than a week ago (low-pass filter for quickly-retracted releases)
+cooldown: 7d
 
-  # used for linting
-  - name: golangci-lint
-    version:
-      want: v1.64.7
-    method: github-release
-    with:
-      repo: golangci/golangci-lint
-
-  # used for running all local and CI tasks
-  - name: task
-    version:
-      want: v3.42.1
-    method: github-release
-    with:
-      repo: go-task/task
+# other binary versions inherited from .binny.yaml file in the anchore/go-make repo (version pinned in .make).
+# If you need to override a tool version, please do so by adding an entry here and go-make will
+# account for the local definition over the go-make shared definitions.
+tools: []

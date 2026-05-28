@@ -55,6 +55,8 @@ type FileInfo struct {
 }
 
 // ref. https://github.com/rpm-software-management/rpm/blob/rpm-4.14.3-release/lib/tagexts.c#L752
+//
+//nolint:funlen,gocognit,gocyclo,goconst
 func getNEVRA(indexEntries []indexEntry) (*PackageInfo, error) {
 	pkgInfo := &PackageInfo{}
 	for _, ie := range indexEntries {

@@ -1,14 +1,12 @@
-issues:
-  max-same-issues: 25
-  uniq-by-line: false
-
+version: "2"
+run:
+  tests: false
 linters:
-  # inverted configuration with `enable-all` and `disable` is not scalable during updates of golangci-lint
-  disable-all: true
+  default: none
   enable:
     - asciicheck
     - bodyclose
-  #  - copyloopvar # too old for supported go version
+    - copyloopvar
     - dogsled
     - dupl
     - errcheck
@@ -17,11 +15,8 @@ linters:
     - goconst
     - gocritic
     - gocyclo
-    - gofmt
-    - goimports
     - goprintffuncname
     - gosec
-    - gosimple
     - govet
     - ineffassign
     - misspell
@@ -29,16 +24,35 @@ linters:
     - nolintlint
     - revive
     - staticcheck
-    - stylecheck
-    - typecheck
     - unconvert
     - unparam
     - unused
     - whitespace
 
-run:
-  timeout: 1m
-  tests: false
+  settings:
+    funlen:
+      lines: 100
+      statements: 60
+    gocognit:
+      min-complexity: 40
+    gocritic:
+      enabled-checks:
+        - deferInLoop
+    gosec:
+      excludes:
+        - G115
+
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
 
 # do not enable...
 #    - deadcode          # The owner seems to have abandoned the linter. Replaced by "unused".
@@ -65,3 +79,23 @@ run:
 #    - testpackage
 #    - varcheck     # The owner seems to have abandoned the linter. Replaced by "unused".
 #    - wsl          # this doens't have an auto-fixer yet and is pretty noisy (https://github.com/bombsimon/wsl/issues/90)
+
+issues:
+  max-same-issues: 25
+  uniq-by-line: false
+
+# TODO: enable this when we have coverage on docstring comments
+#  # The list of ids of default excludes to include or disable.
+#  include:
+#    - EXC0002 # disable excluding of issues about comments from golint
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$

@@ -25,6 +25,7 @@ type SetupConfig struct {
 	Initializers      []Initializer
 	postConstructs    []postConstruct
 	postRuns          []PostRun
+	mapExitCode       MapExitCode
 }
 
 func NewSetupConfig(id Identification) *SetupConfig {
@@ -123,5 +124,10 @@ func (c *SetupConfig) WithGlobalLoggingFlags() *SetupConfig {
 }
 
 func (c *SetupConfig) WithConfigInRootHelp() *SetupConfig {
+	return c
+}
+
+func (c *SetupConfig) WithMapExitCode(mapExitCode MapExitCode) *SetupConfig {
+	c.mapExitCode = mapExitCode
 	return c
 }

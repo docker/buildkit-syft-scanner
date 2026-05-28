@@ -4,8 +4,9 @@ import (
 	"io"
 	"os"
 
-	dbi "github.com/anchore/go-rpmdb/pkg/db"
 	"golang.org/x/xerrors"
+
+	dbi "github.com/anchore/go-rpmdb/pkg/db"
 )
 
 var validPageSizes = map[uint32]struct{}{

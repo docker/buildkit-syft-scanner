@@ -1,11 +1,12 @@
 package rpmdb
 
 import (
+	"golang.org/x/xerrors"
+
 	"github.com/anchore/go-rpmdb/pkg/bdb"
 	dbi "github.com/anchore/go-rpmdb/pkg/db"
 	"github.com/anchore/go-rpmdb/pkg/ndb"
 	"github.com/anchore/go-rpmdb/pkg/sqlite3"
-	"golang.org/x/xerrors"
 )
 
 type RpmDB struct {
@@ -39,7 +40,6 @@ func Open(path string) (*RpmDB, error) {
 	return &RpmDB{
 		db: odb,
 	}, nil
-
 }
 
 func (d *RpmDB) Close() error {

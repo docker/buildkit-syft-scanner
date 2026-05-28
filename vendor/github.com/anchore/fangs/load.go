@@ -212,8 +212,8 @@ func mergeProfiles(cfg Config, v *viper.Viper) error {
 // before the config values are read and parsed. the value _must_ be a pointer but
 // may be a pointer to a pointer
 //
-//nolint:gocognit
-func configureViper(cfg Config, vpr *viper.Viper, configuring []reflect.Type, visited set[reflect.Value], v reflect.Value, flags flagRefs, path []string) { //nolint:funlen
+
+func configureViper(cfg Config, vpr *viper.Viper, configuring []reflect.Type, visited set[reflect.Value], v reflect.Value, flags flagRefs, path []string) {
 	if visited.contains(v) {
 		return
 	}

@@ -4,6 +4,8 @@ import (
 	"context"
 )
 
+const ExecutorDefault = ""
+
 type executorKey struct {
 	name string
 }
@@ -21,6 +23,9 @@ func ContextExecutor(ctx *context.Context, name string) Executor {
 	}
 	executor, ok := (*ctx).Value(executorKey{name: name}).(Executor)
 	if !ok || executor == nil {
+		if name != ExecutorDefault {
+			return ContextExecutor(ctx, ExecutorDefault)
+		}
 		return serialExecutor{}
 	}
 	if e, _ := executor.(ChildExecutor); e != nil {
