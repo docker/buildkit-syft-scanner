@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-ARG GO_VERSION="1.25"
+ARG GO_VERSION="1.26"
 ARG ALPINE_VERSION="3.23"
 ARG XX_VERSION="1.9.0"
 
