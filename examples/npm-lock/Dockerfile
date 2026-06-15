@@ -19,7 +19,7 @@ ARG BUILDKIT_SBOM_SCAN_STAGE=true
 WORKDIR /work
 COPY package*.json .
 COPY .npmrc .
-RUN npm install
+RUN npm ci
 COPY <<EOF /empty
 EOF
 
