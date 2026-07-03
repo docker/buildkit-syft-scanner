@@ -50,7 +50,7 @@ func (s Scanner) Scan(ctx context.Context) error {
 		}
 		stmt := intoto.Statement{
 			StatementHeader: intoto.StatementHeader{
-				Type:          intoto.StatementInTotoV01,
+				Type:          intoto.StatementInTotoV1,
 				PredicateType: intoto.PredicateSPDX,
 			},
 			Predicate: json.RawMessage(output),
