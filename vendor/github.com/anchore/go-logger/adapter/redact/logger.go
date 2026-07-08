@@ -40,61 +40,61 @@ func (r *redactingLogger) GetOutput() io.Writer {
 	return nil
 }
 
-func (r *redactingLogger) Errorf(format string, args ...interface{}) {
+func (r *redactingLogger) Errorf(format string, args ...any) {
 	r.log.Errorf(r.redactString(format), r.redactFields(args)...)
 }
 
-func (r *redactingLogger) Error(args ...interface{}) {
+func (r *redactingLogger) Error(args ...any) {
 	r.log.Error(r.redactFields(args)...)
 }
 
-func (r *redactingLogger) Warnf(format string, args ...interface{}) {
+func (r *redactingLogger) Warnf(format string, args ...any) {
 	r.log.Warnf(r.redactString(format), r.redactFields(args)...)
 }
 
-func (r *redactingLogger) Warn(args ...interface{}) {
+func (r *redactingLogger) Warn(args ...any) {
 	r.log.Warn(r.redactFields(args)...)
 }
 
-func (r *redactingLogger) Infof(format string, args ...interface{}) {
+func (r *redactingLogger) Infof(format string, args ...any) {
 	r.log.Infof(r.redactString(format), r.redactFields(args)...)
 }
 
-func (r *redactingLogger) Info(args ...interface{}) {
+func (r *redactingLogger) Info(args ...any) {
 	r.log.Info(r.redactFields(args)...)
 }
 
-func (r *redactingLogger) Debugf(format string, args ...interface{}) {
+func (r *redactingLogger) Debugf(format string, args ...any) {
 	r.log.Debugf(r.redactString(format), r.redactFields(args)...)
 }
 
-func (r *redactingLogger) Debug(args ...interface{}) {
+func (r *redactingLogger) Debug(args ...any) {
 	r.log.Debug(r.redactFields(args)...)
 }
 
-func (r *redactingLogger) Tracef(format string, args ...interface{}) {
+func (r *redactingLogger) Tracef(format string, args ...any) {
 	r.log.Tracef(r.redactString(format), r.redactFields(args)...)
 }
 
-func (r *redactingLogger) Trace(args ...interface{}) {
+func (r *redactingLogger) Trace(args ...any) {
 	r.log.Trace(r.redactFields(args)...)
 }
 
-func (r *redactingLogger) WithFields(fields ...interface{}) iface.MessageLogger {
+func (r *redactingLogger) WithFields(fields ...any) iface.MessageLogger {
 	if l, ok := r.log.(iface.FieldLogger); ok {
 		return New(l.WithFields(r.redactFields(fields)...), r.redactor)
 	}
 	return r
 }
 
-func (r *redactingLogger) Nested(fields ...interface{}) iface.Logger {
+func (r *redactingLogger) Nested(fields ...any) iface.Logger {
 	if l, ok := r.log.(iface.NestedLogger); ok {
 		return New(l.Nested(r.redactFields(fields)...), r.redactor)
 	}
 	return r
 }
 
-func (r *redactingLogger) redactFields(fields []interface{}) []interface{} {
+func (r *redactingLogger) redactFields(fields []any) []any {
 	for i, v := range fields {
 		switch vv := v.(type) {
 		case string:

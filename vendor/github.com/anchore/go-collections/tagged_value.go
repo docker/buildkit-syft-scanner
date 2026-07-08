@@ -15,10 +15,8 @@ type TaggedValue[T any] struct {
 // HasTag indicates the TaggedValue has a tag matching one or more of the provided arguments
 func (t TaggedValue[T]) HasTag(tags ...string) bool {
 	for _, tag := range tags {
-		for _, existing := range t.Tags {
-			if tag == existing {
-				return true
-			}
+		if slices.Contains(t.Tags, tag) {
+			return true
 		}
 	}
 	return false

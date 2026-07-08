@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"maps"
 	"os"
 
 	"github.com/sirupsen/logrus"
@@ -119,61 +120,61 @@ func New(cfg Config) (iface.Logger, error) {
 }
 
 // Tracef takes a formatted template string and template arguments for the trace logging level.
-func (l *logger) Tracef(format string, args ...interface{}) {
+func (l *logger) Tracef(format string, args ...any) {
 	l.logger.Tracef(format, args...)
 }
 
 // Debugf takes a formatted template string and template arguments for the debug logging level.
-func (l *logger) Debugf(format string, args ...interface{}) {
+func (l *logger) Debugf(format string, args ...any) {
 	l.logger.Debugf(format, args...)
 }
 
 // Infof takes a formatted template string and template arguments for the info logging level.
-func (l *logger) Infof(format string, args ...interface{}) {
+func (l *logger) Infof(format string, args ...any) {
 	l.logger.Infof(format, args...)
 }
 
 // Warnf takes a formatted template string and template arguments for the warning logging level.
-func (l *logger) Warnf(format string, args ...interface{}) {
+func (l *logger) Warnf(format string, args ...any) {
 	l.logger.Warnf(format, args...)
 }
 
 // Errorf takes a formatted template string and template arguments for the error logging level.
-func (l *logger) Errorf(format string, args ...interface{}) {
+func (l *logger) Errorf(format string, args ...any) {
 	l.logger.Errorf(format, args...)
 }
 
 // Trace logs the given arguments at the trace logging level.
-func (l *logger) Trace(args ...interface{}) {
+func (l *logger) Trace(args ...any) {
 	l.logger.Trace(args...)
 }
 
 // Debug logs the given arguments at the debug logging level.
-func (l *logger) Debug(args ...interface{}) {
+func (l *logger) Debug(args ...any) {
 	l.logger.Debug(args...)
 }
 
 // Info logs the given arguments at the info logging level.
-func (l *logger) Info(args ...interface{}) {
+func (l *logger) Info(args ...any) {
 	l.logger.Info(args...)
 }
 
 // Warn logs the given arguments at the warning logging level.
-func (l *logger) Warn(args ...interface{}) {
+func (l *logger) Warn(args ...any) {
 	l.logger.Warn(args...)
 }
 
 // Error logs the given arguments at the error logging level.
-func (l *logger) Error(args ...interface{}) {
+func (l *logger) Error(args ...any) {
 	l.logger.Error(args...)
 }
 
 // WithFields returns a message entry with multiple key-value fields.
-func (l *logger) WithFields(fields ...interface{}) iface.MessageLogger {
+func (l *logger) WithFields(fields ...any) iface.MessageLogger {
 	return l.logger.WithFields(getFields(fields...))
 }
 
-func (l *logger) Nested(fields ...interface{}) iface.Logger {
+func (l *logger) Nested(fields ...any) iface.Logger {
 	return &nestedLogger{entry: l.logger.WithFields(getFields(fields...))}
 }
 
@@ -186,15 +187,13 @@ func (l *logger) GetOutput() io.Writer {
 	return l.output
 }
 
-func getFields(fields ...interface{}) logrus.Fields {
+func getFields(fields ...any) logrus.Fields {
 	f := make(logrus.Fields)
 	offset := 0
 	for i, val := range fields {
 		// there can be a fields map anywhere within the parameters
 		if fieldsMap, ok := val.(iface.Fields); ok {
-			for k, v := range fieldsMap {
-				f[k] = v
-			}
+			maps.Copy(f, fieldsMap)
 			offset++
 			continue
 		}

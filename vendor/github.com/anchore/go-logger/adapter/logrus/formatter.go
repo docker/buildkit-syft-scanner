@@ -24,14 +24,17 @@ Note: this code was copied from https://github.com/x-cray/logrus-prefixed-format
 
 const defaultTimestampFormat = time.RFC3339
 
+// red is the style shared by the error, fatal, and panic levels.
+const red = "red"
+
 var (
 	baseTimestamp      = time.Now()
 	defaultColorScheme = &ColorScheme{
 		InfoLevelStyle:  "green",
 		WarnLevelStyle:  "yellow",
-		ErrorLevelStyle: "red",
-		FatalLevelStyle: "red",
-		PanicLevelStyle: "red",
+		ErrorLevelStyle: red,
+		FatalLevelStyle: red,
+		PanicLevelStyle: red,
 		DebugLevelStyle: "blue",
 		TraceLevelStyle: "magenta+h",
 		PrefixStyle:     "cyan",
@@ -330,7 +333,7 @@ func extractPrefix(msg string) (string, string) {
 	return prefix, msg
 }
 
-func (f *TextFormatter) appendKeyValue(b *bytes.Buffer, key string, value interface{}, appendSpace bool) {
+func (f *TextFormatter) appendKeyValue(b *bytes.Buffer, key string, value any, appendSpace bool) {
 	b.WriteString(key)
 	b.WriteByte('=')
 	f.appendValue(b, value)
@@ -340,7 +343,7 @@ func (f *TextFormatter) appendKeyValue(b *bytes.Buffer, key string, value interf
 	}
 }
 
-func (f *TextFormatter) appendValue(b *bytes.Buffer, value interface{}) {
+func (f *TextFormatter) appendValue(b *bytes.Buffer, value any) {
 	switch value := value.(type) {
 	case string:
 		if !f.needsQuoting(value) {

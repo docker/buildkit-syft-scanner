@@ -61,7 +61,7 @@ func loadConfig(cfg Config, flags flagRefs, configurations ...any) error {
 		configureViper(cfg, v, nil, set[reflect.Value]{}, reflect.ValueOf(configuration), flags, []string{})
 
 		// unmarshal fully populated viper object onto config
-		err := v.Unmarshal(configuration, func(dc *mapstructure.DecoderConfig) {
+		err := unmarshalRecover(v, configuration, func(dc *mapstructure.DecoderConfig) {
 			dc.TagName = cfg.TagName
 			// ZeroFields will use what is present in the config file instead of modifying existing defaults
 			dc.ZeroFields = true
@@ -78,6 +78,23 @@ func loadConfig(cfg Config, flags flagRefs, configurations ...any) error {
 	}
 
 	return nil
+}
+
+// unmarshalRecover calls viper.Unmarshal and converts panics from mapstructure into errors.
+// mapstructure v2.5.0 auto-initializes squashed pointer structs without checking CanSet, which panics
+// for embedded unexported pointer fields like `*private` — a pattern Go reflection cannot support.
+func unmarshalRecover(v *viper.Viper, target any, opts ...viper.DecoderConfigOption) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			msg := fmt.Sprintf("%v", r)
+			if strings.Contains(msg, "unexported field") {
+				err = fmt.Errorf("unsupported type for squash: embedded unexported pointer field cannot be set via reflection: %v", r)
+				return
+			}
+			panic(r)
+		}
+	}()
+	return v.Unmarshal(target, opts...)
 }
 
 // findConfigurationFiles returns the set of configuration files to use, either directly configured

@@ -6,41 +6,42 @@ import (
 	"strconv"
 )
 
-// ConvertFrom interface allows structs to define custom conversion functions if the automated reflection-based Convert
-// is not able to convert properties due to name changes or other factors.
-type ConvertFrom interface {
-	ConvertFrom(interface{}) error
+type conversion struct {
+	errors []error
+	chain  *funcChain
+}
+
+func (c *conversion) err(err error) {
+	c.errors = append(c.errors, err)
+}
+
+func (c *conversion) errf(format string, args ...any) {
+	c.err(fmt.Errorf(format, args...))
 }
 
 // Convert takes two objects, e.g. v2_1.Document and &v2_2.Document{} and attempts to map all the properties from one
-// to the other. After the automatic mapping, if a struct implements the ConvertFrom interface, this is called to
+// to the other. After the automatic mapping, if an explicit conversion function is provided, this will be called to
 // perform any additional conversion logic necessary.
-func Convert(from interface{}, to interface{}) error {
-	fromValue := reflect.ValueOf(from)
-
-	toValuePtr := reflect.ValueOf(to)
+func (c *conversion) convert(fromValue reflect.Value, toValuePtr reflect.Value) {
 	toTypePtr := toValuePtr.Type()
 
 	if !isPtr(toTypePtr) {
-		return fmt.Errorf("TO value provided was not a pointer, unable to set value: %v", to)
+		c.errf("TO value provided was not a pointer, unable to set value: %+v", toValuePtr)
+		return
 	}
 
-	toValue, err := getValue(fromValue, toTypePtr)
-	if err != nil {
-		return err
-	}
+	toValue := c.getValue(fromValue, toTypePtr)
 
 	// don't set nil values
 	if toValue == nilValue {
-		return nil
+		return
 	}
 
 	// toValuePtr is the passed-in pointer, toValue is also the same type of pointer
 	toValuePtr.Elem().Set(toValue.Elem())
-	return nil
 }
 
-func getValue(fromValue reflect.Value, targetType reflect.Type) (reflect.Value, error) {
+func (c *conversion) getValue(fromValue reflect.Value, targetType reflect.Type) reflect.Value {
 	var err error
 
 	fromType := fromValue.Type()
@@ -50,11 +51,11 @@ func getValue(fromValue reflect.Value, targetType reflect.Type) (reflect.Value, 
 	// handle incoming pointer Types
 	if isPtr(fromType) {
 		if fromValue.IsNil() {
-			return nilValue, nil
+			return nilValue
 		}
 		fromValue = fromValue.Elem()
 		if !fromValue.IsValid() || fromValue.IsZero() {
-			return nilValue, nil
+			return nilValue
 		}
 		fromType = fromValue.Type()
 	}
@@ -65,6 +66,11 @@ func getValue(fromValue reflect.Value, targetType reflect.Type) (reflect.Value, 
 	}
 
 	switch {
+	case isInterface(baseTargetType):
+		satisfyingType := c.findConvertableType(fromType, baseTargetType)
+		if satisfyingType != nil {
+			return c.getValue(fromValue, satisfyingType)
+		}
 	case isStruct(fromType) && isStruct(baseTargetType):
 		// this always creates a pointer type
 		toValue = reflect.New(baseTargetType)
@@ -82,11 +88,7 @@ func getValue(fromValue reflect.Value, targetType reflect.Type) (reflect.Value, 
 
 			toFieldValue := toValue.FieldByName(toField.Name)
 
-			newValue, err := getValue(fromFieldValue, toFieldType)
-			if err != nil {
-				return nilValue, err
-			}
-
+			newValue := c.getValue(fromFieldValue, toFieldType)
 			if newValue == nilValue {
 				continue
 			}
@@ -94,39 +96,29 @@ func getValue(fromValue reflect.Value, targetType reflect.Type) (reflect.Value, 
 			toFieldValue.Set(newValue)
 		}
 
-		// allow structs to implement a custom convert function from previous/next version struct
-		if reflect.PtrTo(baseTargetType).Implements(convertFromType) {
-			convertFrom := toValue.Addr().MethodByName(convertFromName)
-			if !convertFrom.IsValid() {
-				return nilValue, fmt.Errorf("unable to get ConvertFrom method")
-			}
-			args := []reflect.Value{fromValue}
-			out := convertFrom.Call(args)
-			err := out[0].Interface()
-			if err != nil {
-				return nilValue, fmt.Errorf("an error occurred calling %s.%s: %v", baseTargetType.Name(), convertFromName, err)
-			}
+		// check for custom convert functions from previous/next version struct
+
+		value, done := c.callConversionFunc(fromValue, fromType, baseTargetType, err, toValue)
+		if done {
+			return value
 		}
 	case isSlice(fromType) && isSlice(baseTargetType):
 		if fromValue.IsNil() {
-			return nilValue, nil
+			return nilValue
 		}
 
 		length := fromValue.Len()
 		targetElementType := baseTargetType.Elem()
 		toValue = reflect.MakeSlice(baseTargetType, length, length)
 		for i := 0; i < length; i++ {
-			v, err := getValue(fromValue.Index(i), targetElementType)
-			if err != nil {
-				return nilValue, err
-			}
+			v := c.getValue(fromValue.Index(i), targetElementType)
 			if v.IsValid() {
 				toValue.Index(i).Set(v)
 			}
 		}
 	case isMap(fromType) && isMap(baseTargetType):
 		if fromValue.IsNil() {
-			return nilValue, nil
+			return nilValue
 		}
 
 		keyType := baseTargetType.Key()
@@ -134,14 +126,8 @@ func getValue(fromValue reflect.Value, targetType reflect.Type) (reflect.Value, 
 		toValue = reflect.MakeMap(baseTargetType)
 		for _, fromKey := range fromValue.MapKeys() {
 			fromVal := fromValue.MapIndex(fromKey)
-			k, err := getValue(fromKey, keyType)
-			if err != nil {
-				return nilValue, err
-			}
-			v, err := getValue(fromVal, elementType)
-			if err != nil {
-				return nilValue, err
-			}
+			k := c.getValue(fromKey, keyType)
+			v := c.getValue(fromVal, elementType)
 			if k == nilValue || v == nilValue {
 				continue
 			}
@@ -153,8 +139,11 @@ func getValue(fromValue reflect.Value, targetType reflect.Type) (reflect.Value, 
 			}
 		}
 	default:
-		// TODO determine if there are other conversions
 		toValue = fromValue
+	}
+
+	if !toValue.IsValid() {
+		return nilValue
 	}
 
 	// handle non-pointer returns -- the reflect.New earlier always creates a pointer
@@ -162,35 +151,45 @@ func getValue(fromValue reflect.Value, targetType reflect.Type) (reflect.Value, 
 		toValue = fromPtr(toValue)
 	}
 
-	toValue, err = convertValueTypes(toValue, baseTargetType)
-
-	if err != nil {
-		return nilValue, err
-	}
+	toValue = c.convertValueTypes(toValue, baseTargetType)
 
 	// handle elements which are now pointers
 	if isPtr(targetType) {
 		toValue = toPtr(toValue)
 	}
 
-	return toValue, nil
+	return toValue
+}
+
+func (c *conversion) callConversionFunc(fromValue reflect.Value, fromType reflect.Type, baseTargetType reflect.Type, _ error, toValue reflect.Value) (reflect.Value, bool) {
+	if c.chain.funcs[fromType] != nil && c.chain.funcs[fromType][baseTargetType] != nil {
+		convertFunc := c.chain.funcs[fromType][baseTargetType]
+		err := convertFunc(fromValue, toValue.Addr())
+		if err != nil {
+			c.errf("an error occurred calling %s.%s: %v", baseTargetType.Name(), convertFromName, err)
+			return nilValue, true
+		}
+	}
+	return reflect.Value{}, false
 }
 
 // convertValueTypes takes a value and a target type, and attempts to convert
 // between the Types - e.g. string -> int. when this function is called the value
-func convertValueTypes(value reflect.Value, targetType reflect.Type) (reflect.Value, error) {
+func (c *conversion) convertValueTypes(value reflect.Value, targetType reflect.Type) reflect.Value {
 	typ := value.Type()
 	switch {
 	// if the Types are the same, just return the value
-	case typ.Kind() == targetType.Kind():
-		return value, nil
+	case typ == targetType:
+		return value
+	case typ.Kind() == targetType.Kind() && typ.ConvertibleTo(targetType):
+		return value.Convert(targetType)
 	case value.IsZero() && isPrimitive(targetType):
-
+		// do nothing, will return nilValue
 	case isPrimitive(typ) && isPrimitive(targetType):
 		// get a string representation of the value
 		str := fmt.Sprintf("%v", value.Interface()) // TODO is there a better way to get a string representation?
 		var err error
-		var out interface{}
+		var out any
 		switch {
 		case isString(targetType):
 			out = str
@@ -205,42 +204,70 @@ func convertValueTypes(value reflect.Value, targetType reflect.Type) (reflect.Va
 		}
 
 		if err != nil {
-			return nilValue, err
+			c.err(err)
+			return nilValue
 		}
 
 		v := reflect.ValueOf(out)
 
 		v = v.Convert(targetType)
 
-		return v, nil
+		return v
 	case isSlice(typ) && isSlice(targetType):
 		// this should already be handled in getValue
 	case isSlice(typ):
 		// this may be lossy
 		if value.Len() > 0 {
 			v := value.Index(0)
-			v, err := convertValueTypes(v, targetType)
-			if err != nil {
-				return nilValue, err
-			}
-			return v, nil
+			return c.convertValueTypes(v, targetType)
 		}
-		return convertValueTypes(nilValue, targetType)
+		return c.convertValueTypes(nilValue, targetType)
 	case isSlice(targetType):
 		elementType := targetType.Elem()
-		v, err := convertValueTypes(value, elementType)
-		if err != nil {
-			return nilValue, err
-		}
+		v := c.convertValueTypes(value, elementType)
 		if v == nilValue {
-			return v, nil
+			return v
 		}
 		slice := reflect.MakeSlice(targetType, 1, 1)
 		slice.Index(0).Set(v)
-		return slice, nil
+		return slice
 	}
 
-	return nilValue, fmt.Errorf("unable to convert from: %v to %v", value.Interface(), targetType.Name())
+	c.errf("unable to convert from: %v to %v", value.Interface(), targetType.Name())
+	return nilValue
+}
+
+func (c *conversion) findConvertableType(fromType reflect.Type, targetType reflect.Type) reflect.Type {
+	converters := c.chain.funcs[fromType]
+	if converters == nil {
+		return nil
+	}
+	if v, ok := converters[targetType]; ok {
+		if v == nil {
+			return nil
+		}
+		return targetType
+	}
+	var found *reflect.Type
+	for target := range converters {
+		if target.AssignableTo(targetType) {
+			if found == nil {
+				found = &target
+			} else {
+				// found multiple
+				found = nil
+				break
+			}
+		}
+	}
+
+	if found == nil {
+		// if we didn't find exactly 1, don't check again
+		converters[targetType] = nil
+		return nil
+	}
+	converters[targetType] = converters[*found]
+	return *found
 }
 
 func isPtr(typ reflect.Type) bool {
@@ -267,8 +294,9 @@ func isInt(typ reflect.Type) bool {
 		reflect.Int32,
 		reflect.Int64:
 		return true
+	default:
+		return false
 	}
-	return false
 }
 
 func isUint(typ reflect.Type) bool {
@@ -279,8 +307,9 @@ func isUint(typ reflect.Type) bool {
 		reflect.Uint32,
 		reflect.Uint64:
 		return true
+	default:
+		return false
 	}
-	return false
 }
 
 func isFloat(typ reflect.Type) bool {
@@ -288,8 +317,9 @@ func isFloat(typ reflect.Type) bool {
 	case reflect.Float32,
 		reflect.Float64:
 		return true
+	default:
+		return false
 	}
-	return false
 }
 
 func isStruct(typ reflect.Type) bool {
@@ -302,6 +332,10 @@ func isSlice(typ reflect.Type) bool {
 
 func isMap(typ reflect.Type) bool {
 	return typ.Kind() == reflect.Map
+}
+
+func isInterface(targetType reflect.Type) bool {
+	return targetType.Kind() == reflect.Interface
 }
 
 func toPtr(val reflect.Value) reflect.Value {
@@ -328,7 +362,4 @@ const convertFromName = "ConvertFrom"
 var (
 	// nilValue is returned in a number of cases when a value should not be set
 	nilValue = reflect.ValueOf(nil)
-
-	// convertFromType is the type to check for ConvertFrom implementations
-	convertFromType = reflect.TypeOf((*ConvertFrom)(nil)).Elem()
 )

@@ -185,14 +185,14 @@ func summarizeLocationsCommand(internalApp *application) *cobra.Command {
 }
 
 func summarizeLocations(fangsCfg fangs.Config, onlySuffix string) string {
-	out := ""
+	var out strings.Builder
 	for _, f := range fangs.SummarizeLocations(fangsCfg) {
 		if onlySuffix != "" && !strings.HasSuffix(f, onlySuffix) {
 			continue
 		}
-		out += f + "\n"
+		out.WriteString(f + "\n")
 	}
-	return out
+	return out.String()
 }
 
 // appendConfigLoadError appends errors including originating struct, but deduplicates identical errors that occur across multiple load calls

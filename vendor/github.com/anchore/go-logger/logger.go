@@ -3,6 +3,7 @@ package logger
 import (
 	"fmt"
 	"io"
+	"slices"
 	"strings"
 )
 
@@ -39,14 +40,14 @@ type Controller interface {
 }
 
 type NestedLogger interface {
-	Nested(fields ...interface{}) Logger
+	Nested(fields ...any) Logger
 }
 
 type FieldLogger interface {
-	WithFields(fields ...interface{}) MessageLogger
+	WithFields(fields ...any) MessageLogger
 }
 
-type Fields map[string]interface{}
+type Fields map[string]any
 
 type MessageLogger interface {
 	ErrorMessageLogger
@@ -62,28 +63,28 @@ type MessageLogger interface {
 //}
 
 type ErrorMessageLogger interface {
-	Errorf(format string, args ...interface{})
-	Error(args ...interface{})
+	Errorf(format string, args ...any)
+	Error(args ...any)
 }
 
 type WarnMessageLogger interface {
-	Warnf(format string, args ...interface{})
-	Warn(args ...interface{})
+	Warnf(format string, args ...any)
+	Warn(args ...any)
 }
 
 type InfoMessageLogger interface {
-	Infof(format string, args ...interface{})
-	Info(args ...interface{})
+	Infof(format string, args ...any)
+	Info(args ...any)
 }
 
 type DebugMessageLogger interface {
-	Debugf(format string, args ...interface{})
-	Debug(args ...interface{})
+	Debugf(format string, args ...any)
+	Debug(args ...any)
 }
 
 type TraceMessageLogger interface {
-	Tracef(format string, args ...interface{})
-	Trace(args ...interface{})
+	Tracef(format string, args ...any)
+	Trace(args ...any)
 }
 
 func LevelFromString(l string) (Level, error) {
@@ -119,12 +120,7 @@ func LevelFromVerbosity(v int, levels ...Level) Level {
 }
 
 func IsLevel(l Level, levels ...Level) bool {
-	for _, level := range levels {
-		if l == level {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(levels, l)
 }
 
 func IsVerbose(level Level) bool {
