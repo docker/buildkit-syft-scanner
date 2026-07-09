@@ -22,7 +22,7 @@ import (
 
 	"github.com/anchore/syft/syft/format"
 	"github.com/anchore/syft/syft/format/spdxjson"
-	intoto "github.com/in-toto/in-toto-golang/in_toto"
+	intoto "github.com/in-toto/attestation/go/v1"
 	"github.com/pkg/errors"
 )
 
@@ -48,12 +48,18 @@ func (s Scanner) Scan(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		stmt := intoto.Statement{
-			StatementHeader: intoto.StatementHeader{
-				Type:          intoto.StatementInTotoV1,
-				PredicateType: intoto.PredicateSPDX,
-			},
-			Predicate: json.RawMessage(output),
+
+		// Use a local statement shape so Syft's SPDX JSON stays a raw JSON object.
+		// intoto.Statement stores Predicate as a protobuf Struct, which would require
+		// an unnecessary decode/remarshal round-trip here.
+		stmt := struct {
+			Type          string          `json:"_type"`
+			PredicateType string          `json:"predicateType"`
+			Predicate     json.RawMessage `json:"predicate"`
+		}{
+			Type:          intoto.StatementTypeUri,
+			PredicateType: "https://spdx.dev/Document",
+			Predicate:     output,
 		}
 
 		outputPath := filepath.Join(s.Destination, target.Name()+".spdx.json")
