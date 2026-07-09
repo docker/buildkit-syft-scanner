@@ -51,7 +51,6 @@ func SummarizeLocations(cfg Config) (out []string) {
 
 type ValueFilterFunc func(string) string
 
-//nolint:gocognit
 func summarize(cfg Config, descriptions DescriptionProvider, s *section, value reflect.Value, path []string) {
 	v, t := base(value)
 
@@ -59,14 +58,28 @@ func summarize(cfg Config, descriptions DescriptionProvider, s *section, value r
 		panic(fmt.Sprintf("Summarize requires struct types, got: %#v", value.Interface()))
 	}
 
+	summarizeFields(cfg, descriptions, s, v, t, path)
+}
+
+func summarizeFields(cfg Config, descriptions DescriptionProvider, s *section, v reflect.Value, t reflect.Type, path []string) {
 	for i := 0; i < t.NumField(); i++ {
 		f := t.Field(i)
 		if !includeField(f) {
 			continue
 		}
 
-		path := path
+		currentPath := path
 		name := f.Name
+
+		// should we ignore this field based on the output tag?
+		if cfg.TagName != "yaml" {
+			if tag, ok := f.Tag.Lookup("yaml"); ok {
+				parts := strings.Split(tag, ",")
+				if parts[0] == "-" {
+					continue
+				}
+			}
+		}
 
 		if tag, ok := f.Tag.Lookup(cfg.TagName); ok {
 			parts := strings.Split(tag, ",")
@@ -78,45 +91,56 @@ func summarize(cfg Config, descriptions DescriptionProvider, s *section, value r
 			case contains(parts, "squash"):
 				name = ""
 			case tag == "":
-				path = append(path, name)
+				currentPath = append(currentPath, name)
 			default:
 				name = tag
-				path = append(path, tag)
+				currentPath = append(currentPath, tag)
 			}
 		} else {
-			path = append(path, name)
+			currentPath = append(currentPath, name)
 		}
 
-		v := v.Field(i)
-		_, t := base(v)
-
-		if isStruct(t) {
-			sub := s
-			if name != "" {
-				sub = s.sub(name)
-			}
-			if isPtr(v.Type()) && v.IsNil() {
-				v = reflect.New(t)
-			}
-			summarize(cfg, descriptions, sub, v, path)
-		} else {
-			env := envVar(cfg.AppName, path...)
-			// for slices of structs, do not output an env var
-			if t.Kind() == reflect.Slice && baseType(t.Elem()).Kind() == reflect.Struct {
-				env = ""
-			}
-			s.add(cfg.Logger,
-				name,
-				v,
-				descriptions.GetDescription(v, f),
-				env)
-		}
+		// process the field based on its type
+		summarizeField(cfg, descriptions, s, f, v.Field(i), name, currentPath)
 	}
 }
 
+// summarizeField handles a single field according to its type
+func summarizeField(cfg Config, descriptions DescriptionProvider, s *section, f reflect.StructField, fieldValue reflect.Value, fieldName string, path []string) {
+	v, t := base(fieldValue)
+
+	if isStruct(t) {
+		sub := s
+		if fieldName != "" {
+			sub = s.sub(fieldName)
+		}
+
+		if isPtr(v.Type()) && v.IsNil() {
+			v = reflect.New(t)
+		}
+
+		summarize(cfg, descriptions, sub, v, path)
+		return
+	}
+
+	// handle non-struct fields...
+
+	env := envVar(cfg.AppName, path...)
+
+	// for slices of structs, do not output an env var
+	if t.Kind() == reflect.Slice && baseType(t.Elem()).Kind() == reflect.Struct {
+		env = ""
+	}
+
+	s.add(cfg.Logger,
+		fieldName,
+		fieldValue,
+		descriptions.GetDescription(fieldValue, f),
+		env)
+}
+
 // printVal prints a value in YAML format
-// nolint:gocognit
-func printVal(cfg Config, filter ValueFilterFunc, value reflect.Value, indent string) string { //nolint:funlen
+func printVal(cfg Config, filter ValueFilterFunc, value reflect.Value, indent string) string {
 	buf := bytes.Buffer{}
 
 	v, t := base(value)

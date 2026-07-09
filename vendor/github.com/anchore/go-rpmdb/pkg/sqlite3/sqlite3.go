@@ -7,8 +7,9 @@ import (
 	"fmt"
 	"os"
 
-	dbi "github.com/anchore/go-rpmdb/pkg/db"
 	"golang.org/x/xerrors"
+
+	dbi "github.com/anchore/go-rpmdb/pkg/db"
 )
 
 type SQLite3 struct {

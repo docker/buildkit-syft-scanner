@@ -16,32 +16,32 @@ func New() iface.Logger {
 	return &logger{}
 }
 
-func (l *logger) Tracef(_ string, _ ...interface{}) {
+func (l *logger) Tracef(_ string, _ ...any) {
 }
 
-func (l *logger) Debugf(_ string, _ ...interface{}) {}
+func (l *logger) Debugf(_ string, _ ...any) {}
 
-func (l *logger) Infof(_ string, _ ...interface{}) {}
+func (l *logger) Infof(_ string, _ ...any) {}
 
-func (l *logger) Warnf(_ string, _ ...interface{}) {}
+func (l *logger) Warnf(_ string, _ ...any) {}
 
-func (l *logger) Errorf(_ string, _ ...interface{}) {}
+func (l *logger) Errorf(_ string, _ ...any) {}
 
-func (l *logger) Trace(_ ...interface{}) {}
+func (l *logger) Trace(_ ...any) {}
 
-func (l *logger) Debug(_ ...interface{}) {}
+func (l *logger) Debug(_ ...any) {}
 
-func (l *logger) Info(_ ...interface{}) {}
+func (l *logger) Info(_ ...any) {}
 
-func (l *logger) Warn(_ ...interface{}) {}
+func (l *logger) Warn(_ ...any) {}
 
-func (l *logger) Error(_ ...interface{}) {}
+func (l *logger) Error(_ ...any) {}
 
-func (l *logger) WithFields(_ ...interface{}) iface.MessageLogger {
+func (l *logger) WithFields(_ ...any) iface.MessageLogger {
 	return l
 }
 
-func (l *logger) Nested(_ ...interface{}) iface.Logger { return l }
+func (l *logger) Nested(_ ...any) iface.Logger { return l }
 
 func (l *logger) SetOutput(_ io.Writer) {}
 

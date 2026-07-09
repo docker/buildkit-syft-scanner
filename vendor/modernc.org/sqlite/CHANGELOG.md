@@ -1,8 +1,104 @@
 # Changelog
 
+ - 2026-05-28 v1.51.0:
+     - Pool the `[]driver.Value` slice passed to scalar/aggregate UDF callbacks and to vtab `Filter`/`Insert`/`Update` callbacks, eliminating the dominant per-row allocation on UDF-heavy queries. Benchmarks on a 1000-row, 3-arg noop scalar UDF show ~40% fewer bytes/op and ~15% fewer allocs/op.
+     - Document the matching "arguments are not valid past return" contract on `vtab.Cursor.Filter` and `vtab.Updater.Insert`/`Update`, consistent with the existing rule for `FunctionImpl.Scalar` / `AggregateFunction.Step` / `WindowInverse`.
+     - Resolves [GitLab issue #226](https://gitlab.com/cznic/sqlite/-/issues/226). See [GitLab merge request #114](https://gitlab.com/cznic/sqlite/-/merge_requests/114), thanks Ian Chechin!
+     - Add `FileControl.FileControlDataVersion`, a wrapper around `SQLITE_FCNTL_DATA_VERSION` for observing pager-cache data-version changes, including those made on the same connection. Useful as a primitive for application-level cache invalidation.
+     - Exposed via the idiomatic `database/sql` escape hatch `(*sql.Conn).Raw()`, consistent with the existing `FileControlPersistWAL`.                                                                    
+     - See [GitLab merge request #115](https://gitlab.com/cznic/sqlite/-/merge_requests/115), thanks Ian Chechin!
+     - Fix a regression where in-memory connections (`:memory:`, `file::memory:`, shared-cache memory URIs) were discarded by `database/sql` after a context-cancelled query, taking the entire in-memory store with them. The fix for #198 had added an `sqlite3_is_interrupted` check to the connection validator that mistakenly applied to in-memory connections too, re-introducing the bug originally fixed by !74. File-backed connections keep the existing behaviour and are still discarded after an interrupt.
+     - Resolves [GitLab issue #196](https://gitlab.com/cznic/sqlite/-/issues/196). See [GitLab merge request #116](https://gitlab.com/cznic/sqlite/-/merge_requests/116), thanks Ian Chechin!
+     - Add an opt-in `FunctionImpl.VolatileArgs` flag that hands TEXT and BLOB arguments to scalar and aggregate UDF callbacks as zero-copy views (`unsafe.String`/`unsafe.Slice`) over SQLite's own value buffers, eliminating the per-argument `libc.GoString`/`make([]byte)` copy that the #226 slice-pooling left as the remaining per-row allocation. On the same 1000-row, 3-arg (INTEGER/TEXT/BLOB) noop scalar UDF this removes a further ~35% of allocs/op and ~11% of bytes/op on top of #226.
+     - The views are valid only for the duration of the callback and must not be retained past return or across rows; a callback that needs to keep a value must copy it. With `VolatileArgs` unset (the default) arguments keep the existing copied, caller-owned semantics, so the flag is fully backward compatible; it has no effect on integer, float, time, or NULL arguments.
+     - See [GitLab merge request #120](https://gitlab.com/cznic/sqlite/-/merge_requests/120), thanks Ian Chechin!
+     - Extend the opt-in `VolatileArgs` zero-copy TEXT/BLOB argument access from #120 to the virtual-table `Cursor.Filter` (`xFilter`) and `Updater.Insert`/`Update` (`xUpdate`) callbacks. A `vtab.Module` opts in by implementing the new optional `vtab.VolatileArgsOpter` interface (`VolatileArgs() bool`); the flag is read once at module registration and shared by every table created from it. On a vtab call carrying one TEXT and one BLOB argument this removes 2 allocs/op (one `libc.GoString`, one `make([]byte)`) on each of the Filter and Update paths.
+     - The same safety contract as #120 applies: the views are valid only for the duration of the callback and must not be retained past return or across rows; a callback that needs to keep a value must copy it. Modules that do not implement `VolatileArgsOpter` (the default for all existing modules) are byte-for-byte unchanged, and the flag has no effect on integer, float, time, or NULL arguments.
+     - See [GitLab merge request #121](https://gitlab.com/cznic/sqlite/-/merge_requests/121), thanks Ian Chechin!
+
+ - 2026-05-10 v1.50.1:
+     - Upgrade to [SQLite 3.53.1](https://sqlite.org/releaselog/3_53_1.html).
+
+ - 2026-04-24 v1.50.0:
+     - Upgrade to sqlite-vec [v0.1.9](https://github.com/asg017/sqlite-vec/releases/tag/v0.1.9).
+     - Introduce `ColumnInfo`, enabling dynamic query builders and ORMs to retrieve underlying SQLite C-API metadata (`OriginName`, `TableName`, `DatabaseName`, and `DeclType`).
+     - This feature is exposed via the idiomatic `database/sql` escape hatch `(*sql.Conn).Raw()`, avoiding custom statement handles and keeping the standard library workflow intact.
+     - See [GitLab merge request #113](https://gitlab.com/cznic/sqlite/-/merge_requests/113), thanks Josh Bleecher Snyder!
+ 
+ - 2026-04-17 v1.49.0: Upgrade to [SQLite 3.53.0](https://sqlite.org/releaselog/3_53_0.html).
+     - Added `-DSQLITE_ENABLE_DBPAGE_VTAB` to the transpilation. See ["The SQLITE_DBPAGE Virtual Table"](https://www.sqlite.org/dbpage.html) for details.
+
+ - 2026-04-06 v1.48.2:
+     - Fix ABI mapping mismatch in the pre-update hook trampoline that caused silent truncation of large 64-bit RowIDs.
+     - Ensure the Go trampoline signature correctly aligns with the public `sqlite3_preupdate_hook` C API, preventing data corruption for high-entropy keys (e.g., Snowflake IDs).
+     - See [GitLab merge request #98](https://gitlab.com/cznic/sqlite/-/merge_requests/98), thanks Josh Bleecher Snyder!
+     - Fix the memory allocator used in `(*conn).Deserialize`.
+     - Replace `tls.Alloc` with `sqlite3_malloc64` to prevent internal allocator corruption. This ensures the buffer is safely owned by SQLite, which may resize or free it due to the `SQLITE_DESERIALIZE_RESIZEABLE` and `SQLITE_DESERIALIZE_FREEONCLOSE` flags.
+     - Prevent a memory leak by properly freeing the allocated buffer if fetching the main database name fails before handing ownership to SQLite.
+     - See [GitLab merge request #100](https://gitlab.com/cznic/sqlite/-/merge_requests/100), thanks Josh Bleecher Snyder!
+     - Fix `(*conn).Deserialize` to explicitly reject `nil` or empty byte slices.
+     - Prevent silent database disconnection and connection pool corruption caused by SQLite's default behavior when `sqlite3_deserialize` receives a 0-length buffer.
+     - See [GitLab merge request #101](https://gitlab.com/cznic/sqlite/-/merge_requests/101), thanks Josh Bleecher Snyder!
+     - Fix `commitHookTrampoline` and `rollbackHookTrampoline` signatures by removing the unused `pCsr` parameter.
+     - Aligns internal hook callbacks accurately with the underlying SQLite C API, cleaning up the code to prevent potential future confusion or bugs.
+     - See [GitLab merge request #102](https://gitlab.com/cznic/sqlite/-/merge_requests/102), thanks Josh Bleecher Snyder!
+     - Fix `checkptr` instrumentation failures during `go test -race` when registering and using virtual tables (`vtab`).
+     - Allocate `sqlite3_module` instances using the C allocator (`libc.Xcalloc`) instead of the Go heap. This ensures transpiled C code can safely perform pointer operations on the struct without tripping Go's pointer checks.
+     - See [GitLab merge request #103](https://gitlab.com/cznic/sqlite/-/merge_requests/103), thanks Josh Bleecher Snyder!
+     - Fix data race on `mutex.id` in the `mutexTry` non-recursive path.
+     - Ensure consistent atomic writes (`atomic.StoreInt32`) to prevent data races with atomic loads in `mutexHeld` and `mutexNotheld` during concurrent execution.
+     - See [GitLab merge request #104](https://gitlab.com/cznic/sqlite/-/merge_requests/104), thanks Josh Bleecher Snyder!
+     - Fix resource leak in `(*Backup).Commit` where the destination connection was not closed on error.
+     - Ensure `dstConn` is properly closed when `sqlite3_backup_finish` fails, preventing file descriptor, TLS, and memory leaks.
+     - See [GitLab merge request #105](https://gitlab.com/cznic/sqlite/-/merge_requests/105), thanks Josh Bleecher Snyder!
+     - Fix `Exec` to fully drain rows when encountering `SQLITE_ROW`, preventing silent data loss in DML statements.
+     - Previously, `Exec` aborted after the first row, meaning `INSERT`, `UPDATE`, or `DELETE` statements with a `RETURNING` clause would fail to process subsequent rows. The execution path now correctly loops until `SQLITE_DONE` and properly respects context cancellations during the drain loop, fully aligning with native C `sqlite3_exec` semantics.
+     - See [GitLab merge request #106](https://gitlab.com/cznic/sqlite/-/merge_requests/106), thanks Josh Bleecher Snyder!
+     - Fix "Shadowed err value (stmt.go)".
+     - See [GitLab issue #249](https://gitlab.com/cznic/sqlite/-/work_items/249), thanks Emrecan BATI!
+     - Fix silent omission of virtual table savepoint callbacks by correctly setting the sqlite3_module version.
+     - See [GitLab merge request #107](https://gitlab.com/cznic/sqlite/-/merge_requests/107), thanks Josh Bleecher Snyder!
+     - Fix `vfsRead` to properly handle partial and fragmented reads from `io.Reader`.
+     - Replace `f.Read` with `io.ReadFull` to ensure the buffer is fully populated, preventing premature `SQLITE_IOERR_SHORT_READ` errors on valid mid-stream partial reads. Unread tail bytes at EOF are now efficiently zero-filled using the built-in `clear` function.
+     - See [GitLab merge request #108](https://gitlab.com/cznic/sqlite/-/merge_requests/108), thanks Josh Bleecher Snyder!
+     - Refactor internal error formatting to safely handle uninitialized or closed database pointers.
+     - Prevent a misleading "out of memory" error message when an operation fails and the underlying SQLite database handle is `NULL` (`db == 0`).
+     - See [GitLab merge request #109](https://gitlab.com/cznic/sqlite/-/merge_requests/109), thanks Josh Bleecher Snyder!
+     - Fix error handling in database backup and restore initialization (`sqlite3_backup_init`).
+     - Ensure error codes and messages are accurately read from the destination database handle rather than hardcoding the source or remote handle. This prevents swallowed errors or mismatched "not an error" messages when a backup or restore operation fails to start.
+     - See [GitLab merge request #111](https://gitlab.com/cznic/sqlite/-/merge_requests/111), thanks Josh Bleecher Snyder!
+     - Fix database handle and C-heap memory leaks when `sqlite3_open_v2` fails.
+     - Ensure `sqlite3_close_v2` is called on the partially allocated database handle during a failed open, and explicitly close `libc.TLS` in `newConn` to prevent resource leakage.
+     - Prevent misleading "out of memory" error messages on failed connections by correctly extracting the exact error string from the allocated handle before it is closed.
+     - See [GitLab merge request #112](https://gitlab.com/cznic/sqlite/-/merge_requests/112), thanks Josh Bleecher Snyder!
+
+ - 2026-04-03 v1.48.1:
+     - Fix memory leaks and double-free vulnerabilities in the multi-statement query execution path.
+     - Ensure bind-parameter allocations are reliably freed via strict ownership transfer if an error occurs mid-loop or if multiple statements bind parameters.
+     - Fix a resource leak where a subsequent statement's error could orphan a previously generated `rows` object without closing it, leaking the prepared statement handle.
+     - See [GitLab merge request #96](https://gitlab.com/cznic/sqlite/-/merge_requests/96), thanks Josh Bleecher Snyder!
+
+ - 2026-03-27 v1.48.0:
+     - Add `_timezone` DSN query parameter to apply IANA timezones (e.g., "America/New_York") to both reads and writes.
+     - Writes will convert `time.Time` values to the target timezone before formatting as a string.
+     - Reads will interpret timezone-less strings as being in the target timezone.
+     - Does not impact `_inttotime` integer values, which will always safely evaluate as UTC.
+     - Add support for `_time_format=datetime` URI parameter to format `time.Time` values identically to SQLite's native `datetime()` function and `CURRENT_TIMESTAMP` (`YYYY-MM-DD HH:MM:SS`).
+     - See [GitLab merge request #94](https://gitlab.com/cznic/sqlite/-/merge_requests/94) and [GitLab merge request #95](https://gitlab.com/cznic/sqlite/-/merge_requests/95), thanks Josh Bleecher Snyder!
+
+ - 2026-03-17 v1.47.0: Add CGO-free version of the vector extensions from https://github.com/asg017/sqlite-vec. See `vec_test.go` for example usage. From the GitHub project page:
+     - **Important:** sqlite-vec is a pre-v1, so expect breaking changes!
+     - Store and query float, int8, and binary vectors in vec0 virtual tables
+     - Written in pure C, no dependencies, runs anywhere SQLite runs (Linux/MacOS/Windows, in the browser with WASM, Raspberry Pis, etc.)
+     - Store non-vector data in metadata, auxiliary, or partition key columns
+     - See [GitLab merge request #93](https://gitlab.com/cznic/sqlite/-/merge_requests/93), thanks Zhenghao Zhang!
+
+ - 2026-03-16 v1.46.2: Upgrade to  [SQLite 3.51.3](https://sqlite.org/releaselog/3_51_3.html).
+
  - 2026-02-17 v1.46.1:
      - Ensure connection state is reset if Tx.Commit fails. Previously, errors like SQLITE_BUSY during COMMIT could leave the underlying connection inside a transaction, causing errors when the connection was reused by the database/sql pool. The driver now detects this state and forces a rollback internally.
      - Fixes [GitHub issue #2](https://github.com/modernc-org/sqlite/issues/2), thanks Edoardo Spadolini!
+
  - 2026-02-17 v1.46.0:
      - Enable ColumnTypeScanType to report time.Time instead of string for TEXT columns declared as DATE, DATETIME, TIME, or TIMESTAMP via a new `_texttotime` URI parameter.
      - See [GitHub pull request #1](https://github.com/modernc-org/sqlite/pull/1), thanks devhaozi!

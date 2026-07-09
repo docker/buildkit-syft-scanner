@@ -28,8 +28,9 @@ import (
 	"os"
 	"unsafe"
 
-	dbi "github.com/anchore/go-rpmdb/pkg/db"
 	"golang.org/x/xerrors"
+
+	dbi "github.com/anchore/go-rpmdb/pkg/db"
 )
 
 /* The "New" Database format by RPM is currently not well documented outside

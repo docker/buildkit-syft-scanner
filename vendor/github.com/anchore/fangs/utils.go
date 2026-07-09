@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"regexp"
 	"runtime"
+	"slices"
 	"strings"
 )
 
@@ -25,12 +26,7 @@ func Flatten(commaSeparatedEntries ...string) []string {
 }
 
 func contains(parts []string, value string) bool {
-	for _, v := range parts {
-		if v == value {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(parts, value)
 }
 
 var envVarRegex = regexp.MustCompile("[^a-zA-Z0-9_]")

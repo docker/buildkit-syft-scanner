@@ -1,28 +1,21 @@
-#issues:
-#  # The list of ids of default excludes to include or disable.
-#  include:
-#    - EXC0002 # disable excluding of issues about comments from golint
-
+version: "2"
+run:
+  tests: false
 linters:
-  # inverted configuration with `enable-all` and `disable` is not scalable during updates of golangci-lint
-  disable-all: true
+  default: none
   enable:
     - asciicheck
     - bodyclose
-    - depguard
     - dogsled
     - dupl
     - errcheck
-    - exportloopref
     - funlen
     - gocognit
     - goconst
     - gocritic
     - gocyclo
-    - gofmt
     - goprintffuncname
     - gosec
-    - gosimple
     - govet
     - ineffassign
     - misspell
@@ -30,14 +23,41 @@ linters:
     - nolintlint
     - revive
     - staticcheck
-    - stylecheck
-    - typecheck
     - unconvert
     - unparam
     - unused
     - whitespace
+  settings:
+    funlen:
+      lines: 140
+      statements: 90
+    gocritic:
+      enabled-checks:
+        - deferInLoop
+    gosec:
+      excludes:
+        - G115
+    gocognit:
+      min-complexity: 80
+    gocyclo:
+      min-complexity: 50
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
 
 # do not enable...
+#    - deadcode          # The owner seems to have abandoned the linter. Replaced by "unused".
+#    - depguard          # We don't have a configuration for this yet
+#    - goprintffuncname  # does not catch all cases and there are exceptions
+#    - nakedret          # does not catch all cases and should not fail a build
 #    - gochecknoglobals
 #    - gochecknoinits    # this is too aggressive
 #    - rowserrcheck disabled per generics https://github.com/golangci/golangci-lint/issues/2649
@@ -51,28 +71,30 @@ linters:
 #    - lll         # without a way to specify per-line exception cases, this is not usable
 #    - maligned    # this is an excellent linter, but tricky to optimize and we are not sensitive to memory layout optimizations
 #    - nestif
-#    - prealloc    # following this rule isn't consistently a good idea, as it sometimes forces unnecessary allocations that result in less idiomatic code
-#    - scopelint   # deprecated
+#    - prealloc     # following this rule isn't consistently a good idea, as it sometimes forces unnecessary allocations that result in less idiomatic code
+#    - rowserrcheck # not in a repo with sql, so this is not useful
+#    - scopelint    # deprecated
+#    - structcheck  # The owner seems to have abandoned the linter. Replaced by "unused".
 #    - testpackage
-#    - wsl         # this doens't have an auto-fixer yet and is pretty noisy (https://github.com/bombsimon/wsl/issues/90)
+#    - varcheck     # The owner seems to have abandoned the linter. Replaced by "unused".
+#    - wsl          # this doens't have an auto-fixer yet and is pretty noisy (https://github.com/bombsimon/wsl/issues/90)
 
-linters-settings:
-  funlen:
-    # Checks the number of lines in a function.
-    # If lower than 0, disable the check.
-    # Default: 60
-    lines: 140
-    # Checks the number of statements in a function.
-    # If lower than 0, disable the check.
-    # Default: 40
-    statements: 100
+issues:
+  max-same-issues: 25
+  uniq-by-line: false
 
-  gocognit:
-    # Minimal code complexity to report
-    # Default: 30 (but we recommend 10-20)
-    min-complexity: 80
+# TODO: enable this when we have coverage on docstring comments
+#  # The list of ids of default excludes to include or disable.
+#  include:
+#    - EXC0002 # disable excluding of issues about comments from golint
 
-  gocyclo:
-    # Minimal code complexity to report.
-    # Default: 30 (but we recommend 10-20)
-    min-complexity: 50
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$

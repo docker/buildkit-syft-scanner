@@ -4,9 +4,11 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
+	iofs "io/fs"
 	"math"
 	"os"
 	"path"
+	"time"
 
 	"github.com/diskfs/go-diskfs/backend"
 	"github.com/diskfs/go-diskfs/filesystem"
@@ -276,10 +278,13 @@ func (fs *FileSystem) GetCacheSize() int {
 //
 // if readonly and not in workspace, will return an error
 func (fs *FileSystem) Mkdir(p string) error {
+	if err := validatePath(p); err != nil {
+		return err
+	}
 	if fs.workspace == "" {
 		return filesystem.ErrReadonlyFilesystem
 	}
-	err := os.MkdirAll(path.Join(fs.workspace, p), 0o755)
+	err := os.MkdirAll(workspacePath(fs.workspace, p), 0o755)
 	if err != nil {
 		return fmt.Errorf("could not create directory %s: %v", p, err)
 	}
@@ -315,11 +320,16 @@ func (fs *FileSystem) Symlink(oldpath, newpath string) error {
 
 // Chmod changes the mode of the named file to mode. If the file is a symbolic link,
 // it changes the mode of the link's target.
-//
-//nolint:revive // parameters will be used eventually
 func (fs *FileSystem) Chmod(name string, mode os.FileMode) error {
-	// https://dr-emann.github.io/squashfs/squashfs.html#_common_inode_header
-	return filesystem.ErrNotImplemented
+	if err := validatePath(name); err != nil {
+		return err
+	}
+
+	if fs.workspace == "" {
+		return filesystem.ErrReadonlyFilesystem
+	}
+
+	return os.Chmod(workspacePath(fs.workspace, name), mode)
 }
 
 // Chown changes the numeric uid and gid of the named file. If the file is a symbolic link,
@@ -331,41 +341,54 @@ func (fs *FileSystem) Chown(name string, uid, gid int) error {
 	return filesystem.ErrNotImplemented
 }
 
+// Chtimes changes the file creation, access and modification times
+//
+//nolint:revive // parameters will be used eventually
+func (fs *FileSystem) Chtimes(name string, ctime, atime, mtime time.Time) error {
+	return filesystem.ErrNotImplemented
+}
+
 // ReadDir return the contents of a given directory in a given filesystem.
 //
-// Returns a slice of os.FileInfo with all of the entries in the directory.
+// Returns a slice of fs.DirEntry with all of the entries in the directory.
 //
 // Will return an error if the directory does not exist or is a regular file and not a directory
-func (fs *FileSystem) ReadDir(p string) ([]os.FileInfo, error) {
-	var fi []os.FileInfo
+func (fs *FileSystem) ReadDir(p string) ([]iofs.DirEntry, error) {
+	// should not accept anything that starts with /
+	if err := validatePath(p); err != nil {
+		return nil, err
+	}
+	var de []iofs.DirEntry
 	// non-workspace: read from squashfs
 	// workspace: read from regular filesystem
 	if fs.workspace != "" {
-		fullPath := path.Join(fs.workspace, p)
+		fullPath := workspacePath(fs.workspace, p)
 		// read the entries
 		dirEntries, err := os.ReadDir(fullPath)
 		if err != nil {
 			return nil, fmt.Errorf("could not read directory %s: %v", p, err)
 		}
-		for _, e := range dirEntries {
-			info, err := e.Info()
-			if err != nil {
-				return nil, fmt.Errorf("could not read directory %s: %v", p, err)
-			}
-
-			fi = append(fi, info)
-		}
+		de = append(de, dirEntries...)
 	} else {
 		dirEntries, err := fs.readDirectory(p)
 		if err != nil {
 			return nil, fmt.Errorf("error reading directory %s: %v", p, err)
 		}
-		fi = make([]os.FileInfo, 0, len(dirEntries))
-		for _, entry := range dirEntries {
-			fi = append(fi, entry)
+		for _, e := range dirEntries {
+			de = append(de, e)
 		}
 	}
-	return fi, nil
+	return de, nil
+}
+
+// Open returns an fs.File from which you can read the contents of a file
+// Especially useful for doing fs.FS operations
+func (fs *FileSystem) Open(p string) (iofs.File, error) {
+	file, err := fs.OpenFile(p, os.O_RDONLY)
+	if err != nil {
+		return nil, err
+	}
+	return file, nil
 }
 
 // OpenFile returns an io.ReadWriter from which you can read the contents of a file
@@ -375,6 +398,10 @@ func (fs *FileSystem) ReadDir(p string) ([]os.FileInfo, error) {
 //
 // returns an error if the file does not exist
 func (fs *FileSystem) OpenFile(p string, flag int) (filesystem.File, error) {
+	// should not accept anything that starts with /
+	if err := validatePath(p); err != nil {
+		return nil, err
+	}
 	var f filesystem.File
 	var err error
 
@@ -382,39 +409,42 @@ func (fs *FileSystem) OpenFile(p string, flag int) (filesystem.File, error) {
 	dir := path.Dir(p)
 	filename := path.Base(p)
 
-	// if the dir == filename, then it is just /
-	if dir == filename {
-		return nil, fmt.Errorf("cannot open directory %s as file", p)
-	}
-
 	// cannot open to write or append or create if we do not have a workspace
 	writeMode := flag&os.O_WRONLY != 0 || flag&os.O_RDWR != 0 || flag&os.O_APPEND != 0 || flag&os.O_CREATE != 0 || flag&os.O_TRUNC != 0 || flag&os.O_EXCL != 0
 	if fs.workspace == "" {
 		if writeMode {
 			return nil, filesystem.ErrReadonlyFilesystem
 		}
-
-		// get the directory entries
-		var entries []*directoryEntry
-		entries, err = fs.readDirectory(dir)
-		if err != nil {
-			return nil, fmt.Errorf("could not read directory entries for %s", dir)
-		}
 		// we now know that the directory exists, see if the file exists
 		var targetEntry *directoryEntry
-		for _, e := range entries {
-			eName := e.Name()
-			// cannot do anything with directories
-			if eName == filename && e.IsDir() {
-				return nil, fmt.Errorf("cannot open directory %s as file", p)
+
+		// what if we asked for root?
+		if dir == filename && filename == "." {
+			targetEntry, err = fs.directoryEntryFromInode(".", fs.rootDir, true)
+			if err != nil {
+				return nil, fmt.Errorf("could not read root directory info: %v", err)
 			}
-			if eName == filename {
+		} else {
+			// get the directory entries
+			var entries []*directoryEntry
+			entries, err = fs.readDirectory(dir)
+			if err != nil {
+				return nil, fmt.Errorf("could not read directory entries for %s", dir)
+			}
+			for _, e := range entries {
+				eName := e.Name()
+				if eName != filename {
+					continue
+				}
+				// cannot do anything with directories
+				if e.IsDir() {
+					return nil, fmt.Errorf("cannot open directory %s as file", p)
+				}
 				// if we got this far, we have found the file
 				targetEntry = e
 				break
 			}
 		}
-
 		// see if the file exists
 		// if the file does not exist, and is not opened for os.O_CREATE, return an error
 		if targetEntry == nil {
@@ -425,7 +455,7 @@ func (fs *FileSystem) OpenFile(p string, flag int) (filesystem.File, error) {
 			return nil, err
 		}
 	} else {
-		f, err = os.OpenFile(path.Join(fs.workspace, p), flag, 0o644)
+		f, err = os.OpenFile(workspacePath(fs.workspace, p), flag, 0o644)
 		if err != nil {
 			return nil, fmt.Errorf("target file %s does not exist: %v", p, err)
 		}
@@ -434,19 +464,54 @@ func (fs *FileSystem) OpenFile(p string, flag int) (filesystem.File, error) {
 	return f, nil
 }
 
+// ReadFile implements ReadFileFS to read an entire file into memory
+func (fs *FileSystem) ReadFile(name string) ([]byte, error) {
+	f, err := fs.Open(name)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	return io.ReadAll(f)
+}
+
 // Rename renames (moves) oldpath to newpath. If newpath already exists and is not a directory, Rename replaces it.
 func (fs *FileSystem) Rename(oldpath, newpath string) error {
 	if fs.workspace == "" {
 		return filesystem.ErrReadonlyFilesystem
 	}
-	return os.Rename(path.Join(fs.workspace, oldpath), path.Join(fs.workspace, newpath))
+	return os.Rename(workspacePath(fs.workspace, oldpath), workspacePath(fs.workspace, newpath))
 }
 
 func (fs *FileSystem) Remove(p string) error {
 	if fs.workspace == "" {
 		return filesystem.ErrReadonlyFilesystem
 	}
-	return os.Remove(path.Join(fs.workspace, p))
+	return os.Remove(workspacePath(fs.workspace, p))
+}
+
+// Stat returns a FileInfo describing the file.
+func (fs *FileSystem) Stat(name string) (iofs.FileInfo, error) {
+	if err := validatePath(name); err != nil {
+		return nil, err
+	}
+	if name == "." {
+		if fs.workspace != "" {
+			return os.Stat(workspacePath(fs.workspace, name))
+		}
+		return fs.directoryEntryFromInode(".", fs.rootDir, true)
+	}
+	dir := path.Dir(name)
+	basename := path.Base(name)
+	des, err := fs.ReadDir(dir)
+	if err != nil {
+		return nil, fmt.Errorf("could not read directory %s: %v", dir, err)
+	}
+	for _, de := range des {
+		if de.Name() == basename {
+			return de.Info()
+		}
+	}
+	return nil, &iofs.PathError{Op: "stat", Path: name, Err: fmt.Errorf("file %s not found in directory %s", basename, dir)}
 }
 
 // readDirectory - read directory entry on squashfs only (not workspace)
@@ -494,7 +559,7 @@ func (fs *FileSystem) getDirectoryEntries(p string, in inode) ([]*directoryEntry
 	entriesRaw := dir.entries
 	var entries []*directoryEntry
 	// if this is the directory we are looking for, return the entries
-	if len(parts) == 0 {
+	if len(parts) == 0 || (len(parts) == 1 && parts[0] == ".") {
 		entries, err = fs.hydrateDirectoryEntries(entriesRaw)
 		if err != nil {
 			return nil, fmt.Errorf("could not populate directory entries for %s with properties: %v", p, err)
@@ -537,29 +602,38 @@ func (fs *FileSystem) hydrateDirectoryEntries(entries []*directoryEntryRaw) ([]*
 		if err != nil {
 			return nil, fmt.Errorf("error finding inode for %s: %v", e.name, err)
 		}
-		body, header := in.getBody(), in.getHeader()
-		xattrIndex, has := body.xattrIndex()
-		xattrs := map[string]string{}
-		if has {
-			xattrs, err = fs.xattrs.find(int(xattrIndex))
-			if err != nil {
-				return nil, fmt.Errorf("error reading xattrs for %s: %v", e.name, err)
-			}
+		entry, err := fs.directoryEntryFromInode(e.name, in, e.isSubdirectory)
+		if err != nil {
+			return nil, err
 		}
-		fullEntries = append(fullEntries, &directoryEntry{
-			fs:             fs,
-			isSubdirectory: e.isSubdirectory,
-			name:           e.name,
-			size:           body.size(),
-			modTime:        header.modTime,
-			mode:           header.mode,
-			inode:          in,
-			uid:            fs.uidsGids[header.uidIdx],
-			gid:            fs.uidsGids[header.gidIdx],
-			xattrs:         xattrs,
-		})
+		fullEntries = append(fullEntries, entry)
 	}
 	return fullEntries, nil
+}
+
+func (fs *FileSystem) directoryEntryFromInode(name string, in inode, isSubdirectory bool) (*directoryEntry, error) {
+	body, header := in.getBody(), in.getHeader()
+	xattrIndex, has := body.xattrIndex()
+	xattrs := map[string]string{}
+	if has {
+		var err error
+		xattrs, err = fs.xattrs.find(int(xattrIndex))
+		if err != nil {
+			return nil, fmt.Errorf("error reading xattrs for %s: %v", name, err)
+		}
+	}
+	return &directoryEntry{
+		fs:             fs,
+		isSubdirectory: isSubdirectory,
+		name:           name,
+		size:           body.size(),
+		modTime:        header.modTime,
+		mode:           header.mode,
+		inode:          in,
+		uid:            fs.uidsGids[header.uidIdx],
+		gid:            fs.uidsGids[header.gidIdx],
+		xattrs:         xattrs,
+	}, nil
 }
 
 // getInode read a single inode, given the block offset, and the offset in the
@@ -910,4 +984,10 @@ func readUidsGids(s *superblock, file backend.File, c Compressor) ([]uint32, err
 
 	// now have all of the data loaded
 	return parseIDTable(data), nil
+}
+func validatePath(name string) error {
+	if !iofs.ValidPath(name) {
+		return iofs.ErrInvalid
+	}
+	return nil
 }

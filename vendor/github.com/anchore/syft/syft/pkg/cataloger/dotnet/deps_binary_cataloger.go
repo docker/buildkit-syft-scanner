@@ -108,7 +108,7 @@ func (c depsBinaryCataloger) Catalog(_ context.Context, resolver file.Resolver) 
 			Name:      "Microsoft.NETCore.App",
 			Version:   version,
 			Type:      pkg.DotnetPkg,
-			CPEs:      runtimeCPEs(version),
+			CPEs:      runtimeCPEs("Microsoft.NETCore.App", version),
 			Locations: file.NewLocationSet(locs...),
 		}
 		pkgs = append(pkgs, rtp)
@@ -291,6 +291,14 @@ func packagesFromLogicalDepsJSON(doc logicalDepsJSON, config CatalogerConfig) (*
 			continue
 		}
 		lp := doc.PackagesByNameVersion[nameVersion]
+
+		if lp.Library != nil &&
+			lp.Library.Type == "referenceassembly" &&
+			lp.Library.Sha512 == "" &&
+			lp.Library.Path == "" {
+			skippedDepPkgs[nameVersion] = lp
+			continue
+		}
 
 		if config.ExcludeProjectReferences && lp.Library != nil && lp.Library.Type == "project" {
 			skippedDepPkgs[nameVersion] = lp

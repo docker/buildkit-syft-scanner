@@ -81,7 +81,7 @@ func versionInfo(info runtimeInfo, format string, additions ...versionAddition) 
 		}
 
 		appendLine(buf, "Application", pad, info.Name)
-		appendLine(buf, "Version", pad, info.Identification.Version)
+		appendLine(buf, "Version", pad, info.Version)
 		appendLine(buf, "BuildDate", pad, info.BuildDate)
 		appendLine(buf, "GitCommit", pad, info.GitCommit)
 		appendLine(buf, "GitDescription", pad, info.GitDescription)

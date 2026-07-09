@@ -269,7 +269,6 @@ func hdrblobVerifyRegion(blob *hdrblob, data []byte) error {
 	if einfo.Tag == RPMTAG_HEADERIMAGE ||
 		einfo.Tag == RPMTAG_HEADERSIGNATURES ||
 		einfo.Tag == RPMTAG_HEADERIMMUTABLE {
-
 		regionTag = einfo.Tag
 	}
 
@@ -277,7 +276,7 @@ func hdrblobVerifyRegion(blob *hdrblob, data []byte) error {
 		return nil
 	}
 
-	if !(einfo.Type == REGION_TAG_TYPE && einfo.Count == uint32(REGION_TAG_COUNT)) {
+	if einfo.Type != REGION_TAG_TYPE || einfo.Count != uint32(REGION_TAG_COUNT) {
 		return xerrors.New("invalid region tag")
 	}
 
@@ -301,7 +300,7 @@ func hdrblobVerifyRegion(blob *hdrblob, data []byte) error {
 		einfo.Tag = RPMTAG_HEADERSIGNATURES
 	}
 
-	if !(einfo.Tag == regionTag && einfo.Type == REGION_TAG_TYPE && einfo.Count == uint32(REGION_TAG_COUNT)) {
+	if einfo.Tag != regionTag || einfo.Type != REGION_TAG_TYPE || einfo.Count != uint32(REGION_TAG_COUNT) {
 		return xerrors.New("invalid region trailer")
 	}
 

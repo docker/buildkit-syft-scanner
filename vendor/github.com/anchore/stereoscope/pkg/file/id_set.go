@@ -1,7 +1,6 @@
-//nolint:dupl
 package file
 
-import "sort"
+import "slices"
 
 type IDSet map[ID]struct{}
 
@@ -54,9 +53,7 @@ func (s IDSet) List() []ID {
 func (s IDSet) Sorted() []ID {
 	ids := s.List()
 
-	sort.Slice(ids, func(i, j int) bool {
-		return ids[i] < ids[j]
-	})
+	slices.Sort(ids)
 
 	return ids
 }
