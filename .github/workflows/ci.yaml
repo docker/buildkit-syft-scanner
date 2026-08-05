@@ -31,12 +31,12 @@ jobs:
       - run: echo "Exposing env vars for reusable workflow"
 
   build:
-    uses: docker/github-builder/.github/workflows/bake.yml@27ade872c1e2296e62ef15ab3b10d37665e57cf7 # v1.15.0
+    uses: docker/github-builder/.github/workflows/bake.yml@a492c6d04fd3315f67230809b44d60cc0acd50b3 # v1.16.0
     needs:
       - build-prepare
     permissions:
       contents: read # same as global permission
-      id-token: write # for signing attestation(s) with GitHub OIDC Token
+      id-token: write # for signing attestations, cache entries and logging in to Docker Hub with GitHub OIDC
     with:
       setup-qemu: true
       target: image-all
@@ -59,11 +59,11 @@ jobs:
         org.opencontainers.image.description=SBOM generation for BuildKit images
         org.opencontainers.image.vendor=Docker Inc.
       meta-bake-target: meta-helper
-    secrets:
-      registry-auths: |
-        - registry: docker.io
-          username: ${{ vars.DOCKERPUBLICBOT_USERNAME }}
-          password: ${{ secrets.DOCKERPUBLICBOT_WRITE_PAT }}
+      registry-identities: |
+        - type: dockerhub
+          registry: docker.io
+          username: docker
+          connection_id: ${{ vars.DOCKERHUB_OIDC_CONNECTIONID }}
 
   dockerhub-readme:
     runs-on: ubuntu-latest
