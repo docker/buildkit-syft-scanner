@@ -17,6 +17,7 @@
 ARG GO_VERSION="1.26"
 ARG ALPINE_VERSION="3.23"
 ARG XX_VERSION="1.9.0"
+ARG WINDOWS_VERSION="ltsc2025"
 
 FROM --platform=$BUILDPLATFORM tonistiigi/xx:${XX_VERSION} AS xx
 
@@ -46,12 +47,24 @@ RUN --mount=type=bind,target=. \
     --mount=type=bind,from=version,source=/tmp/.ldflags,target=/tmp/.ldflags \
     --mount=type=cache,target=/root/.cache <<EOT
   set -ex
+  case "$(xx-info os)" in
+    windows) out=/usr/local/bin/syft-scanner.exe ;;
+    *) out=/usr/local/bin/syft-scanner ;;
+  esac
   xx-go version
-  xx-go build -trimpath -ldflags "$(cat /tmp/.ldflags)" -o /usr/local/bin/syft-scanner ./cmd/syft-scanner
-  xx-verify --static /usr/local/bin/syft-scanner
+  xx-go build -trimpath -ldflags "$(cat /tmp/.ldflags)" -o "$out" ./cmd/syft-scanner
+  xx-verify --static "$out"
 EOT
 
-FROM scratch
+FROM scratch AS linux
 COPY --from=build /usr/local/bin/syft-scanner /bin/syft-scanner
 ENV LOG_LEVEL="warn"
 ENTRYPOINT [ "/bin/syft-scanner" ]
+
+FROM --platform=windows/amd64 mcr.microsoft.com/windows/nanoserver:${WINDOWS_VERSION} AS windows
+COPY --from=build /usr/local/bin/syft-scanner.exe /syft-scanner.exe
+ENV LOG_LEVEL="warn"
+ENTRYPOINT [ "C:\\syft-scanner.exe" ]
+
+ARG TARGETOS
+FROM ${TARGETOS}
