@@ -53,6 +53,38 @@ func newDriver() *Driver { return d }
 // keyword added for you). May be specified more than once, '&'-separated. For more
 // information on supported PRAGMAs see: https://www.sqlite.org/pragma.html
 //
+// The following shorthand keys set common PRAGMAs for easier DSN compatibility
+// when migrating from github.com/mattn/go-sqlite3. Each value is validated
+// against the same set github.com/mattn/go-sqlite3 accepts (case-insensitive);
+// an unrecognized value fails the connection with an error instead of being
+// silently ignored. The keys are applied in a fixed order, independent of the
+// order they appear in the DSN: _busy_timeout and _auto_vacuum first (auto_vacuum
+// must be set before the database is first written), then the _pragma values,
+// then the remaining keys, and _query_only last. Where a shorthand key and a
+// _pragma set the same PRAGMA, whichever is applied later in that order wins. If
+// a key and its alias are both supplied, the alias (the second name below) wins,
+// matching github.com/mattn/go-sqlite3; supplying the alias with an empty value
+// therefore suppresses the PRAGMA rather than deferring to the primary key.
+// Accepted values:
+//
+//	_busy_timeout, _timeout   -> PRAGMA busy_timeout   (an integer)
+//	_foreign_keys, _fk        -> PRAGMA foreign_keys   (0 1 false true no yes off on)
+//	_journal_mode, _journal   -> PRAGMA journal_mode   (DELETE TRUNCATE PERSIST MEMORY WAL OFF)
+//	_synchronous, _sync       -> PRAGMA synchronous    (0 OFF 1 NORMAL 2 FULL 3 EXTRA)
+//	_auto_vacuum, _vacuum     -> PRAGMA auto_vacuum    (0 NONE 1 FULL 2 INCREMENTAL)
+//	_query_only               -> PRAGMA query_only     (0 1 false true no yes off on)
+//
+// All DSN parameters that can be validated are validated before any of them is
+// applied, so a DSN carrying a typo fails without having executed the PRAGMAs
+// that precede it -- a rejected DSN does not leave the database converted to WAL
+// or with auto_vacuum already set.
+//
+// Unlike these validated shorthand keys, each _pragma value is executed verbatim
+// (with PRAGMA prepended) and is not validated, so a DSN that includes _pragma
+// must come from a trusted source. It is also the one case that can still fail
+// partway: a bad _pragma is only rejected by SQLite as it runs, after any
+// earlier _pragma in the list has taken effect.
+//
 // _time_format: The name of a format to use when writing time values to the database.
 // The currently supported values are (1) "sqlite" for YYYY-MM-DD HH:MM:SS.SSS[+-]HH:MM
 // (format 4 from https://www.sqlite.org/lang_datefunc.html#time_values with sub-second
@@ -74,7 +106,15 @@ func newDriver() *Driver { return d }
 // to time if the field contain integer (int64).
 //
 // _texttotime: Enable ColumnTypeScanType to report time.Time instead of string
-// for TEXT columns declared as DATE, DATETIME, TIME, or TIMESTAMP.
+// for TEXT columns declared as DATE, DATETIME, TIME, or TIMESTAMP. It also
+// best-effort upgrades date-shaped TEXT values from columns SQLite reports with
+// an empty declared type (aggregates and expressions such as MAX(d) or
+// upper(d), subqueries, and typeless real columns) to time.Time, since the
+// declared-type test cannot catch those (#248). When that upgrade fires, a Scan
+// into interface{} yields a time.Time where it previously yielded a string, and
+// a Scan into *string receives the value reformatted to RFC3339Nano rather than
+// the raw stored text. A value that does not parse as a time is delivered
+// unchanged as the original string.
 //
 // _timezone: A timezone to use for all time reads and writes, such as "UTC".
 // The value is parsed by time.LoadLocation.
@@ -87,6 +127,34 @@ func newDriver() *Driver { return d }
 // _txlock: The locking behavior to use when beginning a transaction. May be
 // "deferred" (the default), "immediate", or "exclusive" (case insensitive). See:
 // https://www.sqlite.org/lang_transaction.html#deferred_immediate_and_exclusive_transactions
+//
+// _dqs: Opt-in toggle for SQLite's double-quoted string literal
+// compatibility quirk on the connection. Accepts the values strconv.ParseBool
+// understands ("0"/"1", "false"/"true", "f"/"t", case-insensitive). When
+// absent or set to a true value, SQLite's built-in behavior is unchanged:
+// a double-quoted identifier that fails to resolve is silently
+// re-interpreted as a string literal. When set to a false value,
+// SQLITE_DBCONFIG_DQS_DDL and SQLITE_DBCONFIG_DQS_DML are both turned
+// off via sqlite3_db_config so that mistakes hidden by the legacy
+// fallback surface as a parse error instead. See:
+// https://www.sqlite.org/quirks.html#dblquote and
+// https://gitlab.com/cznic/sqlite/-/issues/61
+//
+// _error_rc: Opt-in error-string reporting mode for synthesised errors.
+// Accepts the values strconv.ParseBool understands ("0"/"1",
+// "false"/"true", "f"/"t", case-insensitive). When absent or set to a
+// false value, the legacy "errstr: errmsg (rc)" form is preserved
+// byte-for-byte: the canonical sqlite3_errstr(rc) and the connection's
+// sqlite3_errmsg(db) are concatenated even when the latter belongs to a
+// different operation, which can read as misleading on open-time
+// failures such as SQLITE_CANTOPEN reporting "out of memory". When set
+// to a true value, the appended errmsg is suppressed if
+// sqlite3_extended_errcode(db) is inconsistent with the operation rc
+// (full match first, primary code as fallback); in that case the
+// canonical errstr(rc) is used alone. The Code() returned by the
+// driver's *Error is unchanged in either mode. The parameter is parsed
+// before sqlite3_open_v2 so open-time errors are covered. See
+// https://gitlab.com/cznic/sqlite/-/issues/230.
 func (d *Driver) Open(name string) (conn driver.Conn, err error) {
 	if dmesgs {
 		defer func() {
