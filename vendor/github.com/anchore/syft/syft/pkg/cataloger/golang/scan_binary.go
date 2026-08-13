@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"runtime/debug"
+	"strings"
 
 	"github.com/kastenhq/goversion/version"
 
@@ -18,10 +19,11 @@ type extendedBuildInfo struct {
 	*debug.BuildInfo
 	cryptoSettings []string
 	arch           string
+	symbols        []binarySymbol
 }
 
 // scanFile scans file to try to report the Go and module versions.
-func scanFile(location file.Location, reader unionreader.UnionReader) ([]*extendedBuildInfo, error) {
+func scanFile(location file.Location, reader unionreader.UnionReader, captureSymbols bool) ([]*extendedBuildInfo, error) {
 	// NOTE: multiple readers are returned to cover universal binaries, which are files
 	// with more than one binary
 	readers, errs := unionreader.GetReaders(reader)
@@ -50,6 +52,7 @@ func scanFile(location file.Location, reader unionreader.UnionReader) ([]*extend
 			// we can still catalog packages, even if we can't get the crypto information
 			errs = unknown.Appendf(errs, location, "unable to read golang version info: %w", err)
 		}
+		v = append(v, getNativeFIPSSettings(bi.Settings)...)
 		arch := getGOARCH(bi.Settings)
 		if arch == "" {
 			arch, err = getGOARCHFromBin(r)
@@ -61,7 +64,18 @@ func scanFile(location file.Location, reader unionreader.UnionReader) ([]*extend
 			}
 		}
 
-		builds = append(builds, &extendedBuildInfo{BuildInfo: bi, cryptoSettings: v, arch: arch})
+		var symbols []binarySymbol
+		if captureSymbols {
+			symbols, err = getSymbols(r)
+			if err != nil {
+				log.WithFields("file", location.RealPath, "error", err).Trace("unable to read golang symbol info")
+				// don't skip this build info.
+				// we can still catalog packages, even if we can't get the symbol information
+				errs = unknown.Appendf(errs, location, "unable to read golang symbol info: %w", err)
+			}
+		}
+
+		builds = append(builds, &extendedBuildInfo{BuildInfo: bi, cryptoSettings: v, arch: arch, symbols: symbols})
 	}
 	return builds, errs
 }
@@ -85,6 +99,25 @@ func getCryptoSettingsFromVersion(v version.Version) []string {
 	}
 	if v.FIPSOnly {
 		cryptoSettings = append(cryptoSettings, "crypto/tls/fipsonly")
+	}
+	return cryptoSettings
+}
+
+func getNativeFIPSSettings(settings []debug.BuildSetting) []string {
+	var cryptoSettings []string
+	for _, s := range settings {
+		switch s.Key {
+		case "GOFIPS140":
+			if s.Value != "" {
+				cryptoSettings = append(cryptoSettings, "GOFIPS140="+s.Value)
+			}
+		case "DefaultGODEBUG":
+			for _, kv := range strings.Split(s.Value, ",") {
+				if setting, val, ok := strings.Cut(kv, "="); ok && setting == "fips140" {
+					cryptoSettings = append(cryptoSettings, "GODEBUG=fips140="+val)
+				}
+			}
+		}
 	}
 	return cryptoSettings
 }
