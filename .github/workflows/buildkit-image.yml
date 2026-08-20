@@ -36,6 +36,9 @@ env:
 jobs:
   create:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read # same as global permission
+      id-token: write # for logging in to Docker Hub with GitHub OIDC
     steps:
       -
         name: Set up Docker Buildx
