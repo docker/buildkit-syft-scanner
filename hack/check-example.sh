@@ -21,13 +21,17 @@ GENERATOR=$1
 for example in "${@:2}"; do
   example=$(basename "$example")
   selectCatalogers=""
+  fileMetadata=""
   echo "[-] Building example ${example}..."
 
   if [ "${example}" = "npm-lock" ]; then
     selectCatalogers=",SELECT_CATALOGERS=+javascript-lock-cataloger"
   fi
+  if [ "${example}" = "file-metadata-none" ]; then
+    fileMetadata=",FILE_METADATA=none"
+  fi
 
-  (set -x ; docker buildx build "./examples/${example}" --sbom="generator=${GENERATOR}${selectCatalogers}" --output="./examples/${example}/build")
+  (set -x ; docker buildx build "./examples/${example}" --sbom="generator=${GENERATOR}${selectCatalogers}${fileMetadata}" --output="./examples/${example}/build")
 
   echo "[-] Checking example ${example}..."
   for file in "./examples/${example}"/checks/*.json; do
