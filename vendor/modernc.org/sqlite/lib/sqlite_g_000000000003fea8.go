@@ -261,16 +261,6 @@ func _chacha_block(tls *libc.TLS, out uintptr, in uintptr) {
 // C documentation
 //
 //	/*
-//	** Put the DateTime object into its error state.
-//	*/
-func _datetimeError(tls *libc.TLS, p uintptr) {
-	libc.Xmemset(tls, p, 0, uint64(48))
-	libc.SetBitFieldPtr8Uint32(p+44, libc.Uint32FromInt32(1), 1, 0x2)
-}
-
-// C documentation
-//
-//	/*
 //	** Open a new dbpagevfs cursor.
 //	*/
 func _dbpageOpen(tls *libc.TLS, pVTab uintptr, ppCursor uintptr) (r int32) {
@@ -615,6 +605,10 @@ func _fts5SegIterNextInit(tls *libc.TLS, p uintptr, pTerm uintptr, nTerm int32, 
 		**(**int32)(__ccgo_up(bp)) = 0
 		(*TFts5SegIter)(unsafe.Pointer(pIter)).FiPgidxOff = (*TFts5Data)(unsafe.Pointer((*TFts5SegIter)(unsafe.Pointer(pIter)).FpLeaf)).FszLeaf
 		**(**int32)(__ccgo_up(pIter + 64)) += _sqlite3Fts5GetVarint32(tls, a+uintptr((*TFts5SegIter)(unsafe.Pointer(pIter)).FiPgidxOff), bp)
+		if **(**int32)(__ccgo_up(bp)) > (*TFts5Data)(unsafe.Pointer((*TFts5SegIter)(unsafe.Pointer(pIter)).FpLeaf)).FszLeaf {
+			(*TFts5Index)(unsafe.Pointer(p)).Frc = libc.Int32FromInt32(SQLITE_CORRUPT) | libc.Int32FromInt32(1)<<libc.Int32FromInt32(8)
+			return
+		}
 		(*TFts5SegIter)(unsafe.Pointer(pIter)).FiLeafOffset = int64(**(**int32)(__ccgo_up(bp)))
 		_fts5SegIterLoadTerm(tls, p, pIter, 0)
 		_fts5SegIterLoadNPos(tls, p, pIter)
@@ -1395,138 +1389,6 @@ func _recomputeColumnsUsed(tls *libc.TLS, pSelect uintptr, pSrcItem uintptr) {
 // C documentation
 //
 //	/*
-//	** Resolve all symbols in the trigger at pParse->pNewTrigger, assuming
-//	** it was read from the schema of database zDb. Return SQLITE_OK if
-//	** successful. Otherwise, return an SQLite error code and leave an error
-//	** message in the Parse object.
-//	*/
-func _renameResolveTrigger(tls *libc.TLS, pParse uintptr) (r int32) {
-	bp := tls.Alloc(64)
-	defer tls.Free(64)
-	var db, p, pNew, pSel, pSrc, pStep, pUpsert, pUpsertSet uintptr
-	var i, rc, v2 int32
-	var _ /* sNC at bp+0 */ TNameContext
-	_, _, _, _, _, _, _, _, _, _, _ = db, i, p, pNew, pSel, pSrc, pStep, pUpsert, pUpsertSet, rc, v2
-	db = (*TParse)(unsafe.Pointer(pParse)).Fdb
-	pNew = (*TParse)(unsafe.Pointer(pParse)).FpNewTrigger
-	rc = SQLITE_OK
-	libc.Xmemset(tls, bp, 0, uint64(56))
-	(**(**TNameContext)(__ccgo_up(bp))).FpParse = pParse
-	(*TParse)(unsafe.Pointer(pParse)).FpTriggerTab = _sqlite3FindTable(tls, db, (*TTrigger)(unsafe.Pointer(pNew)).Ftable, (**(**TDb)(__ccgo_up((*Tsqlite3)(unsafe.Pointer(db)).FaDb + uintptr(_sqlite3SchemaToIndex(tls, db, (*TTrigger)(unsafe.Pointer(pNew)).FpTabSchema))*32))).FzDbSName)
-	(*TParse)(unsafe.Pointer(pParse)).FeTriggerOp = (*TTrigger)(unsafe.Pointer(pNew)).Fop
-	/* ALWAYS() because if the table of the trigger does not exist, the
-	 ** error would have been hit before this point */
-	if (*TParse)(unsafe.Pointer(pParse)).FpTriggerTab != 0 {
-		rc = libc.BoolInt32(_sqlite3ViewGetColumnNames(tls, pParse, (*TParse)(unsafe.Pointer(pParse)).FpTriggerTab) != 0)
-	}
-	/* Resolve symbols in WHEN clause */
-	if rc == SQLITE_OK && (*TTrigger)(unsafe.Pointer(pNew)).FpWhen != 0 {
-		rc = _sqlite3ResolveExprNames(tls, bp, (*TTrigger)(unsafe.Pointer(pNew)).FpWhen)
-	}
-	pStep = (*TTrigger)(unsafe.Pointer(pNew)).Fstep_list
-	for {
-		if !(rc == SQLITE_OK && pStep != 0) {
-			break
-		}
-		if (*TTriggerStep)(unsafe.Pointer(pStep)).FpSelect != 0 {
-			_sqlite3SelectPrep(tls, pParse, (*TTriggerStep)(unsafe.Pointer(pStep)).FpSelect, bp)
-			if (*TParse)(unsafe.Pointer(pParse)).FnErr != 0 {
-				rc = (*TParse)(unsafe.Pointer(pParse)).Frc
-			}
-		}
-		if rc == SQLITE_OK && (*TTriggerStep)(unsafe.Pointer(pStep)).FpSrc != 0 {
-			pSrc = _sqlite3SrcListDup(tls, db, (*TTriggerStep)(unsafe.Pointer(pStep)).FpSrc, 0)
-			if pSrc != 0 {
-				pSel = _sqlite3SelectNew(tls, pParse, (*TTriggerStep)(unsafe.Pointer(pStep)).FpExprList, pSrc, uintptr(0), uintptr(0), uintptr(0), uintptr(0), uint32(0), uintptr(0))
-				if pSel == uintptr(0) {
-					(*TTriggerStep)(unsafe.Pointer(pStep)).FpExprList = uintptr(0)
-					pSrc = uintptr(0)
-					rc = int32(SQLITE_NOMEM)
-				} else {
-					/* pStep->pExprList contains an expression-list used for an UPDATE
-					 ** statement. So the a[].zEName values are the RHS of the
-					 ** "<col> = <expr>" clauses of the UPDATE statement. So, before
-					 ** running SelectPrep(), change all the eEName values in
-					 ** pStep->pExprList to ENAME_SPAN (from their current value of
-					 ** ENAME_NAME). This is to prevent any ids in ON() clauses that are
-					 ** part of pSrc from being incorrectly resolved against the
-					 ** a[].zEName values as if they were column aliases.  */
-					_renameSetENames(tls, (*TTriggerStep)(unsafe.Pointer(pStep)).FpExprList, int32(ENAME_SPAN))
-					_sqlite3SelectPrep(tls, pParse, pSel, uintptr(0))
-					_renameSetENames(tls, (*TTriggerStep)(unsafe.Pointer(pStep)).FpExprList, ENAME_NAME)
-					if (*TParse)(unsafe.Pointer(pParse)).FnErr != 0 {
-						v2 = int32(SQLITE_ERROR)
-					} else {
-						v2 = SQLITE_OK
-					}
-					rc = v2
-					if (*TTriggerStep)(unsafe.Pointer(pStep)).FpExprList != 0 {
-						(*TSelect)(unsafe.Pointer(pSel)).FpEList = uintptr(0)
-					}
-					(*TSelect)(unsafe.Pointer(pSel)).FpSrc = uintptr(0)
-					_sqlite3SelectDelete(tls, db, pSel)
-				}
-				if (*TTriggerStep)(unsafe.Pointer(pStep)).FpSrc != 0 {
-					i = 0
-					for {
-						if !(i < (*TSrcList)(unsafe.Pointer((*TTriggerStep)(unsafe.Pointer(pStep)).FpSrc)).FnSrc && rc == SQLITE_OK) {
-							break
-						}
-						p = (*TTriggerStep)(unsafe.Pointer(pStep)).FpSrc + 8 + uintptr(i)*80
-						if int32(*(*uint32)(unsafe.Pointer(p + 24 + 4))&0x4>>2) != 0 {
-							_sqlite3SelectPrep(tls, pParse, (*TSubquery)(unsafe.Pointer(*(*uintptr)(unsafe.Pointer(p + 72)))).FpSelect, uintptr(0))
-						}
-						goto _3
-					_3:
-						;
-						i = i + 1
-					}
-				}
-				if (*Tsqlite3)(unsafe.Pointer(db)).FmallocFailed != 0 {
-					rc = int32(SQLITE_NOMEM)
-				}
-				(**(**TNameContext)(__ccgo_up(bp))).FpSrcList = pSrc
-				if rc == SQLITE_OK && (*TTriggerStep)(unsafe.Pointer(pStep)).FpWhere != 0 {
-					rc = _sqlite3ResolveExprNames(tls, bp, (*TTriggerStep)(unsafe.Pointer(pStep)).FpWhere)
-				}
-				if rc == SQLITE_OK {
-					rc = _sqlite3ResolveExprListNames(tls, bp, (*TTriggerStep)(unsafe.Pointer(pStep)).FpExprList)
-				}
-				if (*TTriggerStep)(unsafe.Pointer(pStep)).FpUpsert != 0 && rc == SQLITE_OK {
-					pUpsert = (*TTriggerStep)(unsafe.Pointer(pStep)).FpUpsert
-					(*TUpsert)(unsafe.Pointer(pUpsert)).FpUpsertSrc = pSrc
-					*(*uintptr)(unsafe.Pointer(bp + 16)) = pUpsert
-					(**(**TNameContext)(__ccgo_up(bp))).FncFlags = int32(NC_UUpsert)
-					rc = _sqlite3ResolveExprListNames(tls, bp, (*TUpsert)(unsafe.Pointer(pUpsert)).FpUpsertTarget)
-					if rc == SQLITE_OK {
-						pUpsertSet = (*TUpsert)(unsafe.Pointer(pUpsert)).FpUpsertSet
-						rc = _sqlite3ResolveExprListNames(tls, bp, pUpsertSet)
-					}
-					if rc == SQLITE_OK {
-						rc = _sqlite3ResolveExprNames(tls, bp, (*TUpsert)(unsafe.Pointer(pUpsert)).FpUpsertWhere)
-					}
-					if rc == SQLITE_OK {
-						rc = _sqlite3ResolveExprNames(tls, bp, (*TUpsert)(unsafe.Pointer(pUpsert)).FpUpsertTargetWhere)
-					}
-					(**(**TNameContext)(__ccgo_up(bp))).FncFlags = 0
-				}
-				(**(**TNameContext)(__ccgo_up(bp))).FpSrcList = uintptr(0)
-				_sqlite3SrcListDelete(tls, db, pSrc)
-			} else {
-				rc = int32(SQLITE_NOMEM)
-			}
-		}
-		goto _1
-	_1:
-		;
-		pStep = (*TTriggerStep)(unsafe.Pointer(pStep)).FpNext
-	}
-	return rc
-}
-
-// C documentation
-//
-//	/*
 //	** Iterate through the Select objects that are part of WITH clauses attached
 //	** to select statement pSelect.
 //	*/
@@ -2200,39 +2062,6 @@ func _sqlite3RenameExprUnmap(tls *libc.TLS, pParse uintptr, pExpr uintptr) {
 // C documentation
 //
 //	/*
-//	** Remove all nodes that are part of expression-list pEList from the
-//	** rename list.
-//	*/
-func _sqlite3RenameExprlistUnmap(tls *libc.TLS, pParse uintptr, pEList uintptr) {
-	bp := tls.Alloc(48)
-	defer tls.Free(48)
-	var i int32
-	var _ /* sWalker at bp+0 */ TWalker
-	_ = i
-	if pEList != 0 {
-		libc.Xmemset(tls, bp, 0, uint64(48))
-		(**(**TWalker)(__ccgo_up(bp))).FpParse = pParse
-		(**(**TWalker)(__ccgo_up(bp))).FxExprCallback = __ccgo_fp(_renameUnmapExprCb)
-		_sqlite3WalkExprList(tls, bp, pEList)
-		i = 0
-		for {
-			if !(i < (*TExprList)(unsafe.Pointer(pEList)).FnExpr) {
-				break
-			}
-			if int32(uint32(*(*uint16)(unsafe.Pointer(pEList + 8 + uintptr(i)*32 + 16 + 4))&0x3>>0)) == ENAME_NAME {
-				_sqlite3RenameTokenRemap(tls, pParse, uintptr(0), (*(*TExprList_item)(unsafe.Pointer(pEList + 8 + uintptr(i)*32))).FzEName)
-			}
-			goto _1
-		_1:
-			;
-			i = i + 1
-		}
-	}
-}
-
-// C documentation
-//
-//	/*
 //	** Resolve names in expressions that can only reference a single table
 //	** or which cannot reference any tables at all.  Examples:
 //	**
@@ -2288,54 +2117,6 @@ func _sqlite3ResolveSelfReference(tls *libc.TLS, pParse uintptr, pTab uintptr, t
 		rc = _sqlite3ResolveExprListNames(tls, bp, pList)
 	}
 	return rc
-}
-
-// C documentation
-//
-//	/*
-//	** Attach a Subquery object to pItem->uv.pSubq.  Set the
-//	** pSelect value but leave all the other values initialized
-//	** to zero.
-//	**
-//	** A copy of the Select object is made if dupSelect is true, and the
-//	** SrcItem takes responsibility for deleting the copy.  If dupSelect is
-//	** false, ownership of the Select passes to the SrcItem.  Either way,
-//	** the SrcItem will take responsibility for deleting the Select.
-//	**
-//	** When dupSelect is zero, that means the Select might get deleted right
-//	** away if there is an OOM error.  Beware.
-//	**
-//	** Return non-zero on success.  Return zero on an OOM error.
-//	*/
-func _sqlite3SrcItemAttachSubquery(tls *libc.TLS, pParse uintptr, pItem uintptr, pSelect uintptr, dupSelect int32) (r int32) {
-	var p, v1 uintptr
-	_, _ = p, v1
-	if int32(*(*uint32)(unsafe.Pointer(pItem + 24 + 4))&0x10000>>16) != 0 {
-		*(*uintptr)(unsafe.Pointer(pItem + 72)) = uintptr(0)
-		libc.SetBitFieldPtr32Uint32(pItem+24+4, libc.Uint32FromInt32(0), 16, 0x10000)
-	} else {
-		if *(*uintptr)(unsafe.Pointer(pItem + 72)) != uintptr(0) {
-			_sqlite3DbFree(tls, (*TParse)(unsafe.Pointer(pParse)).Fdb, *(*uintptr)(unsafe.Pointer(pItem + 72)))
-			*(*uintptr)(unsafe.Pointer(pItem + 72)) = uintptr(0)
-		}
-	}
-	if dupSelect != 0 {
-		pSelect = _sqlite3SelectDup(tls, (*TParse)(unsafe.Pointer(pParse)).Fdb, pSelect, 0)
-		if pSelect == uintptr(0) {
-			return 0
-		}
-	}
-	v1 = _sqlite3DbMallocRawNN(tls, (*TParse)(unsafe.Pointer(pParse)).Fdb, uint64(24))
-	*(*uintptr)(unsafe.Pointer(pItem + 72)) = v1
-	p = v1
-	if p == uintptr(0) {
-		_sqlite3SelectDelete(tls, (*TParse)(unsafe.Pointer(pParse)).Fdb, pSelect)
-		return 0
-	}
-	libc.SetBitFieldPtr32Uint32(pItem+24+4, libc.Uint32FromInt32(1), 2, 0x4)
-	(*TSubquery)(unsafe.Pointer(p)).FpSelect = pSelect
-	libc.Xmemset(tls, p+uintptr(8), 0, libc.Uint64FromInt64(24)-libc.Uint64FromInt64(8))
-	return int32(1)
 }
 
 // C documentation
@@ -2509,6 +2290,98 @@ func _sqlite3VdbeSwap(tls *libc.TLS, pA uintptr, pB uintptr) {
 	**(**Tu32)(__ccgo_up(pB + 212 + 5*4)) = **(**Tu32)(__ccgo_up(pB + 212 + 5*4)) + 1
 }
 
+func _sqlite3WalCheckpoint(tls *libc.TLS, pWal uintptr, db uintptr, eMode int32, __ccgo_fp_xBusy uintptr, pBusyArg uintptr, sync_flags int32, nBuf int32, zBuf uintptr, pnLog uintptr, pnCkpt uintptr) (r int32) {
+	bp := tls.Alloc(96)
+	defer tls.Free(96)
+	var eMode2, rc, v1 int32
+	var xBusy2 uintptr
+	var _ /* a at bp+8 */ TWalSehCheckpoint
+	var _ /* isChanged at bp+0 */ int32
+	_, _, _, _ = eMode2, rc, xBusy2, v1 /* Return code */
+	**(**int32)(__ccgo_up(bp)) = 0      /* True if a new wal-index header is loaded */
+	eMode2 = eMode                      /* Mode to pass to walCheckpoint() */
+	xBusy2 = __ccgo_fp_xBusy            /* Busy handler for eMode2 */
+	/* EVIDENCE-OF: R-62920-47450 The busy-handler callback is never invoked
+	 ** in the SQLITE_CHECKPOINT_PASSIVE mode. */
+	if (*TWal)(unsafe.Pointer(pWal)).FreadOnly != 0 {
+		return int32(SQLITE_READONLY)
+	}
+	/* Enable blocking locks, if possible. */
+	if xBusy2 != 0 {
+	}
+	/* IMPLEMENTATION-OF: R-62028-47212 All calls obtain an exclusive
+	 ** "checkpoint" lock on the database file.
+	 ** EVIDENCE-OF: R-10421-19736 If any other process is running a
+	 ** checkpoint operation at the same time, the lock cannot be obtained and
+	 ** SQLITE_BUSY is returned.
+	 ** EVIDENCE-OF: R-53820-33897 Even if there is a busy-handler configured,
+	 ** it will not be invoked in this case.
+	 */
+	if eMode != -int32(1) {
+		rc = _walLockExclusive(tls, pWal, int32(WAL_CKPT_LOCK), int32(1))
+		if rc == SQLITE_OK {
+			(*TWal)(unsafe.Pointer(pWal)).FckptLock = uint8(1)
+			/* IMPLEMENTATION-OF: R-59782-36818 The SQLITE_CHECKPOINT_FULL, RESTART
+			 ** and TRUNCATE modes also obtain the exclusive "writer" lock on the
+			 ** database file.
+			 **
+			 ** EVIDENCE-OF: R-60642-04082 If the writer lock cannot be obtained
+			 ** immediately, and a busy-handler is configured, it is invoked and the
+			 ** writer lock retried until either the busy-handler returns 0 or the
+			 ** lock is successfully obtained.
+			 */
+			if eMode != SQLITE_CHECKPOINT_PASSIVE {
+				rc = _walBusyLock(tls, pWal, xBusy2, pBusyArg, WAL_WRITE_LOCK, int32(1))
+				if rc == SQLITE_OK {
+					(*TWal)(unsafe.Pointer(pWal)).FwriteLock = uint8(1)
+				} else {
+					if rc == int32(SQLITE_BUSY) {
+						eMode2 = SQLITE_CHECKPOINT_PASSIVE
+						xBusy2 = uintptr(0)
+						rc = SQLITE_OK
+					}
+				}
+			}
+		}
+	} else {
+		rc = SQLITE_OK
+	}
+	/* Read the wal-index header. */
+	(**(**TWalSehCheckpoint)(__ccgo_up(bp + 8))).Frc = rc
+	(**(**TWalSehCheckpoint)(__ccgo_up(bp + 8))).FpisChanged = bp
+	(**(**TWalSehCheckpoint)(__ccgo_up(bp + 8))).FeMode2 = eMode2
+	(**(**TWalSehCheckpoint)(__ccgo_up(bp + 8))).FxBusy2 = xBusy2
+	(**(**TWalSehCheckpoint)(__ccgo_up(bp + 8))).FpBusyArg = pBusyArg
+	(**(**TWalSehCheckpoint)(__ccgo_up(bp + 8))).Fdb = db
+	(**(**TWalSehCheckpoint)(__ccgo_up(bp + 8))).Fsync_flags = sync_flags
+	(**(**TWalSehCheckpoint)(__ccgo_up(bp + 8))).FnBuf = nBuf
+	(**(**TWalSehCheckpoint)(__ccgo_up(bp + 8))).FzBuf = zBuf
+	(**(**TWalSehCheckpoint)(__ccgo_up(bp + 8))).FpnLog = pnLog
+	(**(**TWalSehCheckpoint)(__ccgo_up(bp + 8))).FpnCkpt = pnCkpt
+	rc = _walSehTry(tls, pWal, __ccgo_fp(_walSehCheckpoint), bp+8, __ccgo_fp(_walHandleException))
+	if **(**int32)(__ccgo_up(bp)) != 0 {
+		/* If a new wal-index header was loaded before the checkpoint was
+		 ** performed, then the pager-cache associated with pWal is now
+		 ** out of date. So zero the cached wal-index header to ensure that
+		 ** next time the pager opens a snapshot on this database it knows that
+		 ** the cache needs to be reset.
+		 */
+		libc.Xmemset(tls, pWal+72, 0, uint64(48))
+	}
+	/* Release the locks. */
+	_sqlite3WalEndWriteTransaction(tls, pWal)
+	if (*TWal)(unsafe.Pointer(pWal)).FckptLock != 0 {
+		_walUnlockExclusive(tls, pWal, int32(WAL_CKPT_LOCK), int32(1))
+		(*TWal)(unsafe.Pointer(pWal)).FckptLock = uint8(0)
+	}
+	if rc == SQLITE_OK && eMode != eMode2 {
+		v1 = int32(SQLITE_BUSY)
+	} else {
+		v1 = rc
+	}
+	return v1
+}
+
 // C documentation
 //
 //	/* Create a snapshot object.  The content of a snapshot is opaque to
@@ -2530,61 +2403,6 @@ func _sqlite3WalSnapshotGet(tls *libc.TLS, pWal uintptr, ppSnapshot uintptr) (r 
 	} else {
 		libc.Xmemcpy(tls, pRet, pWal+72, uint64(48))
 		**(**uintptr)(__ccgo_up(ppSnapshot)) = pRet
-	}
-	return rc
-}
-
-// C documentation
-//
-//	/*
-//	** If any data has been written (but not committed) to the log file, this
-//	** function moves the write-pointer back to the start of the transaction.
-//	**
-//	** Additionally, the callback function is invoked for each frame written
-//	** to the WAL since the start of the transaction. If the callback returns
-//	** other than SQLITE_OK, it is not invoked again and the error code is
-//	** returned to the caller.
-//	**
-//	** Otherwise, if the callback function does not return an error, this
-//	** function returns SQLITE_OK.
-//	*/
-func _sqlite3WalUndo(tls *libc.TLS, pWal uintptr, __ccgo_fp_xUndo uintptr, pUndoCtx uintptr) (r int32) {
-	var iFrame, iMax TPgno
-	var rc int32
-	_, _, _ = iFrame, iMax, rc
-	rc = SQLITE_OK
-	if (*TWal)(unsafe.Pointer(pWal)).FwriteLock != 0 {
-		iMax = (*TWal)(unsafe.Pointer(pWal)).Fhdr.FmxFrame
-		/* Restore the clients cache of the wal-index header to the state it
-		 ** was in before the client began writing to the database.
-		 */
-		libc.Xmemcpy(tls, pWal+72, _walIndexHdr(tls, pWal), uint64(48))
-		iFrame = (*TWal)(unsafe.Pointer(pWal)).Fhdr.FmxFrame + uint32(1)
-		for {
-			if !(rc == SQLITE_OK && iFrame <= iMax) {
-				break
-			}
-			/* This call cannot fail. Unless the page for which the page number
-			 ** is passed as the second argument is (a) in the cache and
-			 ** (b) has an outstanding reference, then xUndo is either a no-op
-			 ** (if (a) is false) or simply expels the page from the cache (if (b)
-			 ** is false).
-			 **
-			 ** If the upper layer is doing a rollback, it is guaranteed that there
-			 ** are no outstanding references to any page other than page 1. And
-			 ** page 1 is never written to the log until the transaction is
-			 ** committed. As a result, the call to xUndo may not fail.
-			 */
-			rc = (*(*func(*libc.TLS, uintptr, TPgno) int32)(unsafe.Pointer(&struct{ uintptr }{__ccgo_fp_xUndo})))(tls, pUndoCtx, _walFramePgno(tls, pWal, iFrame))
-			goto _1
-		_1:
-			;
-			iFrame = iFrame + 1
-		}
-		if iMax != (*TWal)(unsafe.Pointer(pWal)).Fhdr.FmxFrame {
-			_walCleanupHash(tls, pWal)
-		}
-		(*TWal)(unsafe.Pointer(pWal)).FiReCksum = uint32(0)
 	}
 	return rc
 }
@@ -2808,6 +2626,35 @@ func _walBeginReadTransaction(tls *libc.TLS, pWal uintptr, pChanged uintptr) (r 
 	/* Release the shared CKPT lock obtained above. */
 	if ckptLock != 0 {
 		_walUnlockShared(tls, pWal, int32(WAL_CKPT_LOCK))
+	}
+	return rc
+}
+
+func _walSehUndo(tls *libc.TLS, pWal uintptr, p uintptr) (r int32) {
+	var a uintptr
+	var iFrame TPgno
+	var rc int32
+	_, _, _ = a, iFrame, rc
+	a = p
+	rc = SQLITE_OK
+	/* Restore the clients cache of the wal-index header to the state it
+	 ** was in before the client began writing to the database.
+	 */
+	libc.Xmemcpy(tls, pWal+72, _walIndexHdr(tls, pWal), uint64(48))
+	iFrame = (*TWal)(unsafe.Pointer(pWal)).Fhdr.FmxFrame + uint32(1)
+	for {
+		if !(rc == SQLITE_OK && iFrame <= (*TWalSehUndo)(unsafe.Pointer(a)).FiMax) {
+			break
+		}
+		/* See the comment in sqlite3WalUndo() below: this call cannot fail. */
+		rc = (*(*func(*libc.TLS, uintptr, TPgno) int32)(unsafe.Pointer(&struct{ uintptr }{(*TWalSehUndo)(unsafe.Pointer(a)).FxUndo})))(tls, (*TWalSehUndo)(unsafe.Pointer(a)).FpUndoCtx, _walFramePgno(tls, pWal, iFrame))
+		goto _1
+	_1:
+		;
+		iFrame = iFrame + 1
+	}
+	if (*TWalSehUndo)(unsafe.Pointer(a)).FiMax != (*TWal)(unsafe.Pointer(pWal)).Fhdr.FmxFrame {
+		_walCleanupHash(tls, pWal)
 	}
 	return rc
 }
