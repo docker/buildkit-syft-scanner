@@ -5,8 +5,12 @@ import (
 
 	"github.com/anchore/packageurl-go"
 	"github.com/anchore/syft/syft/cpe"
+	"github.com/anchore/syft/syft/pkg"
 	"github.com/anchore/syft/syft/pkg/cataloger/internal/binutils"
 )
+
+// mysqlClusterPackage is the package name shared by every MySQL Cluster classifier below.
+const mysqlClusterPackage = "mysql-cluster"
 
 // in both binaries and shared libraries, the version pattern is [NUL]3.11.2[NUL]
 var pythonVersionTemplate = `(?m)\x00(?P<version>{{ .version }}[-._a-zA-Z0-9]*)\x00`
@@ -248,8 +252,9 @@ func DefaultClassifiers() []binutils.Classifier {
 			EvidenceMatcher: m.FileContentsVersionMatcher(
 				`(?m)\/usr\/local\/lib\/perl\d\/(?P<version>[0-9]+\.[0-9]+\.[0-9]+)`),
 			Package: "perl",
-			PURL:    mustPURL("pkg:generic/perl@version"),
+			PURL:    mustPURL("pkg:cpan/perl@version"),
 			CPEs:    singleCPE("cpe:2.3:a:perl:perl:*:*:*:*:*:*:*:*", cpe.NVDDictionaryLookupSource),
+			Type:    pkg.CpanPkg,
 		},
 		{
 			Class:    "php-composer-binary",
@@ -281,11 +286,18 @@ func DefaultClassifiers() []binutils.Classifier {
 		{
 			Class:    "traefik-binary",
 			FileGlob: "**/traefik",
-			EvidenceMatcher: m.FileContentsVersionMatcher(
+			EvidenceMatcher: binutils.MatchAny(
+				// on some architectures (e.g. s390x) the real version string isn't NUL-prefixed
+				// and is instead terminated by two NUL bytes; checking this pattern first avoids
+				// matching an unrelated single-NUL-terminated numeric string elsewhere in the binary
+				m.FileContentsVersionMatcher(
+					`(?m)(?P<version>[0-9]+\.[0-9]+\.[0-9]+(-alpha[0-9]|-beta[0-9]|-rc[0-9])?)\x00\x00`),
 				// [NUL]v1.7.34[NUL]
 				// [NUL]2.9.6[NUL]
 				// 3.0.4[NUL]
-				`(?m)(\x00v?|\x{FFFD}.?)(?P<version>[0-9]+\.[0-9]+\.[0-9]+(-alpha[0-9]|-beta[0-9]|-rc[0-9])?)\x00`),
+				m.FileContentsVersionMatcher(
+					`(?m)(\x00v?|\x{FFFD}.?)(?P<version>[0-9]+\.[0-9]+\.[0-9]+(-alpha[0-9]|-beta[0-9]|-rc[0-9])?)\x00`),
+			),
 			Package: "traefik",
 			PURL:    mustPURL("pkg:generic/traefik@version"),
 			CPEs:    singleCPE("cpe:2.3:a:traefik:traefik:*:*:*:*:*:*:*:*", cpe.NVDDictionaryLookupSource),
@@ -374,7 +386,7 @@ func DefaultClassifiers() []binutils.Classifier {
 					Class: "mysqld-mysql-cluster-legacy-binary",
 					EvidenceMatcher: m.FileContentsVersionMatcher(
 						`cluster-gpl\x00[0-9]+(\.[0-9]+)?(\.[0-9]+)?\-ndb\-(?P<version>[0-9]+(\.[0-9]+)?(\.[0-9]+)?)`),
-					Package: "mysql-cluster",
+					Package: mysqlClusterPackage,
 					PURL:    mustPURL("pkg:generic/mysql-cluster@version"),
 					CPEs: []cpe.CPE{
 						cpe.Must("cpe:2.3:a:oracle:mysql_cluster:*:*:*:*:*:*:*:*", cpe.NVDDictionaryLookupSource),
@@ -385,7 +397,7 @@ func DefaultClassifiers() []binutils.Classifier {
 					Class: "mysqld-mysql-cluster-binary",
 					EvidenceMatcher: m.FileContentsVersionMatcher(
 						`/mysql-cluster-gpl-(?P<version>[0-9]+(\.[0-9]+)?(\.[0-9]+)?(alpha[0-9]|beta[0-9]|rc[0-9])?)/`),
-					Package: "mysql-cluster",
+					Package: mysqlClusterPackage,
 					PURL:    mustPURL("pkg:generic/mysql-cluster@version"),
 					CPEs: []cpe.CPE{
 						cpe.Must("cpe:2.3:a:oracle:mysql:*:*:*:*:*:*:*:*", cpe.NVDDictionaryLookupSource),
@@ -412,7 +424,7 @@ func DefaultClassifiers() []binutils.Classifier {
 			FileGlob: "**/ndbd",
 			EvidenceMatcher: m.FileContentsVersionMatcher(
 				`/mysql-cluster-gpl-(?P<version>[0-9]+(\.[0-9]+)?(\.[0-9]+)?(alpha[0-9]|beta[0-9]|rc[0-9])?)/`),
-			Package: "mysql-cluster",
+			Package: mysqlClusterPackage,
 			PURL:    mustPURL("pkg:generic/mysql-cluster@version"),
 			CPEs: []cpe.CPE{
 				cpe.Must("cpe:2.3:a:oracle:mysql_cluster:*:*:*:*:*:*:*:*", cpe.NVDDictionaryLookupSource),
@@ -423,7 +435,7 @@ func DefaultClassifiers() []binutils.Classifier {
 			FileGlob: "**/ndbmtd",
 			EvidenceMatcher: m.FileContentsVersionMatcher(
 				`/mysql-cluster-gpl-(?P<version>[0-9]+(\.[0-9]+)?(\.[0-9]+)?(alpha[0-9]|beta[0-9]|rc[0-9])?)/`),
-			Package: "mysql-cluster",
+			Package: mysqlClusterPackage,
 			PURL:    mustPURL("pkg:generic/mysql-cluster@version"),
 			CPEs: []cpe.CPE{
 				cpe.Must("cpe:2.3:a:oracle:mysql_cluster:*:*:*:*:*:*:*:*", cpe.NVDDictionaryLookupSource),
@@ -434,7 +446,7 @@ func DefaultClassifiers() []binutils.Classifier {
 			FileGlob: "**/ndb_mgmd",
 			EvidenceMatcher: m.FileContentsVersionMatcher(
 				`/mysql-cluster-gpl-(?P<version>[0-9]+(\.[0-9]+)?(\.[0-9]+)?(alpha[0-9]|beta[0-9]|rc[0-9])?)/`),
-			Package: "mysql-cluster",
+			Package: mysqlClusterPackage,
 			PURL:    mustPURL("pkg:generic/mysql-cluster@version"),
 			CPEs: []cpe.CPE{
 				cpe.Must("cpe:2.3:a:oracle:mysql_cluster:*:*:*:*:*:*:*:*", cpe.NVDDictionaryLookupSource),
@@ -899,6 +911,11 @@ func DefaultClassifiers() []binutils.Classifier {
 			Class:    "gzip-binary",
 			FileGlob: "**/gzip",
 			EvidenceMatcher: m.FileContentsVersionMatcher(
+				// GNU gzip keeps the version as a bare NUL-delimited token, so require an identifying
+				// string from the program as well. Without it any binary that happens to be named gzip
+				// (such as the busybox multicall binary behind a gzip applet symlink) would have an
+				// arbitrary NUL-delimited "N.N" token reported as a GNU gzip version.
+				`%s: %s: not in gzip format`,
 				`\x00(?P<version>[0-9]+\.[0-9]+)\x00`,
 			),
 			Package: "gzip",
@@ -1049,6 +1066,11 @@ func DefaultClassifiers() []binutils.Classifier {
 			EvidenceMatcher: binutils.MatchAny(
 				// [NUL][NUL][NUL][NUL]12.2.0-258092[NUL][NUL][NUL][NUL]
 				m.FileContentsVersionMatcher(`\x00+(?P<version>[0-9]{2}\.[0-9]+\.[0-9]+\-[0-9]{6,})\x00+`),
+				// security patch releases embed the raw version constant with no "release-" prefix
+				// and are not always preceded by NUL bytes (e.g. on arm builds):
+				// [NUL]11.0.5+security-01[NUL][NUL]call frame too large
+				// [NUL]12.4.3+security-02[NUL][NUL]
+				m.FileContentsVersionMatcher(`\x00(?P<version>[0-9]{1,2}\.[0-9]+\.[0-9]+)\+security-[0-9]+\x00`),
 				// [NUL][NUL][NUL][NUL]release-12.3.2+security-01[NUL][NUL][NUL][NUL]
 				// [NUL][NUL][NUL][NUL]release-12.3.1[NUL][NUL][NUL][NUL]
 				m.FileContentsVersionMatcher(`\x00+release-(?P<version>[0-9]{2}\.[0-9]+\.[0-9]+(-beta[0-9]|-test|-preview)?)(\+security-[0-9]+)?\x00+`),
@@ -1153,6 +1175,11 @@ func DefaultClassifiers() []binutils.Classifier {
 			Class:    "ingress-nginx-binary",
 			FileGlob: "**/nginx-ingress-controller",
 			EvidenceMatcher: binutils.MatchAny(
+				// the release is injected with -ldflags -X, which lands it in its own NUL-padded data symbol.
+				// the surrounding bytes are an arch-specific float constant pool, so only the padding is portable.
+				// e.g. v1.9.6[NUL][NUL] on each of linux/amd64, linux/arm, linux/arm64, and linux/s390x
+				// note: one trailing NUL is not enough -- on s390x that matches a vendored "v1.19.0" earlier in the file
+				m.FileContentsVersionMatcher(`v(?P<version>[0-9]+\.[0-9]+\.[0-9]+(\-(alpha|beta)\.[0-9]+)?)\x00\x00`),
 				// [NUL][NUL]v1.15.1[NUL][NUL]@e[ETX][NUL][NUL][NUL][NUL]go1.26.1[NUL][NUL][NUL]
 				// �v1.15.1[NUL][NUL]�z[ETX][NUL][NUL][NUL][NUL]go1.24.4[NUL][NUL][NUL]
 				m.FileContentsVersionMatcher(`v(?P<version>[0-9]+\.[0-9]+\.[0-9]+)\x00+.{0,50}go[0-9]+\.[0-9]+(\-(alpha|beta)\.[0-9])?\.[0-9]+\x00+`),
