@@ -7,14 +7,57 @@ package sqlite // import "modernc.org/sqlite"
 import (
 	"database/sql/driver"
 	"fmt"
+	"sync"
 
+	sqlite3 "modernc.org/sqlite/lib"
 	"modernc.org/sqlite/vtab"
 )
 
 // Driver implements database/sql/driver.Driver.
 //
-// Registration functions and methods must be called before the first call to Open.
+// Registration functions and methods must be called before the first call to
+// Open. The methods are safe to call concurrently with each other, so a
+// *Driver can be handed out for several packages to fill from their init
+// functions; the ordering requirement against Open still stands.
+//
+// Most code has no use for this type. sql.Open("sqlite", dsn) and
+// [NewConnector] both go through the driver this package registers as
+// "sqlite", which carries everything registered with [RegisterFunction],
+// [RegisterScalarFunction], [RegisterDeterministicScalarFunction],
+// [RegisterCollationUtf8], [RegisterConnectionHook] and
+// [vtab.RegisterModule].
+//
+// A Driver a caller constructs is not equivalent to that one. It starts out
+// empty, and the package-level registration functions always apply to the
+// registered driver, never to a constructed one. Connections it opens
+// therefore run without the package-level functions and collations -- and
+// where such a registration overrides a SQLite built-in of the same name, they
+// run with SQLite's built-in in force instead. Virtual table modules are the
+// one exception: those registered through the package-level path are held
+// process-globally and reach every Driver.
+//
+// A constructed Driver is filled in through its own methods, each of which
+// registers on that Driver alone: [Driver.RegisterFunction],
+// [Driver.RegisterScalarFunction],
+// [Driver.RegisterDeterministicScalarFunction],
+// [Driver.RegisterCollationUtf8], [Driver.RegisterConnectionHook] and
+// [Driver.RegisterModule]. The zero Driver is ready to use; there is no
+// constructor. What it registers stays on it, so two constructed Drivers do
+// not see each other's registrations and neither leaks into the package-level
+// driver. Modules it registers itself are installed in addition to the
+// process-global ones, not instead of them, and where both registered the
+// same name the package-level implementation wins on its connections.
+//
+// Constructing one is supported for the private-registration pattern: a driver
+// registered under a name of its own with sql.Register, so that its functions,
+// collations, modules and connection hooks apply to its own connections rather
+// than to every connection in the process. Prefer sql.Open or NewConnector for
+// anything else.
 type Driver struct {
+	// mu guards the registration state below against concurrent
+	// registrations. Open reads that state without it, which the ordering
+	// requirement in the type documentation makes safe.
+	mu sync.Mutex
 	// user defined functions that are added to every new connection on Open
 	udfs map[string]*userDefinedFunction
 	// collations that are added to every new connection on Open
@@ -33,7 +76,7 @@ var d = &Driver{
 	modules:         make(map[string]vtab.Module, 0),
 }
 
-func newDriver() *Driver { return d }
+func defaultDriver() *Driver { return d }
 
 // Open returns a new connection to the database. The name is a string in a
 // driver-specific format.
@@ -44,13 +87,31 @@ func newDriver() *Driver { return d }
 //
 // The returned connection is only used by one goroutine at a time.
 //
-// The name may be a filename, e.g., "/tmp/mydata.sqlite", or a URI, in which
-// case it may include a '?' followed by one or more query parameters.
-// For example, "file:///tmp/mydata.sqlite?_pragma=foreign_keys(1)&_time_format=sqlite".
-// The supported query parameters are:
+// The name is either a plain file name, e.g. "/tmp/mydata.sqlite", or a
+// SQLite URI, e.g. "file:///tmp/mydata.sqlite" (see
+// https://www.sqlite.org/uri.html). Both forms may carry a '?' followed by
+// one or more '&'-separated query parameters, for example
+// "file:///tmp/mydata.sqlite?_pragma=foreign_keys(1)&_time_format=sqlite".
+// The parameters this driver interprets are the underscore-prefixed keys and
+// vfs, all listed below; the driver consumes them in either form. What
+// happens to any other key depends on the form:
 //
-// _pragma: Each value will be run as a "PRAGMA ..." statement (with the PRAGMA
-// keyword added for you). May be specified more than once, '&'-separated. For more
+//   - A plain file name has its query removed before the name reaches
+//     sqlite3_open_v2, matching github.com/mattn/go-sqlite3, so every key the
+//     driver does not interpret is silently ignored, SQLite's own URI
+//     parameters included: "/tmp/mydata.sqlite?mode=ro" opens the database
+//     read-write and creates the file when it is missing.
+//   - A name starting with "file:" is passed to sqlite3_open_v2 whole, with
+//     SQLITE_OPEN_URI set, so SQLite applies its own URI parameters (mode,
+//     cache, immutable, nolock, psow, modeof and vfs; see the mode paragraph
+//     below) and ignores the keys it does not recognize, the underscore keys
+//     among them.
+//
+// The parameters this driver interprets are:
+//
+// _pragma: Each value is run with the PRAGMA keyword prepended, as SQL text; see
+// below for why that is not limited to one PRAGMA statement. May be specified
+// more than once, '&'-separated. For more
 // information on supported PRAGMAs see: https://www.sqlite.org/pragma.html
 //
 // The following shorthand keys set common PRAGMAs for easier DSN compatibility
@@ -80,9 +141,15 @@ func newDriver() *Driver { return d }
 // or with auto_vacuum already set.
 //
 // Unlike these validated shorthand keys, each _pragma value is executed verbatim
-// (with PRAGMA prepended) and is not validated, so a DSN that includes _pragma
-// must come from a trusted source. It is also the one case that can still fail
-// partway: a bad _pragma is only rejected by SQLite as it runs, after any
+// (with PRAGMA prepended) and is not validated. It is executed as SQL text, not
+// as a single PRAGMA: anything after a ';' runs too, so
+// "_pragma=foreign_keys(1);ATTACH 'x.db' AS x" also attaches, and creates,
+// x.db. A DSN therefore carries the authority of the SQL it can run and of the
+// file paths it names, and one that includes _pragma must come from a trusted
+// source. An application whose DSN is not a compile-time constant should call
+// [StrictPragmas](true), which rejects a _pragma value holding more than one
+// statement before anything is applied. It is also the one case that can still
+// fail partway: a bad _pragma is only rejected by SQLite as it runs, after any
 // earlier _pragma in the list has taken effect.
 //
 // _time_format: The name of a format to use when writing time values to the database.
@@ -140,6 +207,40 @@ func newDriver() *Driver { return d }
 // https://www.sqlite.org/quirks.html#dblquote and
 // https://gitlab.com/cznic/sqlite/-/issues/61
 //
+// _defensive: Opt-in toggle for SQLite's defensive connection mode, which
+// disables the SQL-level features that let ordinary statements deliberately
+// corrupt the database file. Accepts the values strconv.ParseBool understands
+// ("0"/"1", "false"/"true", "f"/"t", case-insensitive). When absent or set to
+// a false value SQLite's default is unchanged. When set to a true value the
+// driver calls sqlite3_db_config(SQLITE_DBCONFIG_DEFENSIVE) immediately after
+// sqlite3_open_v2 and before any other parameter is applied, so the PRAGMAs
+// this driver runs, the _pragma list, and every statement the caller prepares
+// are all subject to it. The parameter is parsed before sqlite3_open_v2, so an
+// invalid value fails the connection without creating the database file, and
+// it must appear at most once: a repeated _defensive is an error rather than
+// letting the first value silently win.
+//
+// On such a connection PRAGMA writable_schema=ON, PRAGMA journal_mode=OFF and
+// PRAGMA schema_version=N become silent no-ops, and writes to a virtual
+// table's shadow tables (fts5's _data, _idx and so on) and to sqlite_dbpage
+// fail with "table ... may not be modified". Reading those tables, ordinary
+// use of the virtual tables that own them, and VACUUM are unaffected.
+//
+// Because journal_mode=OFF is one of the operations defensive mode suppresses,
+// a true _defensive combined with _journal_mode=OFF (or _journal=OFF) is
+// rejected rather than silently honouring neither. The unvalidated _pragma
+// list is the exception, as always: _pragma=journal_mode(OFF) alongside
+// _defensive=1 runs and is silently ignored by SQLite.
+//
+// Defensive mode is a hardening measure, not a sandbox for hostile database
+// files. It is one of several steps SQLite recommends for that purpose (see
+// https://www.sqlite.org/security.html); this build compiles with neither
+// SQLITE_TRUSTED_SCHEMA=0 nor SQLITE_DQS=0 and the driver exposes no
+// authorizer, so _defensive=1 alone does not make opening an untrusted file
+// safe. It is also a property of the connection, not of the database: another
+// connection to the same file, opened without the parameter, is unrestricted.
+// See: https://www.sqlite.org/c3ref/c_dbconfig_defensive.html
+//
 // _error_rc: Opt-in error-string reporting mode for synthesised errors.
 // Accepts the values strconv.ParseBool understands ("0"/"1",
 // "false"/"true", "f"/"t", case-insensitive). When absent or set to a
@@ -155,6 +256,34 @@ func newDriver() *Driver { return d }
 // driver's *Error is unchanged in either mode. The parameter is parsed
 // before sqlite3_open_v2 so open-time errors are covered. See
 // https://gitlab.com/cznic/sqlite/-/issues/230.
+//
+// vfs: The name of the SQLite VFS to open the database with. Note the absent
+// underscore prefix: this is the same parameter SQLite recognizes in a file:
+// URI, but the driver reads it too and passes its value on as the
+// sqlite3_open_v2 zVfs argument, so unlike the SQLite URI parameters below it
+// also works in a plain file name. It selects any VFS registered with SQLite,
+// in particular one returned by [modernc.org/sqlite/vfs.New], which exposes a
+// Go fs.FS as a read-only VFS. When absent or empty the default VFS is used.
+// Supplying the parameter more than once with values that differ is an error.
+//
+// mode, cache, immutable, nolock, psow, modeof: SQLite's own URI parameters,
+// documented at https://www.sqlite.org/uri.html#recognized_query_parameters.
+// The driver does not interpret them, SQLite does, which is why they take
+// effect only in a name that starts with "file:" and are silently dropped
+// from a plain file name (see above). The driver opens with
+// SQLITE_OPEN_READWRITE|SQLITE_OPEN_CREATE and mode may only restrict those
+// flags, so all four of its values are available:
+// "file:/tmp/mydata.sqlite?mode=ro" opens the database read-only, fails with
+// SQLITE_CANTOPEN instead of creating a missing file, and every write on the
+// connection fails with SQLITE_READONLY. This differs from _query_only=1,
+// which still creates a missing file and is a PRAGMA that any later statement
+// can turn off again. A driver key that has to write the database, such as
+// _journal_mode=WAL on a database that is not in WAL mode yet or a _pragma to
+// the same effect, fails the open of a mode=ro connection with
+// SQLITE_READONLY; _auto_vacuum on such a connection is accepted and has no
+// effect. mode=memory selects a pure in-memory database; see
+// https://www.sqlite.org/inmemorydb.html for how cache=shared lets several
+// connections share one.
 func (d *Driver) Open(name string) (conn driver.Conn, err error) {
 	if dmesgs {
 		defer func() {
@@ -188,7 +317,7 @@ func (d *Driver) Open(name string) (conn driver.Conn, err error) {
 	// Note: vtab module registration applies to new connections only. If a
 	// module is registered after a connection has been opened, that existing
 	// connection will not see the module; open a new connection to use it.
-	if err := c.registerModules(); err != nil {
+	if err := c.registerModules(d); err != nil {
 		c.Close()
 		return nil, err
 	}
@@ -197,6 +326,122 @@ func (d *Driver) Open(name string) (conn driver.Conn, err error) {
 
 // RegisterConnectionHook registers a function to be called after each connection
 // is opened. This is called after all the connection has been set up.
+//
+// The hook applies only to connections opened by d. To register one on the
+// driver this package registers as "sqlite", and so on the connections
+// sql.Open and [NewConnector] hand out, use the package-level
+// [RegisterConnectionHook].
 func (d *Driver) RegisterConnectionHook(fn ConnectionHookFn) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
 	d.connectionHooks = append(d.connectionHooks, fn)
+}
+
+// RegisterFunction is like the package-level [RegisterFunction] but registers
+// the function on d alone, so it reaches only the connections d opens. See
+// [Driver] for when to prefer this over the package-level form.
+func (d *Driver) RegisterFunction(
+	zFuncName string,
+	impl *FunctionImpl,
+) (err error) {
+	if dmesgs {
+		defer func() {
+			dmesg("d %p, zFuncName %q, impl %p: err %v", d, zFuncName, impl, err)
+		}()
+	}
+	return d.registerFunction(zFuncName, impl)
+}
+
+// MustRegisterFunction is like [Driver.RegisterFunction] but panics on error.
+func (d *Driver) MustRegisterFunction(
+	zFuncName string,
+	impl *FunctionImpl,
+) {
+	if err := d.RegisterFunction(zFuncName, impl); err != nil {
+		panic(err)
+	}
+}
+
+// RegisterScalarFunction is like the package-level [RegisterScalarFunction]
+// but registers the function on d alone, so it reaches only the connections d
+// opens. See [Driver] for when to prefer this over the package-level form.
+func (d *Driver) RegisterScalarFunction(
+	zFuncName string,
+	nArg int32,
+	xFunc func(ctx *FunctionContext, args []driver.Value) (driver.Value, error),
+) (err error) {
+	if dmesgs {
+		defer func() {
+			dmesg("d %p, zFuncName %q, nArg %v, xFunc %p: err %v", d, zFuncName, nArg, xFunc, err)
+		}()
+	}
+	return d.registerFunction(zFuncName, &FunctionImpl{NArgs: nArg, Scalar: xFunc, Deterministic: false})
+}
+
+// MustRegisterScalarFunction is like [Driver.RegisterScalarFunction] but
+// panics on error.
+func (d *Driver) MustRegisterScalarFunction(
+	zFuncName string,
+	nArg int32,
+	xFunc func(ctx *FunctionContext, args []driver.Value) (driver.Value, error),
+) {
+	if err := d.RegisterScalarFunction(zFuncName, nArg, xFunc); err != nil {
+		panic(err)
+	}
+}
+
+// RegisterDeterministicScalarFunction is like the package-level
+// [RegisterDeterministicScalarFunction] but registers the function on d alone,
+// so it reaches only the connections d opens. See [Driver] for when to prefer
+// this over the package-level form.
+func (d *Driver) RegisterDeterministicScalarFunction(
+	zFuncName string,
+	nArg int32,
+	xFunc func(ctx *FunctionContext, args []driver.Value) (driver.Value, error),
+) (err error) {
+	if dmesgs {
+		defer func() {
+			dmesg("d %p, zFuncName %q, nArg %v, xFunc %p: err %v", d, zFuncName, nArg, xFunc, err)
+		}()
+	}
+	return d.registerFunction(zFuncName, &FunctionImpl{NArgs: nArg, Scalar: xFunc, Deterministic: true})
+}
+
+// MustRegisterDeterministicScalarFunction is like
+// [Driver.RegisterDeterministicScalarFunction] but panics on error.
+func (d *Driver) MustRegisterDeterministicScalarFunction(
+	zFuncName string,
+	nArg int32,
+	xFunc func(ctx *FunctionContext, args []driver.Value) (driver.Value, error),
+) {
+	if err := d.RegisterDeterministicScalarFunction(zFuncName, nArg, xFunc); err != nil {
+		panic(err)
+	}
+}
+
+// RegisterCollationUtf8 is like the package-level [RegisterCollationUtf8] but
+// registers the collation on d alone, so it reaches only the connections d
+// opens. See [Driver] for when to prefer this over the package-level form.
+func (d *Driver) RegisterCollationUtf8(
+	zName string,
+	impl func(left, right string) int,
+) (err error) {
+	if dmesgs {
+		defer func() {
+			dmesg("d %p, zName %q, impl %p: err %v", d, zName, impl, err)
+		}()
+	}
+	return d.registerCollation(zName, impl, sqlite3.SQLITE_UTF8)
+}
+
+// MustRegisterCollationUtf8 is like [Driver.RegisterCollationUtf8] but panics
+// on error.
+func (d *Driver) MustRegisterCollationUtf8(
+	zName string,
+	impl func(left, right string) int,
+) {
+	if err := d.RegisterCollationUtf8(zName, impl); err != nil {
+		panic(err)
+	}
 }
