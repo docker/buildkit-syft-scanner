@@ -16,7 +16,6 @@ package internal
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -24,9 +23,16 @@ import (
 	"github.com/anchore/syft/syft"
 	"github.com/anchore/syft/syft/cataloging/filecataloging"
 	"github.com/anchore/syft/syft/cataloging/pkgcataloging"
+	"github.com/anchore/syft/syft/file"
 	"github.com/anchore/syft/syft/sbom"
 	"github.com/anchore/syft/syft/source"
 	"github.com/docker/buildkit-syft-scanner/version"
+	"github.com/pkg/errors"
+)
+
+const (
+	envScanSelectCatalogers = "BUILDKIT_SCAN_SELECT_CATALOGERS"
+	envScanFileMetadata     = "BUILDKIT_SCAN_FILE_METADATA"
 )
 
 type Target struct {
@@ -43,7 +49,7 @@ func (t Target) Scan(ctx context.Context) (sbom.SBOM, error) {
 			WithBasePath(t.Path).
 			WithAlias(source.Alias{Name: t.Name()}))
 	if err != nil {
-		return sbom.SBOM{}, fmt.Errorf("failed to get source from %q: %w", t.Path, err)
+		return sbom.SBOM{}, errors.Wrapf(err, "failed to get source from %q", t.Path)
 	}
 
 	sr := pkgcataloging.NewSelectionRequest().
@@ -55,15 +61,27 @@ func (t Target) Scan(ctx context.Context) (sbom.SBOM, error) {
 			"sbom-cataloger",
 		)
 
-	if v, ok := os.LookupEnv("BUILDKIT_SCAN_SELECT_CATALOGERS"); ok {
+	if v, ok := os.LookupEnv(envScanSelectCatalogers); ok {
 		sr = pkgcataloging.NewSelectionRequest().WithExpression(strings.Split(v, ",")...)
 	}
 
-	result, err := syft.CreateSBOM(
-		ctx,
-		src,
-		syft.DefaultCreateSBOMConfig().
-			WithCatalogerSelection(sr))
+	cfg := syft.DefaultCreateSBOMConfig().WithCatalogerSelection(sr)
+	if v, ok := os.LookupEnv(envScanFileMetadata); ok {
+		switch selection := file.Selection(v); selection {
+		case file.NoFilesSelection:
+			cfg = cfg.WithoutFiles()
+		case file.FilesOwnedByPackageSelection, file.AllFilesSelection:
+			cfg = cfg.WithFilesConfig(cfg.Files.WithSelection(selection))
+		default:
+			return sbom.SBOM{}, errors.Errorf("invalid %s value %q: expected %q, %q, or %q",
+				envScanFileMetadata, v,
+				file.NoFilesSelection,
+				file.FilesOwnedByPackageSelection,
+				file.AllFilesSelection)
+		}
+	}
+
+	result, err := syft.CreateSBOM(ctx, src, cfg)
 	if err != nil {
 		return sbom.SBOM{}, err
 	}

@@ -95,7 +95,6 @@ func check(schema interface{}, target interface{}, vars map[string]interface{}, 
 			return nil
 		}
 	}
-
 	if schemaType.Kind() != targetType.Kind() {
 		return fmt.Errorf("type mismatch on %s, expected %s, got %s", strings.Join(previous, "."), schemaType.Kind(), targetType.Kind())
 	}
@@ -117,6 +116,12 @@ func check(schema interface{}, target interface{}, vars map[string]interface{}, 
 func checkMap(schema map[string]interface{}, target map[string]interface{}, vars map[string]interface{}, assign bool, previous ...string) error {
 	for k, v := range schema {
 		v2, ok := target[k]
+		if s, isString := v.(string); isString && s == "!exists" {
+			if ok {
+				return fmt.Errorf("map mismatch on %s, expected key to be absent", strings.Join(previous, ".")+"."+k)
+			}
+			continue
+		}
 		if !ok {
 			return fmt.Errorf("map mismatch on %s, expected %v", strings.Join(previous, ".")+"."+k, schema)
 		}
