@@ -5,8 +5,12 @@ import (
 
 	"github.com/anchore/packageurl-go"
 	"github.com/anchore/syft/syft/cpe"
+	"github.com/anchore/syft/syft/pkg"
 	"github.com/anchore/syft/syft/pkg/cataloger/internal/binutils"
 )
+
+// mysqlClusterPackage is the package name shared by every MySQL Cluster classifier below.
+const mysqlClusterPackage = "mysql-cluster"
 
 // in both binaries and shared libraries, the version pattern is [NUL]3.11.2[NUL]
 var pythonVersionTemplate = `(?m)\x00(?P<version>{{ .version }}[-._a-zA-Z0-9]*)\x00`
@@ -106,12 +110,16 @@ func DefaultClassifiers() []binutils.Classifier {
 				// [NUL]GIT_VERSION_INFO[NUL]__init__[NUL]1.12.6[NUL]branch[NUL]commit
 				// [NUL]GIT_VERSION_INFO[NUL]__init__[NUL]verify_methods[NUL]1.11.9[NUL]branch[NUL]commit
 				// [NUL][NUL]__init__[NUL]1.10.11[NUL]verify_methods[NUL]
-				m.FileContentsVersionMatcher(`\x00__init__\x00(?P<version>[0-9]+\.[0-9]+\.[0-9]+(-alpha[0-9]|-beta[0-9]|-rc[0-9])?)\x00(branch|verify_methods)`),
-				m.FileContentsVersionMatcher(`(?P<version>[0-9]+\.[0-9]+\.[0-9]+(-alpha[0-9]|-beta[0-9]|-rc[0-9])?)\x00branch\x00`),
-				// [NUL]verify_methods[NUL]Task cannot be serialized[NUL]1.9.0-alpha1[NUL]BigInt[NUL]
-				m.FileContentsVersionMatcher(`\x00verify_methods\x00.{0,30}(?P<version>[0-9]+\.[0-9]+\.[0-9]+(-alpha[0-9]|-beta[0-9]|-rc[0-9])?)\x00BigInt`),
-				// unknown option `%s`[NUL]1.8.5[NUL]julia version %s
-				m.FileContentsVersionMatcher(`\x00(?P<version>[0-9]+\.[0-9]+\.[0-9]+(-alpha[0-9]|-beta[0-9]|-rc[0-9])?)\x00julia version`),
+				// [NUL]1.9.0-beta3[NUL]__init__[NUL]verify_methods
+				// arm64/ppc64le put NUL runs between strings, what precedes the version varies: only the trailing token is anchored
+				// single-digit major (fine while julia is 1.x): on ppc64le 1.9.0-beta3 a run of ASCII '0's precedes the version
+				m.FileContentsVersionMatcher(`(?P<version>[0-9]\.[0-9]+\.[0-9]+(-alpha[0-9]|-beta[0-9]|-rc[0-9])?)\x00+(branch|verify_methods|__init__)\x00`),
+				// [NUL]Task cannot be serialized[NUL]1.9.0-alpha1[NUL]BigInt[NUL]   (amd64)
+				// [NUL x8]1.9.0-alpha1[NUL x4]Precompile file header verification checks failed.[NUL x6]BigInt[NUL]   (arm64)
+				// NUL runs follow the version on arm64/ppc64le; arm64: no NUL-delimited verify_methods nearby, a string before BigInt
+				m.FileContentsVersionMatcher(`\x00(?P<version>[0-9]\.[0-9]+\.[0-9]+(-alpha[0-9]|-beta[0-9]|-rc[0-9])?)\x00+([^\x00]+\x00+)?BigInt\x00`),
+				// unknown option `%s`[NUL]1.8.5[NUL]julia version %s   (arm64/ppc64le: [NUL x5]1.8.5[NUL x3]julia version)
+				m.FileContentsVersionMatcher(`\x00(?P<version>[0-9]+\.[0-9]+\.[0-9]+(-alpha[0-9]|-beta[0-9]|-rc[0-9])?)\x00+julia version`),
 			),
 			Package: "julia",
 			PURL:    mustPURL("pkg:generic/julia@version"),
@@ -126,11 +134,13 @@ func DefaultClassifiers() []binutils.Classifier {
 				// libjulia.so
 				`^libjulia\.so(\.[0-9])?(\.[0-9])?$`,
 				binutils.MatchAny(
-					// unknown option `%s`[NUL]1.5.4[NUL]julia version %s
-					m.FileContentsVersionMatcher(`\x00(?P<version>[0-9]+\.[0-9]+\.[0-9]+(-alpha[0-9]|-beta[0-9]|-rc[0-9])?)\x00julia version`),
+					// unknown option `%s`[NUL]1.5.4[NUL]julia version %s   (arm64/ppc64le: [NUL x5]1.5.4[NUL x3]julia version)
+					m.FileContentsVersionMatcher(`\x00(?P<version>[0-9]+\.[0-9]+\.[0-9]+(-alpha[0-9]|-beta[0-9]|-rc[0-9])?)\x00+julia version`),
 					// [NUL]#kw#[NUL]1.3.1[NUL]BigInt
 					// [NUL]#kw#[NUL]0.7.0-beta2[NUL]_require_dependencies
 					m.FileContentsVersionMatcher(`\x00#kw#\x00(?P<version>[0-9]+\.[0-9]+\.[0-9]+(-alpha[0-9]|-beta[0-9]|-rc[0-9])?)\x00(BigInt|_require_dependencies)`),
+					// [NUL x7]1.3.1[NUL x3]Precompile file header verification checks failed.[NUL x6]BigInt[NUL]   (arm64, no #kw# nearby)
+					m.FileContentsVersionMatcher(`\x00(?P<version>[0-9]\.[0-9]+\.[0-9]+(-alpha[0-9]|-beta[0-9]|-rc[0-9])?)\x00+([^\x00]+\x00+)?BigInt\x00`),
 					// [NUL]ObjectIdDict[NUL]0.6.4[NUL]jl_sysimg_cpu_target
 					m.FileContentsVersionMatcher(`\x00ObjectIdDict\x00(?P<version>[0-9]+\.[0-9]+\.[0-9]+(-alpha[0-9]|-beta[0-9]|-rc[0-9])?)\x00jl_sysimg_cpu_target`),
 					// [NUL]require[NUL]0.4.6[NUL]core2
@@ -248,8 +258,9 @@ func DefaultClassifiers() []binutils.Classifier {
 			EvidenceMatcher: m.FileContentsVersionMatcher(
 				`(?m)\/usr\/local\/lib\/perl\d\/(?P<version>[0-9]+\.[0-9]+\.[0-9]+)`),
 			Package: "perl",
-			PURL:    mustPURL("pkg:generic/perl@version"),
+			PURL:    mustPURL("pkg:cpan/perl@version"),
 			CPEs:    singleCPE("cpe:2.3:a:perl:perl:*:*:*:*:*:*:*:*", cpe.NVDDictionaryLookupSource),
+			Type:    pkg.CpanPkg,
 		},
 		{
 			Class:    "php-composer-binary",
@@ -281,11 +292,18 @@ func DefaultClassifiers() []binutils.Classifier {
 		{
 			Class:    "traefik-binary",
 			FileGlob: "**/traefik",
-			EvidenceMatcher: m.FileContentsVersionMatcher(
+			EvidenceMatcher: binutils.MatchAny(
+				// on some architectures (e.g. s390x) the real version string isn't NUL-prefixed
+				// and is instead terminated by two NUL bytes; checking this pattern first avoids
+				// matching an unrelated single-NUL-terminated numeric string elsewhere in the binary
+				m.FileContentsVersionMatcher(
+					`(?m)(?P<version>[0-9]+\.[0-9]+\.[0-9]+(-alpha[0-9]|-beta[0-9]|-rc[0-9])?)\x00\x00`),
 				// [NUL]v1.7.34[NUL]
 				// [NUL]2.9.6[NUL]
 				// 3.0.4[NUL]
-				`(?m)(\x00v?|\x{FFFD}.?)(?P<version>[0-9]+\.[0-9]+\.[0-9]+(-alpha[0-9]|-beta[0-9]|-rc[0-9])?)\x00`),
+				m.FileContentsVersionMatcher(
+					`(?m)(\x00v?|\x{FFFD}.?)(?P<version>[0-9]+\.[0-9]+\.[0-9]+(-alpha[0-9]|-beta[0-9]|-rc[0-9])?)\x00`),
+			),
 			Package: "traefik",
 			PURL:    mustPURL("pkg:generic/traefik@version"),
 			CPEs:    singleCPE("cpe:2.3:a:traefik:traefik:*:*:*:*:*:*:*:*", cpe.NVDDictionaryLookupSource),
@@ -374,7 +392,7 @@ func DefaultClassifiers() []binutils.Classifier {
 					Class: "mysqld-mysql-cluster-legacy-binary",
 					EvidenceMatcher: m.FileContentsVersionMatcher(
 						`cluster-gpl\x00[0-9]+(\.[0-9]+)?(\.[0-9]+)?\-ndb\-(?P<version>[0-9]+(\.[0-9]+)?(\.[0-9]+)?)`),
-					Package: "mysql-cluster",
+					Package: mysqlClusterPackage,
 					PURL:    mustPURL("pkg:generic/mysql-cluster@version"),
 					CPEs: []cpe.CPE{
 						cpe.Must("cpe:2.3:a:oracle:mysql_cluster:*:*:*:*:*:*:*:*", cpe.NVDDictionaryLookupSource),
@@ -385,7 +403,7 @@ func DefaultClassifiers() []binutils.Classifier {
 					Class: "mysqld-mysql-cluster-binary",
 					EvidenceMatcher: m.FileContentsVersionMatcher(
 						`/mysql-cluster-gpl-(?P<version>[0-9]+(\.[0-9]+)?(\.[0-9]+)?(alpha[0-9]|beta[0-9]|rc[0-9])?)/`),
-					Package: "mysql-cluster",
+					Package: mysqlClusterPackage,
 					PURL:    mustPURL("pkg:generic/mysql-cluster@version"),
 					CPEs: []cpe.CPE{
 						cpe.Must("cpe:2.3:a:oracle:mysql:*:*:*:*:*:*:*:*", cpe.NVDDictionaryLookupSource),
@@ -412,7 +430,7 @@ func DefaultClassifiers() []binutils.Classifier {
 			FileGlob: "**/ndbd",
 			EvidenceMatcher: m.FileContentsVersionMatcher(
 				`/mysql-cluster-gpl-(?P<version>[0-9]+(\.[0-9]+)?(\.[0-9]+)?(alpha[0-9]|beta[0-9]|rc[0-9])?)/`),
-			Package: "mysql-cluster",
+			Package: mysqlClusterPackage,
 			PURL:    mustPURL("pkg:generic/mysql-cluster@version"),
 			CPEs: []cpe.CPE{
 				cpe.Must("cpe:2.3:a:oracle:mysql_cluster:*:*:*:*:*:*:*:*", cpe.NVDDictionaryLookupSource),
@@ -423,7 +441,7 @@ func DefaultClassifiers() []binutils.Classifier {
 			FileGlob: "**/ndbmtd",
 			EvidenceMatcher: m.FileContentsVersionMatcher(
 				`/mysql-cluster-gpl-(?P<version>[0-9]+(\.[0-9]+)?(\.[0-9]+)?(alpha[0-9]|beta[0-9]|rc[0-9])?)/`),
-			Package: "mysql-cluster",
+			Package: mysqlClusterPackage,
 			PURL:    mustPURL("pkg:generic/mysql-cluster@version"),
 			CPEs: []cpe.CPE{
 				cpe.Must("cpe:2.3:a:oracle:mysql_cluster:*:*:*:*:*:*:*:*", cpe.NVDDictionaryLookupSource),
@@ -434,7 +452,7 @@ func DefaultClassifiers() []binutils.Classifier {
 			FileGlob: "**/ndb_mgmd",
 			EvidenceMatcher: m.FileContentsVersionMatcher(
 				`/mysql-cluster-gpl-(?P<version>[0-9]+(\.[0-9]+)?(\.[0-9]+)?(alpha[0-9]|beta[0-9]|rc[0-9])?)/`),
-			Package: "mysql-cluster",
+			Package: mysqlClusterPackage,
 			PURL:    mustPURL("pkg:generic/mysql-cluster@version"),
 			CPEs: []cpe.CPE{
 				cpe.Must("cpe:2.3:a:oracle:mysql_cluster:*:*:*:*:*:*:*:*", cpe.NVDDictionaryLookupSource),
@@ -624,11 +642,14 @@ func DefaultClassifiers() []binutils.Classifier {
 			Class:    "bun-binary",
 			FileGlob: "**/bun",
 			EvidenceMatcher: binutils.MatchAny(
-				// bun 1.1.0
-				// Bun v1.0.0
-				m.FileContentsVersionMatcher(`(?m)[Bb]un v?(?P<version>[0-9]+\.[0-9]+\.[0-9]+)`),
+				// Bun v1.0.0 (the runtime banner). This is checked first because
+				// compiled executables can embed other text that mentions older Bun
+				// versions without the "v" (e.g. "bun 1.0.0 to 1.3.9") before the banner.
+				m.FileContentsVersionMatcher(`(?m)[Bb]un v(?P<version>[0-9]+\.[0-9]+\.[0-9]+)`),
 				// bun-1.1.0
 				m.FileContentsVersionMatcher(`(?m)bun-(?P<version>[0-9]+\.[0-9]+\.[0-9]+)`),
+				// bun 1.1.0
+				m.FileContentsVersionMatcher(`(?m)[Bb]un (?P<version>[0-9]+\.[0-9]+\.[0-9]+)`),
 			),
 			Package: "bun",
 			PURL:    mustPURL("pkg:generic/bun@version"),
@@ -899,6 +920,11 @@ func DefaultClassifiers() []binutils.Classifier {
 			Class:    "gzip-binary",
 			FileGlob: "**/gzip",
 			EvidenceMatcher: m.FileContentsVersionMatcher(
+				// GNU gzip keeps the version as a bare NUL-delimited token, so require an identifying
+				// string from the program as well. Without it any binary that happens to be named gzip
+				// (such as the busybox multicall binary behind a gzip applet symlink) would have an
+				// arbitrary NUL-delimited "N.N" token reported as a GNU gzip version.
+				`%s: %s: not in gzip format`,
 				`\x00(?P<version>[0-9]+\.[0-9]+)\x00`,
 			),
 			Package: "gzip",
@@ -955,7 +981,10 @@ func DefaultClassifiers() []binutils.Classifier {
 			EvidenceMatcher: m.FileContentsVersionMatcher(
 				// Pattern found in the binary: "%s version 7.1.1" or "%s version 6.0"
 				// When executed outputs: "ffmpeg version 7.1.1" or "ffmpeg version 6.0"
-				`(?m)%s version (?P<version>[0-9]+\.[0-9]+(\.[0-9]+)?)`,
+				// The optional "+" suffix preserves semver build metadata (e.g. a
+				// backported-patch stamp like "9.0.3+dev.9.0.2.p1.eb9cef3"); see the
+				// ffmpeg-library classifier for why "-" pre-release suffixes stay truncated.
+				`(?m)%s version (?P<version>[0-9]+\.[0-9]+(\.[0-9]+)?(?:\+[0-9A-Za-z]+(?:\.[0-9A-Za-z]+)*)?)`,
 			),
 			Package: "ffmpeg",
 			PURL:    mustPURL("pkg:generic/ffmpeg@version"),
@@ -964,13 +993,20 @@ func DefaultClassifiers() []binutils.Classifier {
 		{
 			Class:    "ffmpeg-library",
 			FileGlob: "**/libav*",
-			EvidenceMatcher: binutils.MatchAny(
-				// Primary pattern: FFmpeg version found in most libraries
-				m.FileContentsVersionMatcher(`(?m)FFmpeg version (?P<version>[0-9]+\.[0-9]+(\.[0-9]+)?)`),
-				// Fallback: library-specific version patterns for libavcodec and libavformat
-				m.FileContentsVersionMatcher(`(?m)Lavc(?P<version>[0-9]+\.[0-9]+\.[0-9]+)`),
-				m.FileContentsVersionMatcher(`(?m)Lavf(?P<version>[0-9]+\.[0-9]+\.[0-9]+)`),
-			),
+			EvidenceMatcher: m.FileContentsVersionMatcher(
+				// FFmpeg version found in most libraries.
+				// The optional "+" suffix preserves semver build metadata (e.g. a
+				// backported-patch stamp like "9.0.3+dev.9.0.2.p1.eb9cef3") instead of
+				// truncating to X.Y[.Z]. Build metadata compares equal to its core
+				// version, so this does not change vulnerability matching. A "-"
+				// pre-release suffix (e.g. a distro revision "6.1.1-3ubuntu5") is
+				// deliberately NOT captured: it sorts below the release in semver and
+				// would corrupt version-range matching, so it stays truncated as before.
+				// Library idents such as "Lavc62.28.102" or "Lavf62.12.102" are not used
+				// as a fallback: they carry the libavcodec/libavformat API version, which
+				// is versioned independently of FFmpeg releases and would produce a wrong
+				// ffmpeg PURL and CPE.
+				`(?m)FFmpeg version (?P<version>[0-9]+\.[0-9]+(\.[0-9]+)?(?:\+[0-9A-Za-z]+(?:\.[0-9A-Za-z]+)*)?)`),
 			Package: "ffmpeg",
 			PURL:    mustPURL("pkg:generic/ffmpeg@version"),
 			CPEs:    singleCPE("cpe:2.3:a:ffmpeg:ffmpeg:*:*:*:*:*:*:*:*", cpe.NVDDictionaryLookupSource),
@@ -979,8 +1015,9 @@ func DefaultClassifiers() []binutils.Classifier {
 			Class:    "ffmpeg-library",
 			FileGlob: "**/libswresample*",
 			EvidenceMatcher: m.FileContentsVersionMatcher(
-				// FFmpeg version pattern for libswresample
-				`(?m)FFmpeg version (?P<version>[0-9]+\.[0-9]+(\.[0-9]+)?)`),
+				// FFmpeg version pattern for libswresample. Same optional "+" build
+				// metadata handling as the ffmpeg-library classifier above.
+				`(?m)FFmpeg version (?P<version>[0-9]+\.[0-9]+(\.[0-9]+)?(?:\+[0-9A-Za-z]+(?:\.[0-9A-Za-z]+)*)?)`),
 			Package: "ffmpeg",
 			PURL:    mustPURL("pkg:generic/ffmpeg@version"),
 			CPEs:    singleCPE("cpe:2.3:a:ffmpeg:ffmpeg:*:*:*:*:*:*:*:*", cpe.NVDDictionaryLookupSource),
@@ -1014,13 +1051,16 @@ func DefaultClassifiers() []binutils.Classifier {
 			EvidenceMatcher: binutils.MatchAny(
 				// [NUL]1.26.8[NUL][NUL]1.26.8[NUL]
 				// [NUL]1.3.7[NUL][NUL][NUL]1.3.8[NUL]
-				m.FileContentsVersionMatcher(`[0-9]+\.[0-9]+\.[0-9]+\x00+(?P<version>[0-9]+\.[0-9]+\.[0-9]+(-alpha\.[0-9]+|-beta\.[0-9]+|-rc\.[0-9]+|-dev)?)\x00+`),
+				// [NUL]1.15.0-beta.0[NUL][NUL][NUL]1.15.0-beta.0[NUL]  (pre-release builds repeat the full version, suffix included)
+				m.FileContentsVersionMatcher(`[0-9]+\.[0-9]+\.[0-9]+(-alpha\.[0-9]+|-beta\.[0-9]+|-rc\.[0-9]+|-snapshot\.[0-9]+|-dev)?\x00+(?P<version>[0-9]+\.[0-9]+\.[0-9]+(-alpha\.[0-9]+|-beta\.[0-9]+|-rc\.[0-9]+|-snapshot\.[0-9]+|-dev)?)\x00+`),
+				// [NUL][NUL][NUL]1.0.0-snapshot.0[NUL][NUL][NUL] (snapshot builds record the version only once)
+				m.FileContentsVersionMatcher(`\x00+(?P<version>[0-9]+\.[0-9]+\.[0-9]+-snapshot\.[0-9]+)\x00+`),
 				// Clean[NUL][NUL][NUL]1.8.0[NUL]
-				m.FileContentsVersionMatcher(`Clean\x00+(?P<version>[0-9]+\.[0-9]+\.[0-9]+(-alpha\.[0-9]+|-beta\.[0-9]+|-rc\.[0-9]+|-dev)?)\x00+`),
+				m.FileContentsVersionMatcher(`Clean\x00+(?P<version>[0-9]+\.[0-9]+\.[0-9]+(-alpha\.[0-9]+|-beta\.[0-9]+|-rc\.[0-9]+|-snapshot\.[0-9]+|-dev)?)\x00+`),
 				// Modified[NUL][NUL][NUL][NUL][NUL][NUL][NUL][NUL]1.10-dev[NUL][NUL][NUL]
 				m.FileContentsVersionMatcher(`Modified\x00+(?P<version>[0-9]+\.[0-9]+-dev)\x00+`),
 				// 1.1.17[NUL]...S=v<y5
-				m.FileContentsVersionMatcher(`(?s)(?P<version>[0-9]+\.[0-9]+\.[0-9]+(-alpha\.[0-9]+|-beta\.[0-9]+|-rc\.[0-9]+|-dev)?)\x00+.{1,100}S?=v<y5`),
+				m.FileContentsVersionMatcher(`(?s)(?P<version>[0-9]+\.[0-9]+\.[0-9]+(-alpha\.[0-9]+|-beta\.[0-9]+|-rc\.[0-9]+|-snapshot\.[0-9]+|-dev)?)\x00+.{1,100}S?=v<y5`),
 			),
 			Package: "pilot-discovery",
 			PURL:    mustPURL("pkg:generic/istio@version"),
@@ -1031,13 +1071,16 @@ func DefaultClassifiers() []binutils.Classifier {
 			FileGlob: "**/pilot-agent",
 			EvidenceMatcher: binutils.MatchAny(
 				// [NUL]1.26.8[NUL][NUL]1.26.8[NUL]
-				m.FileContentsVersionMatcher(`[0-9]+\.[0-9]+\.[0-9]+\x00+(?P<version>[0-9]+\.[0-9]+\.[0-9]+(-alpha\.[0-9]+|-beta\.[0-9]+|-rc\.[0-9]+|-dev)?)\x00+`),
+				// [NUL]1.15.0-beta.0[NUL][NUL][NUL]1.15.0-beta.0[NUL]  (pre-release builds repeat the full version, suffix included)
+				m.FileContentsVersionMatcher(`[0-9]+\.[0-9]+\.[0-9]+(-alpha\.[0-9]+|-beta\.[0-9]+|-rc\.[0-9]+|-snapshot\.[0-9]+|-dev)?\x00+(?P<version>[0-9]+\.[0-9]+\.[0-9]+(-alpha\.[0-9]+|-beta\.[0-9]+|-rc\.[0-9]+|-snapshot\.[0-9]+|-dev)?)\x00+`),
+				// [NUL][NUL][NUL]1.0.0-snapshot.0[NUL][NUL][NUL] (snapshot builds record the version only once)
+				m.FileContentsVersionMatcher(`\x00+(?P<version>[0-9]+\.[0-9]+\.[0-9]+-snapshot\.[0-9]+)\x00+`),
 				// Clean[NUL][NUL][NUL]1.8.0[NUL]
-				m.FileContentsVersionMatcher(`Clean\x00+(?P<version>[0-9]+\.[0-9]+\.[0-9]+(-alpha\.[0-9]+|-beta\.[0-9]+|-rc\.[0-9]+|-dev)?)\x00+`),
+				m.FileContentsVersionMatcher(`Clean\x00+(?P<version>[0-9]+\.[0-9]+\.[0-9]+(-alpha\.[0-9]+|-beta\.[0-9]+|-rc\.[0-9]+|-snapshot\.[0-9]+|-dev)?)\x00+`),
 				// Modified[NUL][NUL][NUL][NUL][NUL][NUL][NUL][NUL]1.10-dev[NUL][NUL][NUL]
 				m.FileContentsVersionMatcher(`Modified\x00+(?P<version>[0-9]+\.[0-9]+-dev)\x00+`),
 				// 1.1.17[NUL]...S=v<y5
-				m.FileContentsVersionMatcher(`(?s)(?P<version>[0-9]+\.[0-9]+\.[0-9]+(-alpha\.[0-9]+|-beta\.[0-9]+|-rc\.[0-9]+|-dev)?)\x00+.{1,100}S?=v<y5`),
+				m.FileContentsVersionMatcher(`(?s)(?P<version>[0-9]+\.[0-9]+\.[0-9]+(-alpha\.[0-9]+|-beta\.[0-9]+|-rc\.[0-9]+|-snapshot\.[0-9]+|-dev)?)\x00+.{1,100}S?=v<y5`),
 			),
 			Package: "pilot-agent",
 			PURL:    mustPURL("pkg:generic/istio@version"),
@@ -1049,6 +1092,11 @@ func DefaultClassifiers() []binutils.Classifier {
 			EvidenceMatcher: binutils.MatchAny(
 				// [NUL][NUL][NUL][NUL]12.2.0-258092[NUL][NUL][NUL][NUL]
 				m.FileContentsVersionMatcher(`\x00+(?P<version>[0-9]{2}\.[0-9]+\.[0-9]+\-[0-9]{6,})\x00+`),
+				// security patch releases embed the raw version constant with no "release-" prefix
+				// and are not always preceded by NUL bytes (e.g. on arm builds):
+				// [NUL]11.0.5+security-01[NUL][NUL]call frame too large
+				// [NUL]12.4.3+security-02[NUL][NUL]
+				m.FileContentsVersionMatcher(`\x00(?P<version>[0-9]{1,2}\.[0-9]+\.[0-9]+)\+security-[0-9]+\x00`),
 				// [NUL][NUL][NUL][NUL]release-12.3.2+security-01[NUL][NUL][NUL][NUL]
 				// [NUL][NUL][NUL][NUL]release-12.3.1[NUL][NUL][NUL][NUL]
 				m.FileContentsVersionMatcher(`\x00+release-(?P<version>[0-9]{2}\.[0-9]+\.[0-9]+(-beta[0-9]|-test|-preview)?)(\+security-[0-9]+)?\x00+`),
@@ -1096,9 +1144,12 @@ func DefaultClassifiers() []binutils.Classifier {
 			FileGlob: "**/envoy",
 			EvidenceMatcher: binutils.MatchAny(
 				// 1.3x [NUL]1.36.4[NUL]...envoy_reloadable_features
+				// 1.4x [NUL]1.40.1[NUL]...envoy_reloadable_features
 				// 1.34.5 [NUL]1.34.5[NUL]...envoy.reloadable_features
-				m.FileContentsVersionMatcher(`(?s)\x00(?P<version>1\.3[0-9]\.[0-9]+(-dev)?)\x00.{0,1000}envoy_reloadable_features`),
+				m.FileContentsVersionMatcher(`(?s)\x00(?P<version>1\.[34][0-9]\.[0-9]+(-dev)?)\x00.{0,1000}envoy_reloadable_features`),
 				m.FileContentsVersionMatcher(`(?s)\x00(?P<version>1\.34\.5)\x00.{0,200}envoy\.reloadable_features`),
+				// 1.37.1 DeltaDiscoveryResponse.removed_resources[NUL]1.37.1[NUL]the default now-
+				m.FileContentsVersionMatcher(`(?s)DeltaDiscoveryResponse\.removed_resources\x00(?P<version>1\.[34][0-9]\.[0-9]+(-dev)?)\x00`),
 				// 1.2x envoy_quic_...[NUL]1.28.7[NUL]
 				m.FileContentsVersionMatcher(`(?s)envoy_quic_.{0,1000}\x00(?P<version>1\.2[0-9]\.[0-9]+(-dev)?)\x00`),
 				// 1.2x [NUL]1.20.7[NUL]Unable to
@@ -1153,6 +1204,11 @@ func DefaultClassifiers() []binutils.Classifier {
 			Class:    "ingress-nginx-binary",
 			FileGlob: "**/nginx-ingress-controller",
 			EvidenceMatcher: binutils.MatchAny(
+				// the release is injected with -ldflags -X, which lands it in its own NUL-padded data symbol.
+				// the surrounding bytes are an arch-specific float constant pool, so only the padding is portable.
+				// e.g. v1.9.6[NUL][NUL] on each of linux/amd64, linux/arm, linux/arm64, and linux/s390x
+				// note: one trailing NUL is not enough -- on s390x that matches a vendored "v1.19.0" earlier in the file
+				m.FileContentsVersionMatcher(`v(?P<version>[0-9]+\.[0-9]+\.[0-9]+(\-(alpha|beta)\.[0-9]+)?)\x00\x00`),
 				// [NUL][NUL]v1.15.1[NUL][NUL]@e[ETX][NUL][NUL][NUL][NUL]go1.26.1[NUL][NUL][NUL]
 				// �v1.15.1[NUL][NUL]�z[ETX][NUL][NUL][NUL][NUL]go1.24.4[NUL][NUL][NUL]
 				m.FileContentsVersionMatcher(`v(?P<version>[0-9]+\.[0-9]+\.[0-9]+)\x00+.{0,50}go[0-9]+\.[0-9]+(\-(alpha|beta)\.[0-9])?\.[0-9]+\x00+`),

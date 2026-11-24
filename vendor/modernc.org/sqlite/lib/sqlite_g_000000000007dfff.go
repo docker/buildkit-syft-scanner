@@ -37,7 +37,7 @@ func Xsqlite3_complete16(tls *libc.TLS, zSql uintptr) (r int32) {
 	_sqlite3ValueSetStr(tls, pVal, -int32(1), zSql, uint8(SQLITE_UTF16LE), libc.UintptrFromInt32(0))
 	zSql8 = _sqlite3ValueText(tls, pVal, uint8(SQLITE_UTF8))
 	if zSql8 != 0 {
-		rc = Xsqlite3_complete(tls, zSql8)
+		rc = libc.BoolInt32(Xsqlite3_incomplete(tls, zSql8) == 0)
 	} else {
 		rc = int32(SQLITE_NOMEM)
 	}
@@ -76,15 +76,66 @@ func Xsqlite3_value_text16(tls *libc.TLS, pVal uintptr) (r uintptr) {
 
 const __BYTE_ORDER__ = 1234
 
+func _freeCursorWithCache(tls *libc.TLS, p uintptr, pCx uintptr) {
+	var pCache uintptr
+	_ = pCache
+	pCache = (*TVdbeCursor)(unsafe.Pointer(pCx)).FpCache
+	libc.SetBitFieldPtr8Uint32(pCx+8, libc.Uint32FromInt32(0), 4, 0x10)
+	(*TVdbeCursor)(unsafe.Pointer(pCx)).FpCache = uintptr(0)
+	if (*TVdbeTxtBlbCache)(unsafe.Pointer(pCache)).FpCValue != 0 {
+		_sqlite3RCStrUnref(tls, (*TVdbeTxtBlbCache)(unsafe.Pointer(pCache)).FpCValue)
+		(*TVdbeTxtBlbCache)(unsafe.Pointer(pCache)).FpCValue = uintptr(0)
+	}
+	_sqlite3DbFree(tls, (*TVdbe)(unsafe.Pointer(p)).Fdb, pCache)
+	_sqlite3VdbeFreeCursorNN(tls, p, pCx)
+}
+
 func _readCoord(tls *libc.TLS, p uintptr, pCoord uintptr) {
 	*(*Tu32)(unsafe.Pointer(pCoord)) = uint32(**(**Tu8)(__ccgo_up(p)))<<libc.Int32FromInt32(24) + uint32(**(**Tu8)(__ccgo_up(p + 1)))<<libc.Int32FromInt32(16) + uint32(**(**Tu8)(__ccgo_up(p + 2)))<<libc.Int32FromInt32(8) + uint32(**(**Tu8)(__ccgo_up(p + 3)))<<libc.Int32FromInt32(0)
 }
 
+// C documentation
+//
+//	/*
+//	** Read an unsigned 64-bit integer from an unaligned big-endian byte array.
+//	*/
+func _sqlite3Get8byte(tls *libc.TLS, p uintptr) (r Tu64) {
+	/* Test this limb using -DSQLITE_BYTEORDER=0 */
+	return uint64(**(**Tu8)(__ccgo_up(p)))<<libc.Int32FromInt32(56) + uint64(**(**Tu8)(__ccgo_up(p + 1)))<<libc.Int32FromInt32(48) + uint64(**(**Tu8)(__ccgo_up(p + 2)))<<libc.Int32FromInt32(40) + uint64(**(**Tu8)(__ccgo_up(p + 3)))<<libc.Int32FromInt32(32) + uint64(**(**Tu8)(__ccgo_up(p + 4)))<<libc.Int32FromInt32(24) + uint64(**(**Tu8)(__ccgo_up(p + 5)))<<libc.Int32FromInt32(16) + uint64(**(**Tu8)(__ccgo_up(p + 6)))<<libc.Int32FromInt32(8) + uint64(**(**Tu8)(__ccgo_up(p + 7)))<<libc.Int32FromInt32(0)
+}
+
+// C documentation
+//
+//	/* Write an unsigned 32-bit integer into an unaligned big-endian array of bytes.
+//	*/
 func _sqlite3Put4byte(tls *libc.TLS, p uintptr, v Tu32) {
+	/* Test this limb using -DSQLITE_BYTEORDER=0 */
 	**(**uint8)(__ccgo_up(p)) = uint8(v >> libc.Int32FromInt32(24))
 	**(**uint8)(__ccgo_up(p + 1)) = uint8(v >> libc.Int32FromInt32(16))
 	**(**uint8)(__ccgo_up(p + 2)) = uint8(v >> libc.Int32FromInt32(8))
 	**(**uint8)(__ccgo_up(p + 3)) = uint8(v)
+}
+
+// C documentation
+//
+//	/*
+//	**    unixepoch( TIMESTRING, MOD, MOD, ...)
+//	**
+//	** Return the number of seconds (including fractional seconds) since
+//	** the unix epoch of 1970-01-01 00:00:00 GMT.
+//	*/
+func _unixepochFunc(tls *libc.TLS, context uintptr, argc int32, argv uintptr) {
+	bp := tls.Alloc(48)
+	defer tls.Free(48)
+	var _ /* x at bp+0 */ TDateTime
+	if _isDate(tls, context, argc, argv, bp) == 0 {
+		_computeJD(tls, bp)
+		if int32(uint32(*(*uint8)(unsafe.Pointer(bp + 44))&0x4>>2)) != 0 {
+			Xsqlite3_result_double(tls, context, float64((**(**TDateTime)(__ccgo_up(bp))).FiJD-libc.Int64FromInt32(21086676)*libc.Int64FromInt32(10000000))/float64(1000))
+		} else {
+			Xsqlite3_result_int64(tls, context, (**(**TDateTime)(__ccgo_up(bp))).FiJD/int64(1000)-libc.Int64FromInt32(21086676)*libc.Int64FromInt32(10000))
+		}
+	}
 }
 
 func _writeCoord(tls *libc.TLS, p uintptr, pCoord uintptr) (r int32) {
