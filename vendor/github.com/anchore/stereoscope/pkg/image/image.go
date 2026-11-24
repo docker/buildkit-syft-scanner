@@ -49,6 +49,10 @@ type Image struct {
 	SquashedSearchContext filetree.Searcher
 
 	overrideMetadata []AdditionalMetadata
+
+	// wrapLazyLayerTree is a test hook: when set, each layer tree handed to a lazy layer squash goes through
+	// it, so a test can see (or break) the build that reads it
+	wrapLazyLayerTree func(layerIdx int, layerTree filetree.ReadWriter) filetree.ReadWriter
 }
 
 type AdditionalMetadata func(*Image) error
@@ -203,7 +207,9 @@ func (i *Image) applyOverrideMetadata() error {
 }
 
 // Read parses information from the underlying image tar into this struct. This includes image metadata, layer
-// metadata, layer file trees, and layer squash trees (which implies the image squash tree).
+// metadata, layer file trees, and layer squash trees (which implies the image squash tree). Under
+// WithLazyLayerSquashes only the top layer's squash, the image squash, is built here, and every lower
+// layer's squash is built the first time something uses it.
 //
 // The context bounds the read: cancelling it abandons work that has not started and stops the
 // layer pools from picking up more. It does not return until the layer work already in flight has
@@ -213,7 +219,7 @@ func (i *Image) applyOverrideMetadata() error {
 // How long that wait is depends on the source. A registry fetch aborts with the caller's context,
 // but a daemon or archive fetch reads a local tar through go-containerregistry, which takes no
 // context, and indexing a layer is never interruptible. So a cancelled read costs up to one fetch
-// plus one index per in-flight worker slot.
+// plus one index per in-flight worker slot, plus the one layer squash in progress.
 func (i *Image) Read(ctx context.Context) error {
 	startTime := time.Now()
 
@@ -309,7 +315,7 @@ func (i *Image) readAndSquashLayers(ctx context.Context, layers []*Layer, fileCa
 	squashDigest := i.Metadata.ID
 	go func() {
 		squashStart := time.Now()
-		err := i.squashLayers(layers, gates, readProg)
+		err := i.squashLayers(ctx, layers, gates, readProg, !lazyLayerSquashes(ctx))
 		log.WithFields("digest", squashDigest, "time", time.Since(squashStart)).Trace("completed image squash")
 		squashDone <- err
 	}()
@@ -510,6 +516,35 @@ const (
 	LayerIndexExecutor = "layer-index"
 )
 
+type lazyLayerSquashesKey struct{}
+
+// WithLazyLayerSquashes returns a context that tells Read to build only the image squash (the top
+// layer's), and to build every lower layer's squash the first time something uses it. By default Read
+// builds every layer's squash, and since each one is a full copy of the tree below it, memory grows
+// with layers x files. Use this when you expect to need only the image squash (for example a
+// squashed-scope scan): lower layers then cost nothing.
+//
+// Lower layers still work, Layer.SquashedTree and Layer.SquashedSearchContext are never nil, but:
+//   - the first call that touches a lower layer builds its squash, and the squash of every layer below
+//     it that has not been built yet. That call can take a while and cannot be cancelled, since no
+//     context reaches it. Concurrent callers wait for the same build rather than repeating it.
+//   - a failed build no longer fails Read. Methods that return an error report it, and the rest see
+//     an empty tree (see filetree.NewLazySquash). A caller that must not miss files (a scanner) should
+//     read lower layers through the methods that return an error: SquashedSearchContext, and
+//     SquashedTree's File, FilesByGlob, ListPaths and Walk, rather than AllFiles or HasPath.
+//   - a lower layer's SquashedTree is not a *filetree.FileTree, so type assertions on it fail.
+//
+// It applies to every Read under the returned context, so set it on a context scoped to the reads
+// that want it.
+func WithLazyLayerSquashes(ctx context.Context) context.Context {
+	return context.WithValue(ctx, lazyLayerSquashesKey{}, true)
+}
+
+func lazyLayerSquashes(ctx context.Context) bool {
+	v, _ := ctx.Value(lazyLayerSquashesKey{}).(bool)
+	return v
+}
+
 // withLayerExecutors fills in the stage executors this image should use for any the caller has not
 // supplied. Never bounded at zero: a zero-concurrency go-sync executor runs inline on the caller's
 // goroutine, which would collapse the two stages back into one and lose the overlap.
@@ -628,8 +663,15 @@ func layerReadWorkers(layers int) int {
 
 // squash generates a squash tree for each layer in the image. For instance, layer 2 squash =
 // squash(layer 0, layer 1, layer 2), layer 3 squash = squash(layer 0, layer 1, layer 2, layer 3), and so on.
-func (i *Image) squashLayers(layers []*Layer, gates *layerGates, prog *progress.Manual) error {
+//
+// With eager set every layer's squash is built here, each onto a copy of the one below. Otherwise only
+// the top layer's squash (the image squash) is built here, merged in place since no layer below it keeps
+// that tree, and every lower layer gets a lazy squash that is built from its own chain on first use.
+func (i *Image) squashLayers(ctx context.Context, layers []*Layer, gates *layerGates, prog *progress.Manual, eager bool) error {
+	// eager: the squash of the layer below. Lazy: the image squash so far, merged into in place.
 	var lastSquashTree filetree.ReadWriter
+	// lazy only: the lazy squash of the layer below, which the next lazy squash is built from
+	var lowerLazySquash filetree.Reader
 
 	for idx, layer := range layers {
 		if !gates.wait(idx) {
@@ -639,29 +681,67 @@ func (i *Image) squashLayers(layers []*Layer, gates *layerGates, prog *progress.
 			// context over a layer that was never squashed, which panics on the nil tree.
 			return fmt.Errorf("unable to squash: layer %d was not indexed", idx)
 		}
-
-		// the lowest layer has nothing under it to merge into, but it is still squashed rather than
-		// used as-is: a layer tree keeps the whiteout entries of its own changeset, a squashed tree
-		// must not carry them
-		var unionTree = filetree.NewUnionFileTree()
-		if idx > 0 {
-			unionTree.PushTree(lastSquashTree)
+		// checked per layer since the squash keeps running after the last layer is indexed, and Read
+		// waits for it, so without this a cancel can't stop the copies left to do
+		if err := ctx.Err(); err != nil {
+			return fmt.Errorf("unable to squash layer %d: %w", idx, err)
 		}
-		unionTree.PushTree(layer.Tree.(filetree.ReadWriter))
 
-		squashedTree, err := unionTree.Squash()
+		// before the merge. Only Windows layers link into the layers below, and only hcsshim imports them, so
+		// that is the one model followed; a Linux image's links stay as their headers describe them. The
+		// config is part of the image digest, so this stays a function of the image
+		var below []*Layer
+		if i.Metadata.Config.OS == "windows" {
+			below = layers[:idx]
+		}
+		if err := adoptLowerLayerHardLinks(below, layer); err != nil {
+			return fmt.Errorf("failed to adopt hardlinks in layer %d: %w", idx, err)
+		}
+
+		layerTree := layer.Tree.(filetree.ReadWriter)
+		squashedTree, err := squashOnto(lastSquashTree, layerTree, eager)
 		if err != nil {
 			return fmt.Errorf("failed to squash tree %d: %w", idx, err)
 		}
-
-		layer.SquashedTree = squashedTree
-		layer.SquashedSearchContext = filetree.NewSearchContext(layer.SquashedTree, layer.fileCatalog.Index)
 		lastSquashTree = squashedTree
+
+		if eager || idx == len(layers)-1 {
+			layer.SquashedTree = squashedTree
+		} else {
+			// never the in-place tree above: it keeps changing as later layers are merged into it
+			lazyLayerTree := layerTree
+			if i.wrapLazyLayerTree != nil {
+				lazyLayerTree = i.wrapLazyLayerTree(idx, layerTree)
+			}
+			layer.SquashedTree = filetree.NewLazySquash(lowerLazySquash, lazyLayerTree)
+			lowerLazySquash = layer.SquashedTree
+		}
+		// for a lazy squash this is lazy too, and builds nothing until the first search
+		layer.SquashedSearchContext = filetree.NewSearchContext(layer.SquashedTree, layer.fileCatalog.Index)
 
 		prog.Increment()
 	}
 
 	return nil
+}
+
+// squashOnto applies layerTree onto the squash below it (nil for the lowest layer). The lower squash
+// is left untouched when keepLower is set, otherwise it is merged into and returned.
+func squashOnto(lower, layerTree filetree.ReadWriter, keepLower bool) (filetree.ReadWriter, error) {
+	if lower != nil && !keepLower {
+		// a squash never carries whiteouts, so this is exactly what Squash would do after copying it
+		return lower, lower.Merge(layerTree)
+	}
+
+	// the lowest layer has nothing under it to merge into, but it is still squashed rather than
+	// used as-is: a layer tree keeps the whiteout entries of its own changeset, a squashed tree
+	// must not carry them
+	unionTree := filetree.NewUnionFileTree()
+	if lower != nil {
+		unionTree.PushTree(lower)
+	}
+	unionTree.PushTree(layerTree)
+	return unionTree.Squash()
 }
 
 // SquashedTree returns the pre-computed image squash file tree.
@@ -727,6 +807,9 @@ func (i *Image) FileContentsByRef(ref file.Reference) (io.ReadCloser, error) {
 // the image (a cycle, or a chain too deep to follow), resolves to nil with a nil error: callers are resolving one
 // file out of many and one bad link should not fail the whole set.
 func (i *Image) ResolveLinkByLayerSquash(ref file.Reference, layer int, options ...filetree.LinkResolutionOption) (*file.Resolution, error) {
+	if i.Layers[layer].SquashedTree == nil {
+		return nil, i.Layers[layer].errNoSquash()
+	}
 	allOptions := append([]filetree.LinkResolutionOption{filetree.FollowBasenameLinks}, options...)
 	_, resolvedRef, err := i.Layers[layer].SquashedTree.File(ref.RealPath, allOptions...)
 	if filetree.IsUnresolvableLink(err) {

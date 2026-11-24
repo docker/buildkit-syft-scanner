@@ -22,6 +22,7 @@ import (
 	"github.com/anchore/stereoscope/pkg/event"
 	"github.com/anchore/stereoscope/pkg/file"
 	"github.com/anchore/stereoscope/pkg/filetree"
+	"github.com/anchore/stereoscope/pkg/filetree/filenode"
 )
 
 const (
@@ -85,10 +86,16 @@ type Layer struct {
 	Tree filetree.Reader
 	// SquashedTree is a filetree that represents the combination of this layers diff tree and all diff trees
 	// in lower layers relative to this one. It never contains whiteout entries: those are changeset metadata
-	// and do not materialize as files in an applied rootfs.
+	// and do not materialize as files in an applied rootfs. It is set for every layer once the image is read.
+	// Below the top layer of an image read with WithLazyLayerSquashes it is built on first use, so it is
+	// not a *filetree.FileTree and its first call can take a while (see WithLazyLayerSquashes). Entries under a
+	// lower-layer symlink are squashed with overlay semantics, which some runtimes disagree with (see
+	// filetree.FileTree.Merge), so Tree is the place to look for everything a layer wrote.
 	SquashedTree filetree.Reader
 	// fileCatalog contains all file metadata for all files in all layers (not just this layer)
-	fileCatalog           *FileCatalog
+	fileCatalog *FileCatalog
+	// SquashedSearchContext searches SquashedTree. Over a lazy SquashedTree it is lazy too: neither the tree
+	// nor the search context's link index is built until the first search.
 	SquashedSearchContext filetree.Searcher
 	SearchContext         filetree.Searcher
 	// knownDiffID is the layer's diff ID as recorded in the image config, when the image could
@@ -98,6 +105,10 @@ type Layer struct {
 	contentPath string
 	// readMonitor reports indexing progress for this layer
 	readMonitor *progress.Manual
+	// deferredHardLinks are this layer's hardlinks naming a file that is not in this layer, and those naming
+	// one of these, in tar order. squashLayers adopts them from the layers below on a Windows image (see
+	// adoptLowerLayerHardLinks), and they stay here after a standalone Read.
+	deferredHardLinks []deferredHardLink
 }
 
 // NewLayer provides a new, unread layer object.
@@ -244,6 +255,7 @@ func (l *Layer) index(catalog *FileCatalog) error {
 	tree := filetree.New()
 	l.Tree = tree
 	l.fileCatalog = catalog
+	l.deferredHardLinks = nil
 
 	// published here rather than in fetch: the monitor counts tar entries, which is entirely
 	// index-stage work. Publishing it at fetch time also meant a layer that failed to fetch left a
@@ -308,6 +320,9 @@ func (l *Layer) OpenPath(path file.Path) (io.ReadCloser, error) {
 // OpenPathFromSquash reads the file contents for the given path from the underlying layer blob, relative to the layers squashed file tree.
 // An error is returned if there is no file at the given path and layer or the read operation cannot continue.
 func (l *Layer) OpenPathFromSquash(path file.Path) (io.ReadCloser, error) {
+	if l.SquashedTree == nil {
+		return nil, l.errNoSquash()
+	}
 	return fetchReaderByPath(l.SquashedTree, l.fileCatalog, path)
 }
 
@@ -324,7 +339,7 @@ func (l *Layer) FileContents(path file.Path) (io.ReadCloser, error) {
 //
 // Deprecated: use OpenPathFromSquash() instead.
 func (l *Layer) FileContentsFromSquash(path file.Path) (io.ReadCloser, error) {
-	return fetchReaderByPath(l.SquashedTree, l.fileCatalog, path)
+	return l.OpenPathFromSquash(path)
 }
 
 // FilesByMIMEType returns file references for files that match at least one of the given MIME types relative to each layer tree.
@@ -348,6 +363,9 @@ func (l *Layer) FilesByMIMEType(mimeTypes ...string) ([]file.Reference, error) {
 //
 // Deprecated: use SquashedSearchContext().SearchByMIMEType() instead.
 func (l *Layer) FilesByMIMETypeFromSquash(mimeTypes ...string) ([]file.Reference, error) {
+	if l.SquashedSearchContext == nil {
+		return nil, l.errNoSquash()
+	}
 	var refs []file.Reference
 	refVias, err := l.SquashedSearchContext.SearchByMIMEType(mimeTypes...)
 	if err != nil {
@@ -359,6 +377,12 @@ func (l *Layer) FilesByMIMETypeFromSquash(mimeTypes ...string) ([]file.Reference
 		}
 	}
 	return refs, nil
+}
+
+// errNoSquash is returned by squash accessors on a layer without one. Image.Read sets one on every layer,
+// so this only happens for a layer that was not read as part of an image (Layer.Read alone does not squash).
+func (l *Layer) errNoSquash() error {
+	return fmt.Errorf("layer %d has no squashed tree (squashes are built by Image.Read)", l.Metadata.Index)
 }
 
 // adoptHardLinkInode rewrites metadata for a hardlink tar header to describe the file it names, and
@@ -394,12 +418,8 @@ func (l *Layer) FilesByMIMETypeFromSquash(mimeTypes ...string) ([]file.Reference
 //   - when adoption fails, or is undone by the caller because the adopted type collides with a node
 //     already at that path, that one name keeps TypeHardLink, size 0 and an empty data section: the
 //     lopsided picture this function exists to avoid.
-//   - only this layer is searched. extraction resolves a link name against everything applied so
-//     far, so a name pointing into a lower layer does work in a real runtime and is not adopted
-//     here. matching that needs the squash as of the previous layer, not a walk of each lower tree,
-//     which would resolve names that an intervening whiteout had already deleted. squashing runs
-//     after all layers are read, so threading it in would make every layer's indexing wait on the
-//     one below it. no mainstream builder emits these: they keep the inode table per archive.
+//   - only this layer is searched. A name that is not in it is deferred, and adopted from the layers
+//     below only on a Windows image (see adoptLowerLayerHardLinks).
 func adoptHardLinkInode(ft filetree.Reader, fileCatalog *FileCatalog, metadata *file.Metadata) (file.Opener, bool) {
 	// a hardlink's link name refers to an earlier member of this same archive, relative to its root.
 	// the lookup below is not literal: a miss retries following ancestor symlinks, which is what
@@ -434,6 +454,13 @@ func adoptHardLinkInode(ft filetree.Reader, fileCatalog *FileCatalog, metadata *
 		return nil, false
 	}
 
+	bindHardLink(target.Metadata, metadata)
+	return opener, true
+}
+
+// bindHardLink rewrites metadata, a hardlink header's, to describe target, the file it names (see
+// adoptHardLinkInode for what is adopted and what is kept).
+func bindHardLink(target file.Metadata, metadata *file.Metadata) {
 	metadata.FileInfo = file.ManualInfo{
 		NameValue: path.Base(metadata.Path),
 		SizeValue: target.Size(),
@@ -448,12 +475,69 @@ func adoptHardLinkInode(ft filetree.Reader, fileCatalog *FileCatalog, metadata *
 	metadata.MIMEType = target.MIMEType
 	metadata.Type = target.Type
 	metadata.LinkDestination = target.LinkDestination
+}
 
-	return opener, true
+// literalNode is the node at exactly p in ft, following no links, or nil.
+func literalNode(ft filetree.Reader, p file.Path) *filenode.FileNode {
+	n, _ := ft.TreeReader().Node(filenode.IDByPath(p)).(*filenode.FileNode)
+	return n
+}
+
+// hasNonDirAncestor reports whether some ancestor of p in ft is not a directory. The tree can hold a literal
+// child under a symlink node, and anything that resolves such a path follows the symlink instead.
+func hasNonDirAncestor(ft filetree.Reader, p file.Path) bool {
+	for _, c := range p.ConstituentPaths() {
+		n := literalNode(ft, c)
+		if n == nil {
+			// every node has its parent in the tree, so nothing deeper is there either
+			return false
+		}
+		if n.FileType != file.TypeDirectory {
+			return true
+		}
+	}
+	return false
+}
+
+// removeLiteralLeaf removes the node at exactly p from ft, and its reference from the catalog, when that node has
+// no children. It leaves the tree alone when there is no such node, when p is the root, or when an ancestor of p
+// is not a directory, since RemovePath would follow that ancestor and remove some other path.
+func removeLiteralLeaf(ft filetree.ReadWriter, fileCatalog *FileCatalog, p file.Path) error {
+	existing := literalNode(ft, p)
+	if existing == nil || p == file.Path(file.DirSeparator) || len(ft.TreeReader().Children(existing)) > 0 || hasNonDirAncestor(ft, p) {
+		return nil
+	}
+	if err := ft.RemovePath(p); err != nil {
+		return err
+	}
+	if existing.Reference != nil {
+		fileCatalog.remove(*existing.Reference)
+	}
+	return nil
+}
+
+// removeEarlierEntry clears the way for a tar entry over whatever an earlier entry of the same layer put at its
+// path. Extraction applies entries in order and, unless both are directories, removes whatever is at the path
+// before writing the next one there (containerd and docker pkg/archive). Doing the same here gives the header its
+// own reference, so the later entry wins even with the same type, and the replaced reference leaves the catalog.
+//
+// a node with children is kept (see removeLiteralLeaf): those children may have been written through a lower
+// symlink at this path, so a rootfs applier still has them under the symlink's target. There, and under a
+// non-directory ancestor, the builder reuses the node or refuses a retype and fails the read, as before.
+func removeEarlierEntry(ft filetree.ReadWriter, fileCatalog *FileCatalog, metadata file.Metadata) error {
+	p := file.Path(metadata.Path).Normalize()
+	existing := literalNode(ft, p)
+	if existing == nil || (existing.FileType == file.TypeDirectory && metadata.Type == file.TypeDirectory) {
+		return nil
+	}
+	return removeLiteralLeaf(ft, fileCatalog, p)
 }
 
 func layerTarIndexer(ft filetree.ReadWriter, fileCatalog *FileCatalog, size *int64, layerRef *Layer, monitor *progress.Manual) file.TarIndexVisitor {
 	builder := filetree.NewBuilder(ft, fileCatalog.Index)
+	// deferredByID is the index in layerRef.deferredHardLinks of each deferred reference, so a later link can
+	// tell that the name it follows is one of them
+	deferredByID := make(map[file.ID]int)
 
 	return func(index file.TarIndexEntry) error {
 		var err error
@@ -467,10 +551,17 @@ func layerTarIndexer(ft filetree.ReadWriter, fileCatalog *FileCatalog, size *int
 		}()
 		metadata := file.NewMetadata(entry.Header, contents)
 
+		// first, as extraction does: an earlier entry at this path is gone before this one is written, even
+		// for a hardlink naming it
+		if err = removeEarlierEntry(ft, fileCatalog, metadata); err != nil {
+			return err
+		}
+
 		// a hardlink names a file already present in this layer; describe it as that file and read
 		// its contents through that file's opener rather than this header's empty data section
 		var hardLinkOpener file.Opener
 		var preAdoptionMetadata *file.Metadata
+		deferVia, deferred := -1, false
 		if metadata.Type == file.TypeHardLink {
 			original := metadata
 			var adopted bool
@@ -479,11 +570,8 @@ func layerTarIndexer(ft filetree.ReadWriter, fileCatalog *FileCatalog, size *int
 				// keep the un-adopted description to fall back to: adoption changes the node type this
 				// entry claims, which can conflict with what an earlier header put at the same path
 				preAdoptionMetadata = &original
-			} else {
-				// trace, not warn: resolution still works via the link path, and a per-header warning
-				// would be noisy on any archive that trips this
-				log.WithFields("path", metadata.Path, "linkName", metadata.LinkDestination).
-					Trace("hardlink names a file that is not in this layer, indexing it from its own header")
+			} else if layerRef != nil {
+				deferVia, deferred = deferHardLink(ft, deferredByID, metadata)
 			}
 		}
 
@@ -529,6 +617,10 @@ func layerTarIndexer(ft filetree.ReadWriter, fileCatalog *FileCatalog, size *int
 			}
 		}
 		fileCatalog.addImageReferences(ref.ID(), layerRef, opener)
+		if deferred {
+			deferredByID[ref.ID()] = len(layerRef.deferredHardLinks)
+			layerRef.deferredHardLinks = append(layerRef.deferredHardLinks, deferredHardLink{ref: *ref, header: metadata, via: deferVia})
+		}
 
 		if monitor != nil {
 			monitor.Increment()
