@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.5
+# syntax=docker/dockerfile:1
 
 # Copyright 2024 buildkit-syft-scanner authors
 #
