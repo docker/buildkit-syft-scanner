@@ -1,0 +1,102 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    "helpers:pinGitHubActionDigestsToSemver",
+    "helpers:githubDigestChangelogs",
+    ":gitSignOff"
+  ],
+  "enabledManagers": [
+    "gomod",
+    "github-actions",
+    "custom.regex"
+  ],
+  "postUpdateOptions": [
+    "gomodTidy",
+    "gomodUpdateImportPaths",
+    "gomodVendor"
+  ],
+  "prHourlyLimit": 0,
+  "minimumReleaseAge": "2 days",
+  "internalChecksFilter": "strict",
+  "labels": [
+    "dependencies",
+    "bot"
+  ],
+  "semanticCommits": "disabled",
+  "commitMessagePrefix": "deps:",
+  "customManagers": [
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "**/*Dockerfile*"
+      ],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)(?: versioning=(?<versioning>\\S+))?[ \\t]*\\r?\\n[ \\t]*ARG[ \\t]+\\w+=\"?(?<currentValue>[^\\s\"]+)\"?"
+      ]
+    }
+  ],
+  "packageRules": [
+    {
+      "matchDepNames": [
+        "github.com/docker/**",
+        "github.com/moby/**",
+        "docker/**",
+        "moby/**"
+      ],
+      "minimumReleaseAge": null
+    },
+    {
+      "matchManagers": ["gomod"],
+      "commitMessagePrefix": "deps(go):",
+      // Follow Syft for shared dependency updates.
+      "enabled": false
+    },
+    {
+      "matchManagers": ["gomod"],
+      "matchDepNames": [
+        "github.com/anchore/syft",
+        "github.com/in-toto/in-toto-golang",
+        "github.com/pkg/errors",
+        "github.com/sirupsen/logrus"
+      ],
+      "enabled": true
+    },
+    {
+      "matchFileNames": [
+        "**/*Dockerfile*"
+      ],
+      "commitMessagePrefix": "deps(dockerfile):"
+    },
+    {
+      "matchFileNames": [
+        ".github/workflows/**"
+      ],
+      "commitMessagePrefix": "deps(ci):"
+    },
+    {
+      "matchDepNames": ["go"],
+      "enabled": false
+    },
+    {
+      "matchManagers": ["github-actions"],
+      "matchDepNames": ["crazy-max/.github/**"],
+      "groupName": "crazy-max-dot-github"
+    },
+    {
+      "matchManagers": ["github-actions"],
+      "matchDepNames": ["docker/**"],
+      "groupName": "docker-actions"
+    },
+    {
+      "matchUpdateTypes": [
+        "major",
+        "minor",
+        "patch"
+      ],
+      "commitMessageAction": "bump",
+      "commitMessageTopic": "{{{depName}}}",
+      "commitMessageExtra": "from {{{replace '^v' '' currentValue}}} to {{{replace '^v' '' newValue}}}"
+    }
+  ]
+}

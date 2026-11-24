@@ -17,6 +17,7 @@
 # upstream at https://github.com/moby/buildkit/blob/master/hack/dockerfiles/vendor.Dockerfile
 
 ARG GO_VERSION="1.26"
+# renovate: datasource=docker depName=alpine
 ARG ALPINE_VERSION="3.24"
 
 FROM golang:${GO_VERSION}-alpine${ALPINE_VERSION} AS base

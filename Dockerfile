@@ -15,8 +15,11 @@
 # limitations under the License.
 
 ARG GO_VERSION="1.26"
+# renovate: datasource=docker depName=alpine
 ARG ALPINE_VERSION="3.24"
+# renovate: datasource=github-releases depName=tonistiigi/xx
 ARG XX_VERSION="1.10.0"
+# renovate: datasource=docker depName=mcr.microsoft.com/windows/nanoserver versioning=regex:^ltsc(?<major>\d+)$
 ARG WINDOWS_VERSION="ltsc2025"
 
 FROM --platform=$BUILDPLATFORM tonistiigi/xx:${XX_VERSION} AS xx
