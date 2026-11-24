@@ -17,6 +17,7 @@
 ARG LICENSE_HOLDER="buildkit-syft-scanner authors"
 ARG LICENSE_TYPE="apache"
 ARG LICENSE_FILES=".*\(Dockerfile\|Makefile\|\.go\|\.hcl\|\.sh\)"
+# renovate: datasource=github-releases depName=google/addlicense
 ARG ADDLICENSE_VERSION="v1.2.0"
 
 FROM ghcr.io/google/addlicense:${ADDLICENSE_VERSION} AS addlicense
