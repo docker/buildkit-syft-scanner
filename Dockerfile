@@ -29,13 +29,17 @@ RUN apk add --no-cache file git
 WORKDIR /src
 
 FROM base AS version
-ARG GIT_REF
-RUN --mount=target=. <<EOT
-  set -e
-  case "$GIT_REF" in
-    refs/tags/v*) version="${GIT_REF#refs/tags/}" ;;
-    *) version=$(git describe --match 'v[0-9]*' --dirty='.m' --always --tags) ;;
-  esac
+ARG GIT_FETCH_HISTORY=0
+RUN --mount=target=.,rw <<EOT
+  set -eu
+  if [ "$GIT_FETCH_HISTORY" = 1 ]; then
+    if [ "$(git rev-parse --is-shallow-repository)" = true ]; then
+      git fetch --unshallow --tags origin
+    else
+      git fetch --tags origin
+    fi
+  fi
+  version=$(git describe --match 'v[0-9]*' --dirty='.m' --always --tags)
   pkg=github.com/docker/buildkit-syft-scanner
   echo "${version}" | tee /tmp/.version
   echo "-extldflags -static -X ${pkg}/version.Version=${version} -X ${pkg}/version.SyftVersion=$(go list -mod=mod -u -m -f '{{.Version}}' 'github.com/anchore/syft')" | tee /tmp/.ldflags
