@@ -59,6 +59,8 @@ jobs:
         org.opencontainers.image.description=SBOM generation for BuildKit images
         org.opencontainers.image.vendor=Docker Inc.
       meta-bake-target: meta-helper
+      set: |
+        *.args.GIT_FETCH_HISTORY=1
       registry-identities: |
         - type: dockerhub
           registry: docker.io

@@ -20,12 +20,6 @@ variable "WINDOWS_VERSION" {
   default = null
 }
 
-# GITHUB_REF is the actual ref that triggers the workflow and used as version
-# when tag is pushed: https://docs.github.com/en/actions/learn-github-actions/environment-variables#default-environment-variables
-variable "GITHUB_REF" {
-  default = ""
-}
-
 variable "IMAGE_LOCAL" {
   default = "buildkit-syft-scanner:local"
 }
@@ -34,7 +28,6 @@ target "_common" {
   args = {
     BUILDKIT_CONTEXT_KEEP_GIT_DIR = 1
     GO_VERSION = GO_VERSION
-    GIT_REF = GITHUB_REF
     WINDOWS_VERSION = WINDOWS_VERSION
   }
 }
